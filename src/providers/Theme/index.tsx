@@ -15,10 +15,26 @@ const initialContext: ThemeContextType = {
 
 const ThemeContext = createContext(initialContext)
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme | undefined>(
-    canUseDOM ? (document.documentElement.getAttribute('data-theme') as Theme) : undefined,
+const getInitialTheme = (): Theme | undefined => {
+  if (!canUseDOM) {
+    return undefined
+  }
+
+  const preference = window.localStorage.getItem(themeLocalStorageKey)
+
+  if (themeIsValid(preference)) {
+    return preference
+  }
+
+  return (
+    (document.documentElement.getAttribute('data-theme') as Theme | null) ||
+    getImplicitPreference() ||
+    defaultTheme
   )
+}
+
+export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+  const [theme, setThemeState] = useState<Theme | undefined>(getInitialTheme)
 
   const setTheme = useCallback((themeToSet: Theme | null) => {
     if (themeToSet === null) {
@@ -48,7 +64,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     document.documentElement.setAttribute('data-theme', themeToSet)
-    setThemeState(themeToSet)
   }, [])
 
   return <ThemeContext value={{ setTheme, theme }}>{children}</ThemeContext>

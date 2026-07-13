@@ -22,7 +22,14 @@ const collections: CollectionSlug[] = [
 
 const globals: GlobalSlug[] = ['header', 'footer']
 
-const categories = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
+const categoryTitles = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
+
+const formatSlug = (value: string): string =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
 
 // Next.js revalidation errors are normal when seeding the database without a server running
 // i.e. running `yarn seed` locally instead of using the admin UI within an active app
@@ -127,16 +134,23 @@ export const seed = async ({
       data: imageHero1,
       file: hero1Buffer,
     }),
-    categories.map((category) =>
+  ])
+
+  await Promise.all(
+    categoryTitles.map((title, index) =>
       payload.create({
         collection: 'categories',
+        draft: false,
         data: {
-          title: category,
-          slug: category,
+          title,
+          slug: formatSlug(title),
+          image: imageHomeDoc.id,
+          isActive: true,
+          sortOrder: index,
         },
       }),
     ),
-  ])
+  )
 
   payload.logger.info(`— Seeding posts...`)
 

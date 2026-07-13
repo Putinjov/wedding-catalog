@@ -68,7 +68,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
 
     width = fullWidth!
     height = fullHeight!
-    alt = altFromResource || ''
+    alt = altFromResource || altFromProps || ''
 
     const cacheTag = resource.updatedAt
 
