@@ -7,8 +7,14 @@ import { fileURLToPath } from 'url'
 import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
+import {Dresses} from './collections/Dresses'
 import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
+import { Sizes } from './collections/Lookups/Sizes'
+import { Colors } from './collections/Lookups/Colors'
+import { Fabrics } from './collections/Lookups/Fabrics'
+import { Silhouettes } from './collections/Lookups/Silhouettes'
+import { Designers } from './collections/Lookups/Designers'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { plugins } from './plugins'
@@ -19,6 +25,11 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  localization:{
+    locales: ['en', 'uk'],
+    defaultLocale: 'en',
+    fallback: true,
+  },
   admin: {
     components: {
       // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
@@ -60,7 +71,7 @@ export default buildConfig({
   db: mongooseAdapter({
     url: process.env.DATABASE_URL || '',
   }),
-  collections: [Pages, Posts, Media, Categories, Users],
+  collections: [Pages, Posts, Media, Categories, Users, Sizes, Colors, Fabrics, Silhouettes, Designers, Dresses],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins,

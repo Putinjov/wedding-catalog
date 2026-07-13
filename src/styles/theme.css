@@ -1,0 +1,27 @@
+:root {
+  /* Backgrounds */
+  --background: 36 33% 98%;
+  --foreground: 20 8% 10%;
+
+  /* Cards */
+  --card: 0 0% 100%;
+  --card-foreground: 20 8% 10%;
+
+  /* Brand */
+  --primary: 25 22% 20%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary */
+  --secondary: 30 22% 92%;
+  --secondary-foreground: 20 8% 10%;
+
+  /* Accent */
+  --accent: 32 28% 78%;
+  --accent-foreground: 20 8% 10%;
+
+  /* Border */
+  --border: 32 20% 88%;
+
+  /* Radius */
+  --radius: 0.9rem;
+}
