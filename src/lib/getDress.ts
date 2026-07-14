@@ -1,8 +1,9 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
+import { cache } from 'react'
 
-import type { Dress } from '@/payload-types'
 import type { DressMode } from '@/lib/catalogue'
+import type { Dress } from '@/payload-types'
 
 type QueryWhereField = Record<string, string | number | boolean | string[] | null>
 type QueryWhere = Record<string, QueryWhere[] | QueryWhereField>
@@ -38,7 +39,7 @@ function getRelationshipId(value: unknown): string | null {
   return null
 }
 
-export async function getDressBySlug(slug: string): Promise<Dress | null> {
+export const getDressBySlug = cache(async (slug: string): Promise<Dress | null> => {
   const payload = await getPayload({
     config: configPromise,
   })
@@ -60,7 +61,7 @@ export async function getDressBySlug(slug: string): Promise<Dress | null> {
   })
 
   return result.docs[0] ?? null
-}
+})
 
 export async function getRelatedDresses({
   dress,
