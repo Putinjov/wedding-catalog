@@ -20,7 +20,10 @@ function getRequestedMode(mode: string | string[] | undefined): DressMode | null
   return requestedMode === 'buy' || requestedMode === 'rent' ? requestedMode : null
 }
 
-function getInitialMode(dress: NonNullable<Awaited<ReturnType<typeof getDressBySlug>>>, requestedMode: DressMode | null): DressMode {
+function getInitialMode(
+  dress: NonNullable<Awaited<ReturnType<typeof getDressBySlug>>>,
+  requestedMode: DressMode | null,
+): DressMode {
   if (requestedMode === 'buy' && dress.forSale) {
     return 'buy'
   }
@@ -36,7 +39,7 @@ export default async function DressPage({ params: paramsPromise, searchParams }:
   const { slug = '' } = await paramsPromise
   const dress = await getDressBySlug(decodeURIComponent(slug))
 
-  if (!dress) {
+  if (!dress || (!dress.forSale && !dress.availableForRent)) {
     notFound()
   }
 
@@ -53,7 +56,7 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const { slug = '' } = await paramsPromise
   const dress = await getDressBySlug(decodeURIComponent(slug))
 
-  if (!dress) {
+  if (!dress || (!dress.forSale && !dress.availableForRent)) {
     return {
       title: `Dress not found | ${siteConfig.name}`,
     }
