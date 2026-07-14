@@ -1,12 +1,9 @@
 import Link from 'next/link'
 
 import { Media } from '@/components/Media'
+import { formatCurrency } from '@/config/site'
+import type { DressDisplayMode } from '@/lib/catalogue'
 import type { Dress, Media as MediaType } from '@/payload-types'
-
-const euroFormatter = new Intl.NumberFormat('en-IE', {
-  currency: 'EUR',
-  style: 'currency',
-})
 
 function getImage(resource: Dress['mainImage']): MediaType | null {
   return typeof resource === 'object' && resource !== null ? resource : null
@@ -16,8 +13,23 @@ function getImageAlt(dress: Dress, image: MediaType | null): string {
   return image?.alt || dress.name
 }
 
-export function DressCard({ dress }: { dress: Dress }) {
+export function DressCard({
+  dress,
+  mode = 'all',
+}: {
+  dress: Dress
+  mode?: DressDisplayMode
+}) {
   const image = getImage(dress.mainImage)
+  const salePrice =
+    (mode === 'all' || mode === 'buy') && dress.forSale && dress.salePrice != null
+      ? dress.salePrice
+      : null
+  const rentalPrice =
+    (mode === 'all' || mode === 'rent') && dress.availableForRent && dress.rentalPrice != null
+      ? dress.rentalPrice
+      : null
+  const ctaLabel = mode === 'rent' ? 'View rental' : 'View dress'
 
   return (
     <article className="group">
@@ -45,13 +57,16 @@ export function DressCard({ dress }: { dress: Dress }) {
         <div className="mt-4">
           <h3 className="font-serif text-2xl leading-tight text-foreground">{dress.name}</h3>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            {dress.forSale && dress.salePrice != null ? (
-              <span>Sale {euroFormatter.format(dress.salePrice)}</span>
+            {salePrice != null ? (
+              <span>Sale {formatCurrency(salePrice)}</span>
             ) : null}
-            {dress.availableForRent && dress.rentalPrice != null ? (
-              <span>Rental {euroFormatter.format(dress.rentalPrice)}</span>
+            {rentalPrice != null ? (
+              <span>From {formatCurrency(rentalPrice)} rental</span>
             ) : null}
           </div>
+          <span className="mt-4 inline-flex text-sm font-medium text-brand-deep-lavender underline decoration-brand-antique-gold underline-offset-4">
+            {ctaLabel}
+          </span>
         </div>
       </Link>
     </article>

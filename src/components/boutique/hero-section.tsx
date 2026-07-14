@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { Media } from '@/components/Media'
 import { Button } from '@/components/ui/button'
+import { formatFittingFee, siteConfig } from '@/config/site'
 import type { Media as MediaType } from '@/payload-types'
 
 interface HeroSectionProps {
@@ -13,21 +14,29 @@ export function HeroSection({ image }: HeroSectionProps) {
     <section className="bg-background">
       <div className="container grid gap-10 py-14 md:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-16">
         <div className="max-w-xl">
-          <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">THE BRIDAL EDIT</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-brand-deep-lavender">
+            {siteConfig.name.toUpperCase()}
+          </p>
           <h1 className="mt-5 font-serif text-5xl leading-[0.95] tracking-normal text-foreground sm:text-6xl lg:text-7xl">
-            Find your dream dress
+            Your dress, your way
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">
-            Luxury wedding dresses available to buy or rent, selected for modern brides.
+            Discover wedding dresses to buy or rent, with private fittings tailored to you.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild className="rounded-sm px-6" size="lg">
-              <Link href="/dresses">Browse collection</Link>
+              <Link href="/buy">Shop dresses</Link>
             </Button>
             <Button asChild className="rounded-sm px-6" size="lg" variant="outline">
-              <Link href="/book-a-fitting">Book a fitting</Link>
+              <Link href="/rent">Rent a dress</Link>
             </Button>
           </div>
+          <Link
+            className="mt-5 inline-flex text-sm font-medium text-brand-deep-lavender underline decoration-brand-antique-gold underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            href="/book-a-fitting"
+          >
+            Book a fitting&nbsp;&middot;&nbsp;{formatFittingFee()}
+          </Link>
         </div>
 
         <div className="relative min-h-[26rem] overflow-hidden bg-secondary md:min-h-[34rem]">

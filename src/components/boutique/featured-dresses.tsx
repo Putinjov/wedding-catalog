@@ -17,7 +17,7 @@ export function FeaturedDresses({ dresses }: { dresses: Dress[] }) {
             </h2>
           </div>
           <Button asChild className="w-fit rounded-sm" variant="outline">
-            <Link href="/dresses">View all dresses</Link>
+            <Link href="/dresses">Explore buy &amp; rent</Link>
           </Button>
         </div>
 

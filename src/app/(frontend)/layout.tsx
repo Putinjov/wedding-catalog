@@ -8,10 +8,12 @@ import { AdminBar } from '@/components/AdminBar'
 import { AnnouncementBar } from '@/components/boutique/announcement-bar'
 import { BoutiqueFooter } from '@/components/boutique/boutique-footer'
 import { BoutiqueHeader } from '@/components/boutique/boutique-header'
+import { siteConfig } from '@/config/site'
 import { Providers } from '@/providers'
-import { InitTheme } from '@/providers/Theme/InitTheme'
+import { defaultTheme, themeLocalStorageKey } from '@/providers/Theme/shared'
+import { themeIsValid } from '@/providers/Theme/types'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
-import { draftMode } from 'next/headers'
+import { cookies, draftMode } from 'next/headers'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -31,11 +33,18 @@ const serif = Cormorant_Garamond({
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled } = await draftMode()
+  const cookieStore = await cookies()
+  const themePreference = cookieStore.get(themeLocalStorageKey)?.value
+  const initialTheme = themeIsValid(themePreference ?? null) ? themePreference : defaultTheme
 
   return (
-    <html className={cn(sans.variable, serif.variable)} lang="en" suppressHydrationWarning>
+    <html
+      className={cn(sans.variable, serif.variable)}
+      data-theme={initialTheme}
+      lang="en"
+      suppressHydrationWarning
+    >
       <head>
-        <InitTheme />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
       </head>
@@ -58,6 +67,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 
 export const metadata: Metadata = {
+  title: {
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.tagline,
   metadataBase: new URL(getServerSideURL()),
   openGraph: mergeOpenGraph(),
   twitter: {

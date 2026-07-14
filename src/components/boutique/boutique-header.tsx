@@ -1,9 +1,10 @@
 'use client'
 
-import { Heart, Menu, Search, User } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
+import { siteConfig } from '@/config/site'
 import {
   Sheet,
   SheetClose,
@@ -14,17 +15,11 @@ import {
 } from '@/components/ui/sheet'
 
 const navItems = [
-  { href: '/dresses', label: 'Dresses' },
-  { href: '/rental', label: 'Rental' },
-  { href: '/sale', label: 'Sale' },
+  { href: '/buy', label: 'Buy' },
+  { href: '/rent', label: 'Rent' },
+  { href: '/book-a-fitting', label: 'Book a fitting' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
-]
-
-const iconLinks = [
-  { href: '/search', label: 'Search', icon: Search },
-  { href: '/wishlist', label: 'Wishlist', icon: Heart },
-  { href: '/account', label: 'Account', icon: User, desktopOnly: true },
 ]
 
 export function BoutiqueHeader() {
@@ -40,7 +35,9 @@ export function BoutiqueHeader() {
             </SheetTrigger>
             <SheetContent className="w-[18rem] bg-background" side="left">
               <SheetHeader>
-                <SheetTitle className="font-serif text-2xl tracking-[0.16em]">WEDDING</SheetTitle>
+                <SheetTitle className="font-serif text-2xl tracking-[0.04em]">
+                  {siteConfig.name}
+                </SheetTitle>
               </SheetHeader>
               <nav aria-label="Mobile navigation" className="mt-8 flex flex-col gap-1">
                 {navItems.map((item) => (
@@ -62,7 +59,7 @@ export function BoutiqueHeader() {
           className="font-serif text-2xl tracking-[0.18em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href="/"
         >
-          WEDDING
+          {siteConfig.name}
         </Link>
 
         <nav aria-label="Primary navigation" className="hidden items-center gap-8 lg:flex">
@@ -78,19 +75,11 @@ export function BoutiqueHeader() {
         </nav>
 
         <div className="flex items-center gap-1">
-          {iconLinks.map(({ desktopOnly, href, icon: Icon, label }) => (
-            <Button
-              asChild
-              className={desktopOnly ? 'hidden lg:inline-flex' : undefined}
-              key={href}
-              size="icon"
-              variant="ghost"
-            >
-              <Link aria-label={label} href={href}>
-                <Icon className="size-5" aria-hidden="true" />
-              </Link>
-            </Button>
-          ))}
+          <Button asChild size="icon" variant="ghost">
+            <Link aria-label="Search" href="/search">
+              <Search className="size-5" aria-hidden="true" />
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
