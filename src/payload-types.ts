@@ -78,6 +78,7 @@ export interface Config {
     silhouettes: Silhouette;
     designers: Designer;
     dresses: Dress;
+    appointments: Appointment;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -106,6 +107,7 @@ export interface Config {
     silhouettes: SilhouettesSelect<false> | SilhouettesSelect<true>;
     designers: DesignersSelect<false> | DesignersSelect<true>;
     dresses: DressesSelect<false> | DressesSelect<true>;
+    appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -973,6 +975,33 @@ export interface Dress {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments".
+ */
+export interface Appointment {
+  id: string;
+  /**
+   * Private-safe reference used on the pending payment page.
+   */
+  publicReference: string;
+  purpose: 'buy' | 'rent';
+  dress?: (string | null) | Dress;
+  customerName: string;
+  email: string;
+  phone: string;
+  notes?: string | null;
+  startAt: string;
+  endAt: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no-show';
+  paymentStatus: 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed';
+  fittingFee: number;
+  currency: 'EUR';
+  source: 'website' | 'admin';
+  internalNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1204,6 +1233,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'dresses';
         value: string | Dress;
+      } | null)
+    | ({
+        relationTo: 'appointments';
+        value: string | Appointment;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1692,6 +1725,29 @@ export interface DressesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments_select".
+ */
+export interface AppointmentsSelect<T extends boolean = true> {
+  publicReference?: T;
+  purpose?: T;
+  dress?: T;
+  customerName?: T;
+  email?: T;
+  phone?: T;
+  notes?: T;
+  startAt?: T;
+  endAt?: T;
+  status?: T;
+  paymentStatus?: T;
+  fittingFee?: T;
+  currency?: T;
+  source?: T;
+  internalNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
