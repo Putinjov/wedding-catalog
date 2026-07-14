@@ -991,9 +991,43 @@ export interface Appointment {
   notes?: string | null;
   startAt: string;
   endAt: string;
+  /**
+   * Confirmed means the fitting payment has been verified by Stripe.
+   */
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no-show';
+  /**
+   * Online payment covers the private fitting fee only; dress buy/rent is in store.
+   */
   paymentStatus: 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed';
+  /**
+   * Read-only Stripe Checkout Session used for the fitting fee.
+   */
+  stripeCheckoutSessionId?: string | null;
+  /**
+   * Read-only Stripe PaymentIntent for the fitting fee.
+   */
+  stripePaymentIntentId?: string | null;
   fittingFee: number;
+  /**
+   * Paid fitting fee in integer cents. Online payment covers fitting only.
+   */
+  amountPaid?: number | null;
+  /**
+   * Set only after Stripe verifies the fitting payment.
+   */
+  paidAt?: string | null;
+  /**
+   * Email returned by Stripe for the fitting payment.
+   */
+  stripeCustomerEmail?: string | null;
+  /**
+   * Safe internal reason for a failed fitting payment.
+   */
+  paymentFailureReason?: string | null;
+  /**
+   * Expiration time of the active fitting Checkout Session.
+   */
+  checkoutExpiresAt?: string | null;
   currency: 'EUR';
   source: 'website' | 'admin';
   internalNotes?: string | null;
@@ -1742,7 +1776,14 @@ export interface AppointmentsSelect<T extends boolean = true> {
   endAt?: T;
   status?: T;
   paymentStatus?: T;
+  stripeCheckoutSessionId?: T;
+  stripePaymentIntentId?: T;
   fittingFee?: T;
+  amountPaid?: T;
+  paidAt?: T;
+  stripeCustomerEmail?: T;
+  paymentFailureReason?: T;
+  checkoutExpiresAt?: T;
   currency?: T;
   source?: T;
   internalNotes?: T;

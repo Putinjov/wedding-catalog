@@ -24,6 +24,8 @@ export const Appointments: CollectionConfig = {
       'status',
       'paymentStatus',
       'fittingFee',
+      'amountPaid',
+      'publicReference',
     ],
     group: 'Bookings',
     useAsTitle: 'customerName',
@@ -122,6 +124,9 @@ export const Appointments: CollectionConfig = {
       type: 'select',
       defaultValue: 'pending',
       required: true,
+      admin: {
+        description: 'Confirmed means the fitting payment has been verified by Stripe.',
+      },
       options: [
         { label: 'Pending', value: 'pending' },
         { label: 'Confirmed', value: 'confirmed' },
@@ -135,6 +140,10 @@ export const Appointments: CollectionConfig = {
       type: 'select',
       defaultValue: 'unpaid',
       required: true,
+      admin: {
+        description: 'Online payment covers the private fitting fee only; dress buy/rent is in store.',
+        position: 'sidebar',
+      },
       options: [
         { label: 'Unpaid', value: 'unpaid' },
         { label: 'Pending', value: 'pending' },
@@ -144,11 +153,76 @@ export const Appointments: CollectionConfig = {
       ],
     },
     {
+      name: 'stripeCheckoutSessionId',
+      type: 'text',
+      unique: true,
+      admin: {
+        description: 'Read-only Stripe Checkout Session used for the fitting fee.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'stripePaymentIntentId',
+      type: 'text',
+      admin: {
+        description: 'Read-only Stripe PaymentIntent for the fitting fee.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
       name: 'fittingFee',
       type: 'number',
       required: true,
       min: 0,
       defaultValue: siteConfig.fittingFee,
+    },
+    {
+      name: 'amountPaid',
+      type: 'number',
+      min: 0,
+      admin: {
+        description: 'Paid fitting fee in integer cents. Online payment covers fitting only.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'paidAt',
+      type: 'date',
+      admin: {
+        description: 'Set only after Stripe verifies the fitting payment.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'stripeCustomerEmail',
+      type: 'email',
+      admin: {
+        description: 'Email returned by Stripe for the fitting payment.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'paymentFailureReason',
+      type: 'text',
+      admin: {
+        description: 'Safe internal reason for a failed fitting payment.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'checkoutExpiresAt',
+      type: 'date',
+      admin: {
+        description: 'Expiration time of the active fitting Checkout Session.',
+        position: 'sidebar',
+        readOnly: true,
+      },
     },
     {
       name: 'currency',

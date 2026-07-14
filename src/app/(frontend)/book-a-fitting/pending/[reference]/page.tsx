@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { Button } from '@/components/ui/button'
+import { PaymentButton } from '@/components/booking/payment-button'
 import { bookingConfig } from '@/config/booking'
 import { formatCurrency, siteConfig } from '@/config/site'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
@@ -36,6 +36,8 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
     typeof appointment.dress === 'object' && appointment.dress !== null
       ? appointment.dress.name
       : null
+  const isPaid = appointment.paymentStatus === 'paid'
+  const isConfirmed = isPaid && appointment.status === 'confirmed'
 
   return (
     <main className="bg-background">
@@ -44,11 +46,14 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
           Private fitting
         </p>
         <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-foreground sm:text-6xl">
-          Appointment held pending payment
+          {isConfirmed ? 'Your fitting is confirmed' : isPaid ? 'Payment received' : 'Appointment held pending payment'}
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-          We have recorded your requested appointment. It is not confirmed until the fitting fee
-          has been paid.
+          {isConfirmed
+            ? 'Your fitting fee has been verified. We look forward to welcoming you.'
+            : isPaid
+              ? 'Your fitting fee has been verified. Our team will review the appointment details before confirming the slot.'
+            : 'We have recorded your requested appointment. It is not confirmed until the fitting fee has been paid.'}
         </p>
 
         <div className="mt-10 border border-brand-warm-border bg-brand-blush/30 p-6 sm:p-8">
@@ -82,15 +87,25 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
           </dl>
         </div>
 
-        <div className="mt-8 flex flex-col items-start gap-4">
-          <p className="text-sm leading-6 text-muted-foreground">
-            Payment will be required to confirm this appointment. Stripe payment will be added in
-            the next step.
-          </p>
-          <Button className="rounded-sm" disabled size="lg" type="button">
-            Pay {formatCurrency(appointment.fittingFee, { maximumFractionDigits: 0 })} to confirm
-          </Button>
-        </div>
+        {isPaid ? (
+          <div className="mt-8">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Online payment covers the private fitting fee only. Dress purchase and rental are
+              completed in store.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-8 flex flex-col items-start gap-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Pay the fitting fee securely through Stripe-hosted Checkout to confirm this
+              appointment.
+            </p>
+            <PaymentButton
+              amount={formatCurrency(appointment.fittingFee, { maximumFractionDigits: 0 })}
+              reference={appointment.publicReference}
+            />
+          </div>
+        )}
       </section>
     </main>
   )
