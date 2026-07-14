@@ -1,4 +1,5 @@
-export type CatalogueMode = 'buy' | 'rent'
+export type DressMode = 'buy' | 'rent'
+export type CatalogueMode = DressMode
 export type DressDisplayMode = 'all' | CatalogueMode
 
 export const catalogueContent: Record<
