@@ -110,6 +110,12 @@ export function AppointmentDrawer({
           {!detail && !error ? <p>Loading appointment…</p> : null}
           {detail ? (
             <>
+              {detail.needsAdminReview ? (
+                <p className="calendar-message calendar-message--review" role="alert">
+                  <strong>Payment received — admin review required.</strong>{' '}
+                  {detail.reviewReason || 'Review this appointment before contacting the customer.'}
+                </p>
+              ) : null}
               <dl className="appointment-detail-list">
                 <div><dt>Customer</dt><dd>{detail.customerName}</dd></div>
                 <div><dt>Email</dt><dd><a href={`mailto:${detail.email}`}>{detail.email}</a></dd></div>
@@ -123,6 +129,7 @@ export function AppointmentDrawer({
                 <div><dt>Amount paid</dt><dd>{formatMoney((detail.amountPaid ?? 0) / 100, detail.currency)}</dd></div>
                 <div><dt>Reference</dt><dd><code>{detail.publicReference}</code></dd></div>
                 <div><dt>Source</dt><dd>{detail.source}</dd></div>
+                <div><dt>Admin review</dt><dd>{detail.needsAdminReview ? 'Required' : 'No'}</dd></div>
                 <div><dt>Customer notes</dt><dd>{detail.notes || '—'}</dd></div>
                 <div><dt>Internal notes</dt><dd>{detail.internalNotes || '—'}</dd></div>
               </dl>

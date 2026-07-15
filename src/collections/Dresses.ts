@@ -1,6 +1,9 @@
 import type { CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 
+import { ownerOrManager } from '@/access/roles'
+import { ownerOrManagerOrPublished } from '@/access/ownerOrPublished'
+
 export const Dresses: CollectionConfig = {
   slug: 'dresses',
 
@@ -23,7 +26,11 @@ export const Dresses: CollectionConfig = {
   },
 
   access: {
-    read: () => true,
+    admin: ownerOrManager,
+    create: ownerOrManager,
+    delete: ownerOrManager,
+    read: ownerOrManagerOrPublished,
+    update: ownerOrManager,
   },
 
   versions: {

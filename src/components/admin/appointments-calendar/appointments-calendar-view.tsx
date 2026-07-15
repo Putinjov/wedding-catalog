@@ -3,12 +3,16 @@ import { redirect } from 'next/navigation'
 import type { AdminViewServerProps } from 'payload'
 
 import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
+import { hasRole } from '@/access/roles'
 
 import { AppointmentsCalendar } from './appointments-calendar'
 
 export async function AppointmentsCalendarView(props: AdminViewServerProps) {
   if (!props.user) {
     redirect('/admin/login?redirect=%2Fadmin%2Fappointments-calendar')
+  }
+  if (!hasRole(props.user, ['owner', 'manager', 'staff'])) {
+    redirect('/admin')
   }
 
   const result = await props.payload.find({

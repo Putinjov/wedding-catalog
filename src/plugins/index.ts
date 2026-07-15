@@ -12,6 +12,7 @@ import { beforeSyncWithSearch } from '@/search/beforeSync'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
+import { ownerOnly, ownerOrManager } from '@/access/roles'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | Payload Website Template` : 'Payload Website Template'
@@ -27,6 +28,13 @@ export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
     overrides: {
+      access: {
+        admin: ownerOnly,
+        create: ownerOnly,
+        delete: ownerOnly,
+        read: () => true,
+        update: ownerOnly,
+      },
       // @ts-expect-error - This is a valid override, mapped fields don't resolve to the same type
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -61,6 +69,13 @@ export const plugins: Plugin[] = [
       payment: false,
     },
     formOverrides: {
+      access: {
+        admin: ownerOnly,
+        create: ownerOnly,
+        delete: ownerOnly,
+        read: () => true,
+        update: ownerOnly,
+      },
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
           if ('name' in field && field.name === 'confirmationMessage') {
@@ -81,11 +96,27 @@ export const plugins: Plugin[] = [
         })
       },
     },
+    formSubmissionOverrides: {
+      access: {
+        admin: ownerOrManager,
+        create: () => true,
+        delete: ownerOrManager,
+        read: ownerOrManager,
+        update: () => false,
+      },
+    },
   }),
   searchPlugin({
     collections: ['posts'],
     beforeSync: beforeSyncWithSearch,
     searchOverrides: {
+      access: {
+        admin: ownerOnly,
+        create: ownerOnly,
+        delete: ownerOnly,
+        read: () => true,
+        update: ownerOnly,
+      },
       fields: ({ defaultFields }) => {
         return [...defaultFields, ...searchFields]
       },

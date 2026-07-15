@@ -2,6 +2,7 @@ import { createLocalReq, getPayload } from 'payload'
 import { seed } from '@/endpoints/seed'
 import config from '@payload-config'
 import { headers } from 'next/headers'
+import { hasRole } from '@/access/roles'
 
 export const maxDuration = 60 // This function can run for a maximum of 60 seconds
 
@@ -12,7 +13,7 @@ export async function POST(): Promise<Response> {
   // Authenticate by passing request headers
   const { user } = await payload.auth({ headers: requestHeaders })
 
-  if (!user) {
+  if (!user || !hasRole(user, ['owner'])) {
     return new Response('Action forbidden.', { status: 403 })
   }
 

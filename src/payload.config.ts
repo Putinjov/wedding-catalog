@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
 import { Appointments } from './collections/Appointments'
+import { AppointmentAudits } from './collections/AppointmentAudits'
+import { ProcessedStripeEvents } from './collections/ProcessedStripeEvents'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import {Dresses} from './collections/Dresses'
@@ -21,6 +23,8 @@ import { Header } from './Header/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
+import { hasRole } from './access/roles'
+import { migrateLegacyUserRoles } from './lib/security/migrateLegacyUserRoles'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -97,10 +101,13 @@ export default buildConfig({
     Designers,
     Dresses,
     Appointments,
+    AppointmentAudits,
+    ProcessedStripeEvents,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins,
+  onInit: migrateLegacyUserRoles,
   secret: process.env.PAYLOAD_SECRET,
   sharp,
   typescript: {
@@ -109,8 +116,7 @@ export default buildConfig({
   jobs: {
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
-        // Allow logged in users to execute this endpoint (default)
-        if (req.user) return true
+        if (hasRole(req.user, ['owner'])) return true
 
         const secret = process.env.CRON_SECRET
         if (!secret) return false

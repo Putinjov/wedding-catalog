@@ -1,9 +1,11 @@
 'use server'
 
 import configPromise from '@payload-config'
+import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
 import { createPublicReference } from '@/lib/booking/createPublicReference'
+import { bookingConfig } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import { getDressBySlug } from '@/lib/getDress'
 import {
@@ -19,6 +21,13 @@ import {
   getBookingFieldErrors,
   type BookingFieldErrors,
 } from '@/lib/booking/validation'
+import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
+import {
+  consumeRateLimits,
+  identifierRateLimitRule,
+  ipRateLimitRule,
+} from '@/lib/security/rateLimit'
 
 export type BookingActionResult =
   | {
@@ -53,6 +62,15 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   }
 
   const data = parsed.data
+  const requestHeaders = await headers()
+  const rateLimitAllowed = consumeRateLimits([
+    ipRateLimitRule(requestHeaders, 'public-booking', 10, 15 * 60 * 1000),
+    identifierRateLimitRule(data.email, 'public-booking:email', 3, 60 * 60 * 1000),
+    identifierRateLimitRule(data.phone, 'public-booking:phone', 3, 60 * 60 * 1000),
+  ])
+  if (!rateLimitAllowed) {
+    return invalidBooking('Too many booking attempts. Please wait and try again.')
+  }
   if (!isDateWithinBookingWindow(data.date)) {
     return invalidBooking(getBookingWindowLabel(), {
       date: getBookingWindowLabel(),
@@ -98,32 +116,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   const payload = await getPayload({ config: configPromise })
   const startAt = dateTimes.startAt.toISOString()
   const endAt = dateTimes.endAt.toISOString()
-  const conflict = await payload.find({
-    collection: 'appointments',
-    depth: 0,
-    limit: 1,
-    where: {
-      and: [
-        {
-          endAt: {
-            greater_than: startAt,
-          },
-        },
-        {
-          startAt: {
-            less_than: endAt,
-          },
-        },
-        {
-          status: {
-            not_equals: 'cancelled',
-          },
-        },
-      ],
-    },
-  })
-
-  if (conflict.docs.length > 0) {
+  if (await hasAppointmentSlotConflict(payload, { startAt, endAt })) {
     return invalidBooking('That fitting time has just been taken. Please choose another.', {
       time: 'That fitting time has just been taken. Please choose another.',
     })
@@ -139,6 +132,9 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         email: data.email,
         endAt,
         fittingFee: siteConfig.fittingFee,
+        holdExpiresAt: new Date(
+          Date.now() + bookingConfig.holdMinutes * 60 * 1000,
+        ).toISOString(),
         notes: data.notes || undefined,
         paymentStatus: 'unpaid',
         phone: data.phone,
@@ -149,6 +145,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         status: 'pending',
         currency: siteConfig.currency,
       },
+      context: appointmentPaymentContext('public-booking'),
     })
 
     return {

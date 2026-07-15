@@ -12,6 +12,7 @@ import {
   isValidSlotTime,
 } from '@/lib/booking/date'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 
 import { AdminAppointmentError } from './getCalendarAppointments'
 import { validateAppointmentStatusTransition } from './updateAppointmentStatus'
@@ -114,7 +115,10 @@ export async function createAdminAppointment({
       status: input.initialStatus,
       currency: siteConfig.currency,
     },
-    context: { appointmentStatusTransition: transitionOptions },
+    context: {
+      ...appointmentPaymentContext('admin-create'),
+      appointmentStatusTransition: transitionOptions,
+    },
     depth: 1,
     overrideAccess: false,
     user,

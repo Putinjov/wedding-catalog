@@ -88,6 +88,7 @@
   .appointment-card__time { color: var(--theme-elevation-650); font-weight: 700; }
   .appointment-card__states { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;
     span { background: var(--theme-elevation-100); padding: 2px 4px; text-transform: capitalize; }
+    .appointment-card__review { background: #f3dfdf; color: #7d2f2a; font-weight: 700; }
   }
 
   .day-view { border: 1px solid var(--calendar-border); max-width: 940px;
@@ -110,6 +111,7 @@
 
   .calendar-loading, .calendar-empty, .calendar-message, .calendar-warning { background: var(--calendar-ivory); border: 1px solid var(--calendar-border); margin: 16px 0; padding: 12px; }
   .calendar-message--error { border-color: #bd6b66; color: #7d2f2a; }
+  .calendar-message--review { background: #fff5f4; border-color: #bd6b66; color: #7d2f2a; }
   .calendar-warning { border-left: 4px solid var(--calendar-gold); }
 
   .calendar-dialog__overlay { background: rgb(33 26 30 / .52); inset: 0; position: fixed; z-index: 100; }

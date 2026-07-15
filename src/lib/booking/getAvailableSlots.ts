@@ -1,6 +1,7 @@
 'use server'
 
 import configPromise from '@payload-config'
+import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
 import type { AvailableSlot } from '@/config/booking'
@@ -15,6 +16,11 @@ import {
   isValidSlotTime,
 } from '@/lib/booking/date'
 import type { Appointment } from '@/payload-types'
+import {
+  getBlockingAppointmentWhere,
+  isAppointmentBlockingSlot,
+} from '@/lib/booking/appointmentConflicts'
+import { consumeRateLimits, ipRateLimitRule } from '@/lib/security/rateLimit'
 
 export type AvailableSlotsResult =
   | {
@@ -42,6 +48,12 @@ function overlaps(
 }
 
 export async function getAvailableSlots(date: string): Promise<AvailableSlotsResult> {
+  if (!consumeRateLimits([
+    ipRateLimitRule(await headers(), 'available-slots', 60, 5 * 60 * 1000),
+  ])) {
+    return { message: 'Too many availability requests. Please wait and try again.', success: false }
+  }
+
   if (!isDateWithinBookingWindow(date)) {
     return {
       message: getBookingWindowLabel(),
@@ -103,6 +115,7 @@ export async function getAvailableSlots(date: string): Promise<AvailableSlotsRes
             not_equals: 'cancelled',
           },
         },
+        getBlockingAppointmentWhere(now),
       ],
     },
   })
@@ -111,8 +124,10 @@ export async function getAvailableSlots(date: string): Promise<AvailableSlotsRes
     slots: candidates
       .filter(
         (candidate) =>
-          !existingAppointments.docs.some((appointment) =>
-            overlaps(appointment, candidate.startAt, candidate.endAt),
+          !existingAppointments.docs.some(
+            (appointment) =>
+              isAppointmentBlockingSlot(appointment, now) &&
+              overlaps(appointment, candidate.startAt, candidate.endAt),
           ),
       )
       .map((candidate) => ({

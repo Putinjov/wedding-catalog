@@ -18,6 +18,7 @@ export type CalendarAppointment = {
   purpose: Appointment['purpose']
   status: AppointmentStatus
   paymentStatus: PaymentStatus
+  needsAdminReview: boolean
   dress?: CalendarDress | null
 }
 
@@ -32,6 +33,7 @@ export type AppointmentDetail = CalendarAppointment & {
   source: Appointment['source']
   stripeCheckoutSessionId?: string | null
   stripePaymentIntentId?: string | null
+  reviewReason?: string | null
 }
 
 export type ManualAppointmentDress = CalendarDress & {
@@ -79,6 +81,7 @@ export function toCalendarAppointment(appointment: Appointment): CalendarAppoint
     purpose: appointment.purpose,
     status: appointment.status,
     paymentStatus: appointment.paymentStatus,
+    needsAdminReview: appointment.needsAdminReview ?? false,
     dress: getRelatedDress(appointment.dress),
   }
 }
@@ -96,5 +99,6 @@ export function toAppointmentDetail(appointment: Appointment): AppointmentDetail
     source: appointment.source,
     stripeCheckoutSessionId: appointment.stripeCheckoutSessionId,
     stripePaymentIntentId: appointment.stripePaymentIntentId,
+    reviewReason: appointment.reviewReason,
   }
 }

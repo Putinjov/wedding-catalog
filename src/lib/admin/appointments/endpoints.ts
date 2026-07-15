@@ -1,6 +1,8 @@
 import type { Endpoint, PayloadRequest, TypedUser } from 'payload'
 import { z } from 'zod'
 
+import { hasRole } from '@/access/roles'
+
 import {
   appointmentStatuses,
   toAppointmentDetail,
@@ -30,6 +32,17 @@ function getAuthenticatedUser(req: PayloadRequest): TypedUser | null {
 
 function unauthorizedResponse() {
   return Response.json({ message: 'Authentication is required.' }, { status: 401 })
+}
+
+function forbiddenResponse() {
+  return Response.json({ message: 'You do not have access to appointment administration.' }, { status: 403 })
+}
+
+function getAppointmentUser(req: PayloadRequest): TypedUser | Response {
+  const user = getAuthenticatedUser(req)
+  if (!user) return unauthorizedResponse()
+  if (!hasRole(user, ['owner', 'manager', 'staff'])) return forbiddenResponse()
+  return user
 }
 
 function getRouteID(req: PayloadRequest): string | null {
@@ -65,8 +78,8 @@ const getCalendarEndpoint: Endpoint = {
   path: '/calendar',
   method: 'get',
   handler: async (req) => {
-    const user = getAuthenticatedUser(req)
-    if (!user) return unauthorizedResponse()
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
 
     try {
       if (!req.url) throw new AdminAppointmentError('A valid visible date range is required.')
@@ -84,8 +97,8 @@ const updateCalendarStatusEndpoint: Endpoint = {
   path: '/calendar/:id/status',
   method: 'post',
   handler: async (req) => {
-    const user = getAuthenticatedUser(req)
-    if (!user) return unauthorizedResponse()
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
     const id = getRouteID(req)
     if (!id) return Response.json({ message: 'Appointment not found.' }, { status: 404 })
 
@@ -116,8 +129,8 @@ const createCalendarAppointmentEndpoint: Endpoint = {
   path: '/calendar/create',
   method: 'post',
   handler: async (req) => {
-    const user = getAuthenticatedUser(req)
-    if (!user) return unauthorizedResponse()
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
 
     try {
       const input = createAdminAppointmentSchema.parse(await getJSONBody(req))
@@ -133,8 +146,8 @@ const getCalendarAppointmentDetailEndpoint: Endpoint = {
   path: '/calendar/:id',
   method: 'get',
   handler: async (req) => {
-    const user = getAuthenticatedUser(req)
-    if (!user) return unauthorizedResponse()
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
     const id = getRouteID(req)
     if (!id) return Response.json({ message: 'Appointment not found.' }, { status: 404 })
 

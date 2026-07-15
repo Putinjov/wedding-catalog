@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 
+import { ownerOrManager } from '@/access/roles'
+
 type LookupCollectionOptions = {
   slug: string
   singularLabel: string
@@ -29,7 +31,11 @@ export const createLookupCollection = ({
   },
 
   access: {
+    admin: ownerOrManager,
+    create: ownerOrManager,
+    delete: ownerOrManager,
     read: () => true,
+    update: ownerOrManager,
   },
 
   fields: [

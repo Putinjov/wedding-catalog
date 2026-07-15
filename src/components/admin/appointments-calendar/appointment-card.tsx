@@ -13,6 +13,7 @@ export function AppointmentCard({ appointment, onOpen }: { appointment: Calendar
       <span>{appointment.purpose === 'buy' ? 'Buy' : 'Rent'}{appointment.dress ? ` · ${appointment.dress.name}` : ''}</span>
       <span className="appointment-card__states">
         <span>{appointment.status}</span><span>{appointment.paymentStatus}</span>
+        {appointment.needsAdminReview ? <span className="appointment-card__review">Admin review</span> : null}
       </span>
     </button>
   )

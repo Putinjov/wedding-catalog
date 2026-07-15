@@ -3,6 +3,7 @@ import type { DressMode } from '@/lib/catalogue'
 export const bookingConfig = {
   timezone: 'Europe/Dublin',
   durationMinutes: 60,
+  holdMinutes: 30,
   bookingWindowDays: 60,
   closedWeekdays: [0, 1],
   workingHours: {

@@ -5,6 +5,7 @@ import type Stripe from 'stripe'
 import { isAppointmentSlotValid } from '@/lib/booking/appointmentIntegrity'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import { getServerSideURL } from '@/utilities/getURL'
 
 import { getStripeClient } from './client'
@@ -125,6 +126,7 @@ export async function createFittingCheckoutSession(
         paymentStatus: 'unpaid',
         stripeCheckoutSessionId: null,
       },
+      context: appointmentPaymentContext('checkout-session'),
     })
   }
 
@@ -175,9 +177,11 @@ export async function createFittingCheckoutSession(
     id: appointment.id,
     data: {
       checkoutExpiresAt: new Date(checkoutExpiresAt * 1000).toISOString(),
+      holdExpiresAt: new Date(checkoutExpiresAt * 1000).toISOString(),
       paymentStatus: 'pending',
       stripeCheckoutSessionId: session.id,
     },
+    context: appointmentPaymentContext('checkout-session'),
   })
 
   return { status: 'redirect', url: session.url }

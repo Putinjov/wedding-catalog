@@ -79,6 +79,8 @@ export interface Config {
     designers: Designer;
     dresses: Dress;
     appointments: Appointment;
+    'appointment-audits': AppointmentAudit;
+    'processed-stripe-events': ProcessedStripeEvent;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -108,6 +110,8 @@ export interface Config {
     designers: DesignersSelect<false> | DesignersSelect<true>;
     dresses: DressesSelect<false> | DressesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
+    'appointment-audits': AppointmentAuditsSelect<false> | AppointmentAuditsSelect<true>;
+    'processed-stripe-events': ProcessedStripeEventsSelect<false> | ProcessedStripeEventsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -441,6 +445,10 @@ export interface Category {
 export interface User {
   id: string;
   name?: string | null;
+  /**
+   * Owners manage users; managers manage bookings and catalogue; staff use the calendar.
+   */
+  role: 'owner' | 'manager' | 'staff';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1028,9 +1036,56 @@ export interface Appointment {
    * Expiration time of the active fitting Checkout Session.
    */
   checkoutExpiresAt?: string | null;
+  /**
+   * Unpaid website holds stop blocking the slot after this time.
+   */
+  holdExpiresAt?: string | null;
   currency: 'EUR';
   source: 'website' | 'admin';
+  /**
+   * Set by trusted payment processing when staff action is required.
+   */
+  needsAdminReview?: boolean | null;
+  reviewReason?: string | null;
   internalNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointment-audits".
+ */
+export interface AppointmentAudit {
+  id: string;
+  appointment: string | Appointment;
+  actor?: (string | null) | User;
+  actorType: 'user' | 'stripe' | 'public' | 'system';
+  timestamp: string;
+  action: string;
+  previousStatus?: string | null;
+  newStatus?: string | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "processed-stripe-events".
+ */
+export interface ProcessedStripeEvent {
+  id: string;
+  eventId: string;
+  eventType: string;
+  status: 'processing' | 'processed' | 'failed';
+  appointment?: (string | null) | Appointment;
+  processedAt?: string | null;
+  failureReason?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1271,6 +1326,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'appointments';
         value: string | Appointment;
+      } | null)
+    | ({
+        relationTo: 'appointment-audits';
+        value: string | AppointmentAudit;
+      } | null)
+    | ({
+        relationTo: 'processed-stripe-events';
+        value: string | ProcessedStripeEvent;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1624,6 +1687,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1784,9 +1848,40 @@ export interface AppointmentsSelect<T extends boolean = true> {
   stripeCustomerEmail?: T;
   paymentFailureReason?: T;
   checkoutExpiresAt?: T;
+  holdExpiresAt?: T;
   currency?: T;
   source?: T;
+  needsAdminReview?: T;
+  reviewReason?: T;
   internalNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointment-audits_select".
+ */
+export interface AppointmentAuditsSelect<T extends boolean = true> {
+  appointment?: T;
+  actor?: T;
+  actorType?: T;
+  timestamp?: T;
+  action?: T;
+  previousStatus?: T;
+  newStatus?: T;
+  metadata?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "processed-stripe-events_select".
+ */
+export interface ProcessedStripeEventsSelect<T extends boolean = true> {
+  eventId?: T;
+  eventType?: T;
+  status?: T;
+  appointment?: T;
+  processedAt?: T;
+  failureReason?: T;
   updatedAt?: T;
   createdAt?: T;
 }

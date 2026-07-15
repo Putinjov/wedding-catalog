@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { createFittingCheckoutSession } from '@/lib/stripe/createFittingCheckoutSession'
+import {
+  consumeRateLimits,
+  identifierRateLimitRule,
+  ipRateLimitRule,
+} from '@/lib/security/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +25,23 @@ export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ message: 'Invalid payment request.' }, { status: 400 })
+  }
+
+  if (
+    !consumeRateLimits([
+      ipRateLimitRule(request.headers, 'checkout-session', 20, 15 * 60 * 1000),
+      identifierRateLimitRule(
+        parsed.data.reference,
+        'checkout-session:reference',
+        10,
+        15 * 60 * 1000,
+      ),
+    ])
+  ) {
+    return NextResponse.json(
+      { message: 'Too many payment attempts. Please wait and try again.' },
+      { status: 429 },
+    )
   }
 
   try {

@@ -1,6 +1,7 @@
 import type { Payload, Where } from 'payload'
 
 import type { Appointment } from '@/payload-types'
+import { getBlockingAppointmentWhere } from '@/lib/booking/appointmentConflicts'
 
 export async function hasAppointmentSlotConflict(
   payload: Payload,
@@ -22,6 +23,7 @@ export async function hasAppointmentSlotConflict(
         not_equals: 'cancelled',
       },
     },
+    getBlockingAppointmentWhere(),
   ]
 
   if (appointment.id) {

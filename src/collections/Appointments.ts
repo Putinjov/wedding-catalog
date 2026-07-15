@@ -1,6 +1,6 @@
 import { APIError, type CollectionBeforeChangeHook, type CollectionConfig } from 'payload'
 
-import { authenticated } from '@/access/authenticated'
+import { appointmentTeam, ownerOrManager } from '@/access/roles'
 import { bookingConfig } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import { appointmentCalendarEndpoints } from '@/lib/admin/appointments/endpoints'
@@ -10,7 +10,13 @@ import {
 } from '@/lib/admin/appointments/updateAppointmentStatus'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
+import {
+  assertProtectedAppointmentFields,
+  getAppointmentPaymentContext,
+  protectedAppointmentFieldWrite,
+} from '@/lib/booking/paymentIntegrity'
 import type { Appointment } from '@/payload-types'
+import { writeAppointmentAudit } from '@/lib/booking/writeAppointmentAudit'
 
 const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   context,
@@ -19,6 +25,8 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   originalDoc,
   req,
 }) => {
+  assertProtectedAppointmentFields({ context, data, operation, originalDoc })
+
   const nextStatus = data.status
   const options = getStatusTransitionOptions(context)
   if (operation === 'create' && nextStatus && nextStatus !== 'pending') {
@@ -33,11 +41,14 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
       options,
     })
   } else if (operation === 'update' && originalDoc && nextStatus && nextStatus !== originalDoc.status) {
+    const paymentContext = getAppointmentPaymentContext(context)
     assertAppointmentStatusTransition({
       appointment: {
         endAt: data.endAt ?? originalDoc.endAt,
-        paymentStatus: data.paymentStatus ?? originalDoc.paymentStatus,
-        source: data.source ?? originalDoc.source,
+        paymentStatus: paymentContext
+          ? (data.paymentStatus ?? originalDoc.paymentStatus)
+          : originalDoc.paymentStatus,
+        source: originalDoc.source,
         status: originalDoc.status,
       },
       nextStatus,
@@ -95,12 +106,14 @@ export const Appointments: CollectionConfig = {
   },
   endpoints: appointmentCalendarEndpoints,
   access: {
-    create: authenticated,
-    delete: authenticated,
-    read: authenticated,
-    update: authenticated,
+    admin: appointmentTeam,
+    create: appointmentTeam,
+    delete: ownerOrManager,
+    read: appointmentTeam,
+    update: appointmentTeam,
   },
   hooks: {
+    afterChange: [writeAppointmentAudit],
     beforeChange: [validateStatusChange],
     beforeValidate: [
       ({ data, operation }) => {
@@ -114,14 +127,20 @@ export const Appointments: CollectionConfig = {
             ? new Date(startAt.getTime() + bookingConfig.durationMinutes * 60 * 1000).toISOString()
             : data.endAt
 
+        const source = data.source ?? 'website'
         return {
           ...data,
           currency: data.currency ?? siteConfig.currency,
           endAt,
           fittingFee: data.fittingFee ?? siteConfig.fittingFee,
+          holdExpiresAt:
+            data.holdExpiresAt ??
+            (source === 'website'
+              ? new Date(Date.now() + bookingConfig.holdMinutes * 60 * 1000).toISOString()
+              : undefined),
           paymentStatus: data.paymentStatus ?? 'unpaid',
           publicReference: data.publicReference ?? createPublicReference(),
-          source: data.source ?? 'website',
+          source,
           status: data.status ?? 'pending',
         }
       },
@@ -131,6 +150,10 @@ export const Appointments: CollectionConfig = {
     {
       name: 'publicReference',
       type: 'text',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       required: true,
       unique: true,
       index: true,
@@ -203,11 +226,16 @@ export const Appointments: CollectionConfig = {
     {
       name: 'paymentStatus',
       type: 'select',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       defaultValue: 'unpaid',
       required: true,
       admin: {
         description: 'Online payment covers the private fitting fee only; dress buy/rent is in store.',
         position: 'sidebar',
+        readOnly: true,
       },
       options: [
         { label: 'Unpaid', value: 'unpaid' },
@@ -220,6 +248,10 @@ export const Appointments: CollectionConfig = {
     {
       name: 'stripeCheckoutSessionId',
       type: 'text',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       unique: true,
       admin: {
         description: 'Read-only Stripe Checkout Session used for the fitting fee.',
@@ -230,6 +262,10 @@ export const Appointments: CollectionConfig = {
     {
       name: 'stripePaymentIntentId',
       type: 'text',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       admin: {
         description: 'Read-only Stripe PaymentIntent for the fitting fee.',
         position: 'sidebar',
@@ -239,13 +275,24 @@ export const Appointments: CollectionConfig = {
     {
       name: 'fittingFee',
       type: 'number',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       required: true,
       min: 0,
       defaultValue: siteConfig.fittingFee,
+      admin: {
+        readOnly: true,
+      },
     },
     {
       name: 'amountPaid',
       type: 'number',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       min: 0,
       admin: {
         description: 'Paid fitting fee in integer cents. Online payment covers fitting only.',
@@ -256,6 +303,10 @@ export const Appointments: CollectionConfig = {
     {
       name: 'paidAt',
       type: 'date',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       admin: {
         description: 'Set only after Stripe verifies the fitting payment.',
         position: 'sidebar',
@@ -265,6 +316,10 @@ export const Appointments: CollectionConfig = {
     {
       name: 'stripeCustomerEmail',
       type: 'email',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       admin: {
         description: 'Email returned by Stripe for the fitting payment.',
         position: 'sidebar',
@@ -274,6 +329,10 @@ export const Appointments: CollectionConfig = {
     {
       name: 'paymentFailureReason',
       type: 'text',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       admin: {
         description: 'Safe internal reason for a failed fitting payment.',
         position: 'sidebar',
@@ -283,6 +342,10 @@ export const Appointments: CollectionConfig = {
     {
       name: 'checkoutExpiresAt',
       type: 'date',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       admin: {
         description: 'Expiration time of the active fitting Checkout Session.',
         position: 'sidebar',
@@ -290,21 +353,75 @@ export const Appointments: CollectionConfig = {
       },
     },
     {
+      name: 'holdExpiresAt',
+      type: 'date',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        description: 'Unpaid website holds stop blocking the slot after this time.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
       name: 'currency',
       type: 'select',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       defaultValue: siteConfig.currency,
       required: true,
+      admin: {
+        readOnly: true,
+      },
       options: [{ label: 'EUR', value: 'EUR' }],
     },
     {
       name: 'source',
       type: 'select',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
       defaultValue: 'website',
       required: true,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
       options: [
         { label: 'Website', value: 'website' },
         { label: 'Admin', value: 'admin' },
       ],
+    },
+    {
+      name: 'needsAdminReview',
+      type: 'checkbox',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        description: 'Set by trusted payment processing when staff action is required.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+      defaultValue: false,
+    },
+    {
+      name: 'reviewReason',
+      type: 'text',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
     },
     {
       name: 'internalNotes',
