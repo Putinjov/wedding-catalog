@@ -1,8 +1,8 @@
 import { DefaultTemplate } from '@payloadcms/next/templates'
 import type { AdminViewServerProps } from 'payload'
 
-import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
 import { hasRole } from '@/access/roles'
+import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
 
 import { AppointmentsCalendar } from './appointments-calendar'
 
@@ -13,8 +13,16 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
   if (!props.user) {
     return null
   }
+
   if (!hasRole(props.user, ['owner', 'manager', 'staff'])) {
-    redirect('/admin')
+    return (
+      <DefaultTemplate {...props} visibleEntities={props.initPageResult.visibleEntities}>
+        <section aria-labelledby="calendar-access-denied" style={{ maxWidth: '48rem' }}>
+          <h1 id="calendar-access-denied">Access denied</h1>
+          <p>You do not have permission to view the appointments calendar.</p>
+        </section>
+      </DefaultTemplate>
+    )
   }
 
   const result = await props.payload.find({
