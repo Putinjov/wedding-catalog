@@ -1,5 +1,4 @@
 import { DefaultTemplate } from '@payloadcms/next/templates'
-import { redirect } from 'next/navigation'
 import type { AdminViewServerProps } from 'payload'
 
 import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
@@ -7,8 +6,11 @@ import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTy
 import { AppointmentsCalendar } from './appointments-calendar'
 
 export async function AppointmentsCalendarView(props: AdminViewServerProps) {
+  // Payload owns the admin authentication flow. Redirecting manually from a
+  // custom view can cause an RSC loop between the view and the login route.
+  // During unauthenticated rendering, let Payload's admin shell handle login.
   if (!props.user) {
-    redirect('/admin/login?redirect=%2Fadmin%2Fappointments-calendar')
+    return null
   }
 
   const result = await props.payload.find({
