@@ -9,6 +9,9 @@ import { formatCurrency, siteConfig } from '@/config/site'
 import { formatDateForCustomer, formatTimeForCustomer, getDateKey } from '@/lib/booking/date'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type Args = {
   searchParams: Promise<{
     reference?: string | string[]
@@ -20,6 +23,11 @@ function getQueryValue(value: string | string[] | undefined): string {
 }
 
 export const metadata: Metadata = {
+  robots: {
+    follow: false,
+    index: false,
+    nocache: true,
+  },
   title: `Payment cancelled | ${siteConfig.name}`,
 }
 
