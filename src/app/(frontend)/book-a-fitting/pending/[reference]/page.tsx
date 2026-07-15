@@ -7,6 +7,9 @@ import { formatCurrency, siteConfig } from '@/config/site'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type Args = {
   params: Promise<{
     reference?: string
@@ -18,6 +21,11 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const appointment = await getAppointmentByReference(decodeURIComponent(reference))
 
   return {
+    robots: {
+      follow: false,
+      index: false,
+      nocache: true,
+    },
     title: appointment
       ? `Appointment pending | ${siteConfig.name}`
       : `Appointment not found | ${siteConfig.name}`,
@@ -53,7 +61,7 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
             ? 'Your fitting fee has been verified. We look forward to welcoming you.'
             : isPaid
               ? 'Your fitting fee has been verified. Our team will review the appointment details before confirming the slot.'
-            : 'We have recorded your requested appointment. It is not confirmed until the fitting fee has been paid.'}
+              : 'We have recorded your requested appointment. It is not confirmed until the fitting fee has been paid.'}
         </p>
 
         <div className="mt-10 border border-brand-warm-border bg-brand-blush/30 p-6 sm:p-8">

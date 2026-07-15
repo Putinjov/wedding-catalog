@@ -10,6 +10,9 @@ import { formatDateForCustomer, formatTimeForCustomer, getDateKey } from '@/lib/
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { getFittingCheckoutSession } from '@/lib/stripe/getFittingCheckoutSession'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type Args = {
   searchParams: Promise<{
     reference?: string | string[]
@@ -28,7 +31,14 @@ function getDressName(appointment: Awaited<ReturnType<typeof getAppointmentByRef
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: `Fitting payment | ${siteConfig.name}` }
+  return {
+    robots: {
+      follow: false,
+      index: false,
+      nocache: true,
+    },
+    title: `Fitting payment | ${siteConfig.name}`,
+  }
 }
 
 export default async function FittingPaymentSuccessPage({ searchParams }: Args) {
