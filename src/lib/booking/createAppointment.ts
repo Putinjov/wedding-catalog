@@ -3,7 +3,7 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
-import { createPublicReference } from '@/collections/Appointments'
+import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { siteConfig } from '@/config/site'
 import { getDressBySlug } from '@/lib/getDress'
 import {

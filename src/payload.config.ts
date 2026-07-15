@@ -39,6 +39,18 @@ export default buildConfig({
       // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
       // Feel free to delete this at any time. Simply remove the line below.
       beforeDashboard: ['@/components/BeforeDashboard'],
+      beforeNavLinks: ['@/components/admin/appointments-calendar/bookings-nav#BookingsNav'],
+      views: {
+        appointmentsCalendar: {
+          Component:
+            '@/components/admin/appointments-calendar/appointments-calendar-view#AppointmentsCalendarView',
+          exact: true,
+          meta: {
+            title: 'Appointments calendar',
+          },
+          path: '/appointments-calendar',
+        },
+      },
     },
     importMap: {
       baseDir: path.resolve(dirname),

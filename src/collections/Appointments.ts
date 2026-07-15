@@ -1,13 +1,76 @@
-import { randomBytes } from 'node:crypto'
-
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionBeforeChangeHook, type CollectionConfig } from 'payload'
 
 import { authenticated } from '@/access/authenticated'
 import { bookingConfig } from '@/config/booking'
 import { siteConfig } from '@/config/site'
+import { appointmentCalendarEndpoints } from '@/lib/admin/appointments/endpoints'
+import {
+  assertAppointmentStatusTransition,
+  getStatusTransitionOptions,
+} from '@/lib/admin/appointments/updateAppointmentStatus'
+import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { createPublicReference } from '@/lib/booking/createPublicReference'
+import type { Appointment } from '@/payload-types'
 
-export function createPublicReference(): string {
-  return `fit_${randomBytes(16).toString('hex')}`
+const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
+  context,
+  data,
+  operation,
+  originalDoc,
+  req,
+}) => {
+  const nextStatus = data.status
+  const options = getStatusTransitionOptions(context)
+  if (operation === 'create' && nextStatus && nextStatus !== 'pending') {
+    assertAppointmentStatusTransition({
+      appointment: {
+        endAt: data.endAt ?? new Date().toISOString(),
+        paymentStatus: data.paymentStatus ?? 'unpaid',
+        source: data.source ?? 'website',
+        status: 'pending',
+      },
+      nextStatus,
+      options,
+    })
+  } else if (operation === 'update' && originalDoc && nextStatus && nextStatus !== originalDoc.status) {
+    assertAppointmentStatusTransition({
+      appointment: {
+        endAt: data.endAt ?? originalDoc.endAt,
+        paymentStatus: data.paymentStatus ?? originalDoc.paymentStatus,
+        source: data.source ?? originalDoc.source,
+        status: originalDoc.status,
+      },
+      nextStatus,
+      options,
+    })
+  }
+
+  const effectiveStatus = nextStatus ?? originalDoc?.status ?? 'pending'
+  const scheduleChanged =
+    operation === 'create' ||
+    (operation === 'update' &&
+      originalDoc &&
+      ((data.startAt && data.startAt !== originalDoc.startAt) ||
+        (data.endAt && data.endAt !== originalDoc.endAt) ||
+        (originalDoc.status === 'cancelled' && effectiveStatus === 'pending')))
+  const startAt = data.startAt ?? originalDoc?.startAt
+  const endAt = data.endAt ?? originalDoc?.endAt
+
+  if (
+    scheduleChanged &&
+    effectiveStatus !== 'cancelled' &&
+    startAt &&
+    endAt &&
+    (await hasAppointmentSlotConflict(req.payload, {
+      endAt,
+      id: originalDoc?.id,
+      startAt,
+    }))
+  ) {
+    throw new APIError('This appointment overlaps another active appointment.', 400)
+  }
+
+  return data
 }
 
 export const Appointments: CollectionConfig = {
@@ -27,9 +90,10 @@ export const Appointments: CollectionConfig = {
       'amountPaid',
       'publicReference',
     ],
-    group: 'Bookings',
+    group: false,
     useAsTitle: 'customerName',
   },
+  endpoints: appointmentCalendarEndpoints,
   access: {
     create: authenticated,
     delete: authenticated,
@@ -37,6 +101,7 @@ export const Appointments: CollectionConfig = {
     update: authenticated,
   },
   hooks: {
+    beforeChange: [validateStatusChange],
     beforeValidate: [
       ({ data, operation }) => {
         if (operation !== 'create' || !data) {

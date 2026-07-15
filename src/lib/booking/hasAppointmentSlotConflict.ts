@@ -1,47 +1,45 @@
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import type { Payload, Where } from 'payload'
 
 import type { Appointment } from '@/payload-types'
 
-type PayloadInstance = Awaited<ReturnType<typeof getPayload>>
-
 export async function hasAppointmentSlotConflict(
-  payload: PayloadInstance,
-  appointment: Pick<Appointment, 'endAt' | 'id' | 'startAt'>,
+  payload: Payload,
+  appointment: Pick<Appointment, 'endAt' | 'startAt'> & { id?: Appointment['id'] },
 ): Promise<boolean> {
+  const conditions: Where[] = [
+    {
+      endAt: {
+        greater_than: appointment.startAt,
+      },
+    },
+    {
+      startAt: {
+        less_than: appointment.endAt,
+      },
+    },
+    {
+      status: {
+        not_equals: 'cancelled',
+      },
+    },
+  ]
+
+  if (appointment.id) {
+    conditions.unshift({
+      id: {
+        not_equals: appointment.id,
+      },
+    })
+  }
+
   const result = await payload.find({
     collection: 'appointments',
     depth: 0,
     limit: 1,
     where: {
-      and: [
-        {
-          id: {
-            not_equals: appointment.id,
-          },
-        },
-        {
-          endAt: {
-            greater_than: appointment.startAt,
-          },
-        },
-        {
-          startAt: {
-            less_than: appointment.endAt,
-          },
-        },
-        {
-          status: {
-            not_equals: 'cancelled',
-          },
-        },
-      ],
+      and: conditions,
     },
   })
 
   return result.docs.length > 0
-}
-
-export async function getBookingPayload(): Promise<PayloadInstance> {
-  return getPayload({ config: configPromise })
 }

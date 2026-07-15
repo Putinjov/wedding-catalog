@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
-import { getBookingPayload } from '@/lib/booking/hasAppointmentSlotConflict'
+import { getBookingPayload } from '@/lib/booking/getBookingPayload'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { getStripeClient } from '@/lib/stripe/client'
 import {
