@@ -26,7 +26,7 @@ export const createLookupCollection = ({
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug', 'isActive', 'sortOrder', 'updatedAt'],
-    group: 'Catalog',
+    group: 'Settings',
     description,
   },
 

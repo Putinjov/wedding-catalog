@@ -1,24 +1,62 @@
 @import '@payloadcms/ui/scss';
 
 .dashboard .before-dashboard {
-  margin-bottom: base(1.5);
+  --dashboard-lavender: #8e6fa0;
+  --dashboard-gold: #c9a45c;
+  --dashboard-border: #e5d8cb;
+  margin-bottom: base(2);
 
-  &__banner {
-    & h4 {
-      margin: 0;
+  &__eyebrow {
+    color: var(--dashboard-lavender);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 500;
+    margin: 0;
+  }
+
+  &__intro {
+    color: var(--theme-elevation-650);
+    margin: 8px 0 20px;
+    max-width: 720px;
+  }
+
+  &__shortcuts {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    a {
+      background: var(--theme-elevation-0);
+      border: 1px solid var(--dashboard-border);
+      border-top: 3px solid var(--dashboard-gold);
+      color: var(--theme-text);
+      display: grid;
+      gap: 6px;
+      min-height: 150px;
+      padding: 18px;
+      text-decoration: none;
+
+      &:hover { border-color: var(--dashboard-lavender); }
+      &:focus-visible { outline: 2px solid var(--dashboard-lavender); outline-offset: 2px; }
+      svg { color: var(--dashboard-lavender); height: 22px; width: 22px; }
+      strong { font-size: 16px; }
+      span { color: var(--theme-elevation-600); font-size: 13px; line-height: 1.45; }
     }
   }
 
-  &__instructions {
-    list-style: decimal;
-    margin-bottom: base(0.5);
-
-    & li {
-      width: 100%;
-    }
+  @media (max-width: 1024px) {
+    &__shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  & a:hover {
-    opacity: 0.85;
+  @media (max-width: 640px) {
+    &__shortcuts { grid-template-columns: 1fr; }
   }
 }

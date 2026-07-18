@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 
 import { getVisibleRange, type CalendarViewMode } from '@/lib/admin/appointments/calendarDate'
@@ -46,12 +47,23 @@ export function AppointmentsCalendar({
   dresses: ManualAppointmentDress[]
   initialError?: string
 }) {
-  const [date, setDate] = useState(() => getDateKey())
-  const [view, setView] = useState<CalendarViewMode>('week')
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const requestedDate = searchParams.get('date')
+  const requestedView = searchParams.get('view')
+  const [date, setDate] = useState(() =>
+    requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : getDateKey(),
+  )
+  const [view, setView] = useState<CalendarViewMode>(() =>
+    requestedView === 'month' || requestedView === 'week' || requestedView === 'day'
+      ? requestedView
+      : 'week',
+  )
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
   const [filters, setFilters] = useState(initialCalendarFilters)
   const [selectedID, setSelectedID] = useState<string | null>(null)
-  const [newOpen, setNewOpen] = useState(false)
+  const [newOpen, setNewOpen] = useState(() => searchParams.get('new') === '1')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(initialError)
   const [filterNow] = useState(() => Date.now())
@@ -121,6 +133,14 @@ export function AppointmentsCalendar({
     setView('day')
   }
 
+  function setNewAppointmentOpen(open: boolean) {
+    setNewOpen(open)
+    const params = new URLSearchParams(searchParams.toString())
+    if (open) params.set('new', '1')
+    else params.delete('new')
+    router.replace(params.size > 0 ? `${pathname}?${params.toString()}` : pathname)
+  }
+
   return (
     <main className="appointments-calendar">
       <header className="appointments-calendar__header">
@@ -134,7 +154,7 @@ export function AppointmentsCalendar({
         date={date}
         onDateChange={setDate}
         onNavigate={navigate}
-        onNew={() => setNewOpen(true)}
+        onNew={() => setNewAppointmentOpen(true)}
         onToday={() => setDate(getDateKey())}
         onViewChange={setView}
         view={activeView}
@@ -181,7 +201,7 @@ export function AppointmentsCalendar({
       <NewAppointmentDialog
         dresses={dresses}
         onCreated={() => loadAppointments()}
-        onOpenChange={setNewOpen}
+        onOpenChange={setNewAppointmentOpen}
         open={newOpen}
       />
     </main>

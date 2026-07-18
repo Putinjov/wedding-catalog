@@ -1,68 +1,65 @@
-import { Banner } from '@payloadcms/ui/elements/Banner'
+import { CalendarDays, CalendarPlus, Clock3, Shirt } from 'lucide-react'
 import React from 'react'
 
-import { SeedButton } from './SeedButton'
+import { hasRole } from '@/access/roles'
+import { getDateKey } from '@/lib/booking/date'
+
 import './index.scss'
 
 const baseClass = 'before-dashboard'
 
-const BeforeDashboard: React.FC = () => {
+const BeforeDashboard: React.FC<{ user?: unknown }> = ({ user }) => {
+  const today = getDateKey()
+  const shortcuts = [
+    {
+      description: 'Open the primary month or week schedule.',
+      href: '/admin/appointments-calendar',
+      icon: CalendarDays,
+      label: 'Calendar',
+    },
+    {
+      description: 'Add a phone, walk-in or staff-created booking.',
+      href: '/admin/appointments-calendar?new=1',
+      icon: CalendarPlus,
+      label: 'New manual appointment',
+    },
+    ...(hasRole(user, ['owner', 'manager'])
+      ? [{
+          description: 'Update catalogue availability, pricing and imagery.',
+          href: '/admin/collections/dresses',
+          icon: Shirt,
+          label: 'Dresses',
+        }]
+      : []),
+    {
+      description: 'Review today’s fitting schedule in Dublin time.',
+      href: `/admin/appointments-calendar?date=${today}&view=day`,
+      icon: Clock3,
+      label: 'Today’s appointments',
+    },
+  ]
+
   return (
-    <div className={baseClass}>
-      <Banner className={`${baseClass}__banner`} type="success">
-        <h4>Welcome to your dashboard!</h4>
-      </Banner>
-      Here&apos;s what to do next:
-      <ul className={`${baseClass}__instructions`}>
-        <li>
-          <SeedButton />
-          {' with a few pages, posts, and projects to jump-start your new site, then '}
-          <a href="/" target="_blank">
-            visit your website
-          </a>
-          {' to see the results.'}
-        </li>
-        <li>
-          {'Modify your '}
-          <a
-            href="https://payloadcms.com/docs/configuration/collections"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            collections
-          </a>
-          {' and add more '}
-          <a
-            href="https://payloadcms.com/docs/fields/overview"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            fields
-          </a>
-          {' as needed. If you are new to Payload, we also recommend you check out the '}
-          <a
-            href="https://payloadcms.com/docs/getting-started/what-is-payload"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Getting Started
-          </a>
-          {' docs.'}
-        </li>
-        <li>
-          Commit and push your changes to the repository to trigger a redeployment of your project.
-        </li>
-      </ul>
-      {'Pro Tip: This block is a '}
-      <a
-        href="https://payloadcms.com/docs/custom-components/overview"
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        custom component
-      </a>
-      , you can remove it at any time by updating your <strong>payload.config</strong>.
-    </div>
+    <section className={baseClass} aria-labelledby="operations-heading">
+      <p className={`${baseClass}__eyebrow`}>CAIT Bridal operations</p>
+      <h2 id="operations-heading">Appointments at a glance</h2>
+      <p className={`${baseClass}__intro`}>
+        Start with the calendar for daily salon work. Payment records remain protected and are
+        updated only by the existing Stripe flow.
+      </p>
+      <div className={`${baseClass}__shortcuts`}>
+        {shortcuts.map((shortcut) => {
+          const Icon = shortcut.icon
+          return (
+            <a href={shortcut.href} key={shortcut.href}>
+              <Icon aria-hidden="true" />
+              <strong>{shortcut.label}</strong>
+              <span>{shortcut.description}</span>
+            </a>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

@@ -19,7 +19,8 @@ export const ProcessedStripeEvents: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['eventId', 'eventType', 'status', 'processedAt'],
-    group: 'Bookings',
+    description: 'Owner-only Stripe webhook processing records. These entries are not manually editable.',
+    group: 'Administration',
     useAsTitle: 'eventId',
   },
   fields: [

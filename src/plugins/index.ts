@@ -28,6 +28,10 @@ export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
     overrides: {
+      admin: {
+        description: 'Owner-only URL redirects and legacy-path handling.',
+        group: 'Administration',
+      },
       access: {
         admin: ownerOnly,
         create: ownerOnly,
@@ -69,6 +73,10 @@ export const plugins: Plugin[] = [
       payment: false,
     },
     formOverrides: {
+      admin: {
+        description: 'Storefront contact and enquiry forms.',
+        group: 'Content',
+      },
       access: {
         admin: ownerOnly,
         create: ownerOnly,
@@ -97,6 +105,10 @@ export const plugins: Plugin[] = [
       },
     },
     formSubmissionOverrides: {
+      admin: {
+        description: 'Customer form responses for operational follow-up.',
+        group: 'Content',
+      },
       access: {
         admin: ownerOrManager,
         create: () => true,
@@ -110,6 +122,10 @@ export const plugins: Plugin[] = [
     collections: ['posts'],
     beforeSync: beforeSyncWithSearch,
     searchOverrides: {
+      admin: {
+        description: 'Owner-only generated search index records.',
+        group: 'Administration',
+      },
       access: {
         admin: ownerOnly,
         create: ownerOnly,

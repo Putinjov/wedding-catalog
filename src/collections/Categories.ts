@@ -14,6 +14,8 @@ export const Categories: CollectionConfig = {
     update: ownerOrManager,
   },
   admin: {
+    description: 'Catalogue categories used to organise dresses.',
+    group: 'Dresses',
     useAsTitle: 'title',
   },
   fields: [

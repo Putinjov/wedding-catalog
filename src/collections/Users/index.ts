@@ -13,6 +13,8 @@ export const Users: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['name', 'email'],
+    description: 'Owner-only staff accounts and role assignments.',
+    group: 'Administration',
     useAsTitle: 'name',
   },
   auth: true,

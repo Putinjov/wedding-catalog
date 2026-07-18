@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
-import { ownerOnly } from '../../access/roles'
-import { ownerOrPublished } from '../../access/ownerOrPublished'
+import { ownerOrManager } from '../../access/roles'
+import { ownerOrManagerOrPublished } from '../../access/ownerOrPublished'
 import { Archive } from '../../blocks/ArchiveBlock/config'
 import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
@@ -24,11 +24,11 @@ import {
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
   access: {
-    admin: ownerOnly,
-    create: ownerOnly,
-    delete: ownerOnly,
-    read: ownerOrPublished,
-    update: ownerOnly,
+    admin: ownerOrManager,
+    create: ownerOrManager,
+    delete: ownerOrManager,
+    read: ownerOrManagerOrPublished,
+    update: ownerOrManager,
   },
   // This config controls what's populated by default when a page is referenced
   // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
@@ -38,7 +38,9 @@ export const Pages: CollectionConfig<'pages'> = {
     slug: true,
   },
   admin: {
+    description: 'Editable storefront pages and landing-page content.',
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    group: 'Content',
     livePreview: {
       url: ({ data, req }) =>
         generatePreviewPath({

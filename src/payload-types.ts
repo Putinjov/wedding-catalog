@@ -170,6 +170,8 @@ export interface UserAuthOperations {
   };
 }
 /**
+ * Editable storefront pages and landing-page content.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
  */
@@ -239,6 +241,8 @@ export interface Page {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Editorial stories and announcements shown on the storefront.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
  */
@@ -289,6 +293,8 @@ export interface Post {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Storefront imagery and editorial assets.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
@@ -408,6 +414,8 @@ export interface FolderInterface {
   createdAt: string;
 }
 /**
+ * Catalogue categories used to organise dresses.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories".
  */
@@ -439,6 +447,8 @@ export interface Category {
   createdAt: string;
 }
 /**
+ * Owner-only staff accounts and role assignments.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
@@ -637,6 +647,8 @@ export interface FormBlock {
   blockType: 'formBlock';
 }
 /**
+ * Storefront contact and enquiry forms.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "forms".
  */
@@ -902,6 +914,8 @@ export interface Designer {
   createdAt: string;
 }
 /**
+ * Wedding dresses available to buy or rent, including pricing, availability and imagery.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "dresses".
  */
@@ -1052,6 +1066,8 @@ export interface Appointment {
   createdAt: string;
 }
 /**
+ * Owner-only immutable appointment history for operational and payment review.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointment-audits".
  */
@@ -1075,6 +1091,8 @@ export interface AppointmentAudit {
     | null;
 }
 /**
+ * Owner-only Stripe webhook processing records. These entries are not manually editable.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "processed-stripe-events".
  */
@@ -1090,6 +1108,8 @@ export interface ProcessedStripeEvent {
   createdAt: string;
 }
 /**
+ * Owner-only URL redirects and legacy-path handling.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -1116,6 +1136,8 @@ export interface Redirect {
   createdAt: string;
 }
 /**
+ * Customer form responses for operational follow-up.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "form-submissions".
  */
@@ -1133,7 +1155,7 @@ export interface FormSubmission {
   createdAt: string;
 }
 /**
- * This is a collection of automatically created search results. These results are used by the global site search and will be updated automatically as documents in the CMS are created or updated.
+ * Owner-only generated search index records.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "search".
@@ -2161,6 +2183,8 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Primary storefront navigation links.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header".
  */
@@ -2190,6 +2214,8 @@ export interface Header {
   createdAt?: string | null;
 }
 /**
+ * Storefront footer navigation links.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "footer".
  */

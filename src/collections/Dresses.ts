@@ -22,7 +22,8 @@ export const Dresses: CollectionConfig = {
       'rentalPrice',
       'updatedAt',
     ],
-    group: 'Catalog',
+    group: 'Dresses',
+    description: 'Wedding dresses available to buy or rent, including pricing, availability and imagery.',
   },
 
   access: {

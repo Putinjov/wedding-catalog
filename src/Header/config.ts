@@ -2,13 +2,17 @@ import type { GlobalConfig } from 'payload'
 
 import { link } from '@/fields/link'
 import { revalidateHeader } from './hooks/revalidateHeader'
-import { ownerOnly } from '@/access/roles'
+import { ownerOrManager } from '@/access/roles'
 
 export const Header: GlobalConfig = {
   slug: 'header',
   access: {
     read: () => true,
-    update: ownerOnly,
+    update: ownerOrManager,
+  },
+  admin: {
+    description: 'Primary storefront navigation links.',
+    group: 'Content',
   },
   fields: [
     {

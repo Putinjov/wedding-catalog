@@ -15,7 +15,6 @@ import {
   isDateWithinBookingWindow,
   isValidSlotTime,
 } from '@/lib/booking/date'
-import type { Appointment } from '@/payload-types'
 import {
   appointmentOverlapsSlot,
   getBlockingAppointmentWhere,

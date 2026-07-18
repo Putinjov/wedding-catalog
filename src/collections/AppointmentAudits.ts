@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { ownerOrManager } from '@/access/roles'
+import { ownerOnly } from '@/access/roles'
 
 const denyAccess = () => false
 
@@ -11,15 +11,16 @@ export const AppointmentAudits: CollectionConfig = {
     plural: 'Appointment audits',
   },
   access: {
-    admin: ownerOrManager,
+    admin: ownerOnly,
     create: denyAccess,
     delete: denyAccess,
-    read: ownerOrManager,
+    read: ownerOnly,
     update: denyAccess,
   },
   admin: {
     defaultColumns: ['timestamp', 'action', 'appointment', 'actorType'],
-    group: 'Bookings',
+    description: 'Owner-only immutable appointment history for operational and payment review.',
+    group: 'Administration',
     useAsTitle: 'action',
   },
   fields: [

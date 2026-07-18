@@ -2,13 +2,17 @@ import type { GlobalConfig } from 'payload'
 
 import { link } from '@/fields/link'
 import { revalidateFooter } from './hooks/revalidateFooter'
-import { ownerOnly } from '@/access/roles'
+import { ownerOrManager } from '@/access/roles'
 
 export const Footer: GlobalConfig = {
   slug: 'footer',
   access: {
     read: () => true,
-    update: ownerOnly,
+    update: ownerOrManager,
+  },
+  admin: {
+    description: 'Storefront footer navigation links.',
+    group: 'Content',
   },
   fields: [
     {
