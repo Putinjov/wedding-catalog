@@ -3,24 +3,16 @@ import Link from 'next/link'
 import { Media } from '@/components/Media'
 import { formatCurrency } from '@/config/site'
 import type { DressDisplayMode } from '@/lib/catalogue'
-import type { Dress, Media as MediaType } from '@/payload-types'
-
-function getImage(resource: Dress['mainImage']): MediaType | null {
-  return typeof resource === 'object' && resource !== null ? resource : null
-}
-
-function getImageAlt(dress: Dress, image: MediaType | null): string {
-  return image?.alt || dress.name
-}
+import type { DressWithMedia } from '@/lib/dress-media'
 
 export function DressCard({
   dress,
   mode = 'all',
 }: {
-  dress: Dress
+  dress: DressWithMedia
   mode?: DressDisplayMode
 }) {
-  const image = getImage(dress.mainImage)
+  const image = dress.media.main
   const salePrice =
     (mode === 'all' || mode === 'buy') && dress.forSale && dress.salePrice != null
       ? dress.salePrice
@@ -40,12 +32,12 @@ export function DressCard({
         <div className="aspect-[3/4] overflow-hidden bg-secondary">
           {image ? (
             <Media
-              alt={getImageAlt(dress, image)}
+              alt={image.alt || dress.name}
               className="relative block h-full w-full"
               fill
               imgClassName="object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
               pictureClassName="relative block h-full w-full"
-              resource={image}
+              resource={image.card}
               size="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           ) : (

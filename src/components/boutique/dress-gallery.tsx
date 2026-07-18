@@ -3,18 +3,13 @@
 import { useState } from 'react'
 
 import { Media } from '@/components/Media'
-import type { Media as MediaType } from '@/payload-types'
-
-export type DressGalleryImage = {
-  alt: string
-  resource: MediaType
-}
+import type { DressMediaImage } from '@/lib/dress-media'
 
 export function DressGallery({
   images,
   name,
 }: {
-  images: DressGalleryImage[]
+  images: DressMediaImage[]
   name: string
 }) {
   const [activeIndex, setActiveIndex] = useState(0)
@@ -39,7 +34,7 @@ export function DressGallery({
           imgClassName="object-cover"
           pictureClassName="relative block h-full w-full"
           priority
-          resource={activeImage.resource}
+          resource={activeImage.full}
           size="(max-width: 1023px) 100vw, 58vw"
         />
       </div>
@@ -55,7 +50,7 @@ export function DressGallery({
               aria-label={`View ${name} image ${index + 1}`}
               aria-pressed={index === activeIndex}
               className="relative aspect-[3/4] min-w-20 overflow-hidden bg-secondary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 lg:min-w-0"
-              key={`${image.resource.id}-${index}`}
+              key={`${image.full.id}-${index}`}
               onClick={() => setActiveIndex(index)}
               type="button"
             >
@@ -65,7 +60,7 @@ export function DressGallery({
                 fill
                 imgClassName="object-cover"
                 pictureClassName="relative block h-full w-full"
-                resource={image.resource}
+                resource={image.thumbnail}
                 size="96px"
               />
             </button>

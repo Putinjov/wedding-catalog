@@ -1,9 +1,9 @@
 import type { DressMode } from '@/lib/catalogue'
-import type { Dress } from '@/payload-types'
+import type { DressWithMedia } from '@/lib/dress-media'
 
 import { DressGrid } from './dress-grid'
 
-export function RelatedDresses({ dresses, mode }: { dresses: Dress[]; mode: DressMode }) {
+export function RelatedDresses({ dresses, mode }: { dresses: DressWithMedia[]; mode: DressMode }) {
   if (dresses.length === 0) {
     return null
   }

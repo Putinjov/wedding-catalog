@@ -16,13 +16,7 @@ export const metadata: Metadata = {
 }
 
 function getHeroImage(dresses: Awaited<ReturnType<typeof getFeaturedDresses>>): Media | null {
-  const dressWithImage = dresses.find((dress) => typeof dress.mainImage === 'object')
-
-  if (!dressWithImage || typeof dressWithImage.mainImage !== 'object') {
-    return null
-  }
-
-  return dressWithImage.mainImage
+  return dresses.find((dress) => dress.media.main)?.media.main?.full ?? null
 }
 
 export default async function HomePage() {

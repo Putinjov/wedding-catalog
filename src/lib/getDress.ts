@@ -4,6 +4,7 @@ import { cache } from 'react'
 
 import type { DressMode } from '@/lib/catalogue'
 import type { Dress } from '@/payload-types'
+import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
 
 type QueryWhereField = Record<string, string | number | boolean | string[] | null>
 type QueryWhere = Record<string, QueryWhere[] | QueryWhereField>
@@ -39,7 +40,7 @@ function getRelationshipId(value: unknown): string | null {
   return null
 }
 
-export const getDressBySlug = cache(async (slug: string): Promise<Dress | null> => {
+export const getDressBySlug = cache(async (slug: string): Promise<DressWithMedia | null> => {
   const payload = await getPayload({
     config: configPromise,
   })
@@ -60,7 +61,9 @@ export const getDressBySlug = cache(async (slug: string): Promise<Dress | null> 
     },
   })
 
-  return result.docs[0] ?? null
+  const dress = result.docs[0]
+  if (!dress) return null
+  return (await attachDressMedia([dress], payload))[0] ?? null
 })
 
 export async function getRelatedDresses({
@@ -69,7 +72,7 @@ export async function getRelatedDresses({
 }: {
   dress: Dress
   mode: DressMode
-}): Promise<Dress[]> {
+}): Promise<DressWithMedia[]> {
   const payload = await getPayload({
     config: configPromise,
   })
@@ -104,7 +107,7 @@ export async function getRelatedDresses({
       },
     })
 
-    return result.docs
+    return attachDressMedia(result.docs, payload)
   }
 
   const preferredResult = await payload.find({
@@ -123,7 +126,7 @@ export async function getRelatedDresses({
   })
 
   if (preferredResult.docs.length >= 4) {
-    return preferredResult.docs
+    return attachDressMedia(preferredResult.docs, payload)
   }
 
   const preferredIds = preferredResult.docs.map((relatedDress) => relatedDress.id)
@@ -140,5 +143,5 @@ export async function getRelatedDresses({
     },
   })
 
-  return [...preferredResult.docs, ...fallbackResult.docs]
+  return attachDressMedia([...preferredResult.docs, ...fallbackResult.docs], payload)
 }

@@ -1,11 +1,11 @@
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import type { Dress } from '@/payload-types'
+import type { DressWithMedia } from '@/lib/dress-media'
 
 import { DressGrid } from './dress-grid'
 
-export function FeaturedDresses({ dresses }: { dresses: Dress[] }) {
+export function FeaturedDresses({ dresses }: { dresses: DressWithMedia[] }) {
   return (
     <section className="bg-background py-16 md:py-24">
       <div className="container">

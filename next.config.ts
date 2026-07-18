@@ -48,6 +48,9 @@ const nextConfig: NextConfig = {
       {
         pathname: '/brand/**',
       },
+      {
+        pathname: '/media/**',
+      },
     ],
     qualities: [65, 75, 85, 90],
     remotePatterns: [

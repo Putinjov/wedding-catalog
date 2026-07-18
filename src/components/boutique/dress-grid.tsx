@@ -1,5 +1,5 @@
 import type { DressDisplayMode } from '@/lib/catalogue'
-import type { Dress } from '@/payload-types'
+import type { DressWithMedia } from '@/lib/dress-media'
 
 import { DressCard } from './dress-card'
 
@@ -7,7 +7,7 @@ export function DressGrid({
   dresses,
   mode = 'all',
 }: {
-  dresses: Dress[]
+  dresses: DressWithMedia[]
   mode?: DressDisplayMode
 }) {
   return (
