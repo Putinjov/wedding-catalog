@@ -23,19 +23,25 @@ const journeys = [
 
 interface JourneySplitProps {
   description?: string
+  headingLevel?: 'h1' | 'h2'
   title?: string
 }
 
 export function JourneySplit({
   description = 'Choose the way you want to wear your dress.',
+  headingLevel = 'h2',
   title = 'Your dress, your way',
 }: JourneySplitProps) {
+  const Heading = headingLevel
+
   return (
     <section className="border-y border-border bg-background py-16 md:py-24">
       <div className="container">
         <div className="mb-10 max-w-2xl">
           <p className="text-xs uppercase tracking-[0.28em] text-brand-deep-lavender">Buy or rent</p>
-          <h2 className="mt-3 font-serif text-4xl text-foreground md:text-5xl">{title}</h2>
+          <Heading className="mt-3 font-serif text-4xl text-foreground md:text-5xl">
+            {title}
+          </Heading>
           <p className="mt-4 text-lg leading-8 text-muted-foreground">{description}</p>
         </div>
 

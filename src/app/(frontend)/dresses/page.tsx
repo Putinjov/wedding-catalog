@@ -13,6 +13,7 @@ export default function DressesPage() {
     <main>
       <JourneySplit
         description={`Browse the ${siteConfig.name} collection by the way you want to wear your dress.`}
+        headingLevel="h1"
         title="Choose your dress journey"
       />
     </main>

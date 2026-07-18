@@ -25,6 +25,7 @@ import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { hasRole } from './access/roles'
 import { migrateLegacyUserRoles } from './lib/security/migrateLegacyUserRoles'
+import { s3Storage } from '@payloadcms/storage-s3'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -106,7 +107,41 @@ export default buildConfig({
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
-  plugins,
+  plugins: [
+    ...plugins,
+    s3Storage({
+      enabled: Boolean(process.env.R2_BUCKET),
+
+      collections: {
+        media: {
+          prefix: 'media',
+
+          disablePayloadAccessControl: true,
+
+          generateFileURL: ({ filename, prefix }) => {
+            const key = prefix ? `${prefix}/${filename}` : filename
+
+            return `${process.env.R2_PUBLIC_URL}/${key}`
+          },
+        },
+      },
+
+      bucket: process.env.R2_BUCKET!,
+
+      config: {
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        },
+
+        region: 'auto',
+
+        endpoint: process.env.R2_ENDPOINT,
+
+        forcePathStyle: true,
+      },
+    }),
+  ],
   onInit: migrateLegacyUserRoles,
   secret: process.env.PAYLOAD_SECRET,
   sharp,

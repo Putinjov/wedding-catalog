@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 import { Media } from '@/components/Media'
 import { Button } from '@/components/ui/button'
-import { formatFittingFee, siteConfig } from '@/config/site'
+import { siteConfig } from '@/config/site'
 import type { Media as MediaType } from '@/payload-types'
 
 interface HeroSectionProps {
