@@ -26,5 +26,20 @@ export function isAppointmentBlockingSlot(
   return !Number.isNaN(holdExpiresAt.getTime()) && holdExpiresAt > now
 }
 
+export function appointmentOverlapsSlot(
+  appointment: Pick<Appointment, 'startAt' | 'endAt'>,
+  startAt: Date,
+  endAt: Date,
+): boolean {
+  const appointmentStart = new Date(appointment.startAt).getTime()
+  const appointmentEnd = new Date(appointment.endAt).getTime()
+  return (
+    !Number.isNaN(appointmentStart) &&
+    !Number.isNaN(appointmentEnd) &&
+    appointmentStart < endAt.getTime() &&
+    appointmentEnd > startAt.getTime()
+  )
+}
+
 // TODO: Add a scheduled Payload job to cancel or archive expired unpaid website
 // holds. Conflict queries already ignore them, so cleanup is operational only.

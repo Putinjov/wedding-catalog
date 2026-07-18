@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react'
 
 import { BookingProgress } from '@/components/booking/booking-progress'
 import { BookingSummary } from '@/components/booking/booking-summary'
+import { BookingCalendar } from '@/components/booking/booking-calendar'
 import { SelectedDressSummary } from '@/components/booking/selected-dress-summary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +20,7 @@ import {
 } from '@/lib/booking/date'
 import { createPendingAppointment, type BookingActionResult } from '@/lib/booking/createAppointment'
 import { getAvailableSlots } from '@/lib/booking/getAvailableSlots'
+import { getFullyBookedDates } from '@/lib/booking/getFullyBookedDates'
 import type { BookingFieldErrors, BookingInput } from '@/lib/booking/validation'
 
 import type { PurposeOption, SelectedDressSummary as SelectedDress } from './types'
@@ -91,6 +93,8 @@ export function BookingFlow({
     slots: [],
     status: 'idle',
   })
+  const [fullyBookedDates, setFullyBookedDates] = useState<string[]>([])
+  const [calendarAvailabilityError, setCalendarAvailabilityError] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -98,6 +102,20 @@ export function BookingFlow({
   const [stepError, setStepError] = useState('')
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
   const availablePurposes = getAvailablePurposeValues(selectedDress)
+
+  useEffect(() => {
+    void getFullyBookedDates()
+      .then((result) => {
+        if (result.success) {
+          setFullyBookedDates(result.dates)
+        } else {
+          setCalendarAvailabilityError(result.message)
+        }
+      })
+      .catch(() => {
+        setCalendarAvailabilityError('Fully booked dates could not be preloaded. Times are still checked after selection.')
+      })
+  }, [])
 
   useEffect(() => {
     requestId.current += 1
@@ -311,23 +329,27 @@ export function BookingFlow({
             Fittings last {bookingConfig.durationMinutes} minutes. Choose a date first and we will
             show the currently available times.
           </p>
-          <div className="mt-7">
-            <label className="text-sm font-medium text-foreground" htmlFor="fitting-date">
+          <div className="mt-7 min-w-0">
+            <p className="text-sm font-medium text-foreground" id="fitting-date-label">
               Preferred date
-            </label>
-            <Input
-              aria-describedby="fitting-date-help"
-              className="mt-2 max-w-sm rounded-sm bg-background"
-              id="fitting-date"
-              max={maxDate}
-              min={minDate}
-              onChange={(event) => handleDateChange(event.target.value)}
-              type="date"
-              value={date}
-            />
+            </p>
+            <div aria-labelledby="fitting-date-label" className="mt-2">
+              <BookingCalendar
+                fullyBookedDates={fullyBookedDates}
+                maxDate={maxDate}
+                minDate={minDate}
+                onSelect={handleDateChange}
+                selectedDate={date}
+              />
+            </div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground" id="fitting-date-help">
               {getBookingWindowLabel()} {getBookingScheduleLabel()}
             </p>
+            {calendarAvailabilityError ? (
+              <p className="mt-2 text-sm text-muted-foreground" role="status">
+                {calendarAvailabilityError}
+              </p>
+            ) : null}
           </div>
 
           <div aria-live="polite" className="mt-8">

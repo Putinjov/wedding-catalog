@@ -49,6 +49,7 @@
     "payload": "3.86.0",
     "prism-react-renderer": "^2.3.1",
     "react": "19.2.6",
+    "react-day-picker": "^10.0.1",
     "react-dom": "19.2.6",
     "react-hook-form": "7.71.1",
     "sharp": "0.34.2",

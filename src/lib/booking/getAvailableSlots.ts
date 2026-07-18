@@ -17,6 +17,7 @@ import {
 } from '@/lib/booking/date'
 import type { Appointment } from '@/payload-types'
 import {
+  appointmentOverlapsSlot,
   getBlockingAppointmentWhere,
   isAppointmentBlockingSlot,
 } from '@/lib/booking/appointmentConflicts'
@@ -31,21 +32,6 @@ export type AvailableSlotsResult =
       message: string
       success: false
     }
-
-function overlaps(
-  appointment: Appointment,
-  startAt: Date,
-  endAt: Date,
-): boolean {
-  const appointmentStart = new Date(appointment.startAt).getTime()
-  const appointmentEnd = new Date(appointment.endAt).getTime()
-  return (
-    !Number.isNaN(appointmentStart) &&
-    !Number.isNaN(appointmentEnd) &&
-    appointmentStart < endAt.getTime() &&
-    appointmentEnd > startAt.getTime()
-  )
-}
 
 export async function getAvailableSlots(date: string): Promise<AvailableSlotsResult> {
   if (!consumeRateLimits([
@@ -127,7 +113,7 @@ export async function getAvailableSlots(date: string): Promise<AvailableSlotsRes
           !existingAppointments.docs.some(
             (appointment) =>
               isAppointmentBlockingSlot(appointment, now) &&
-              overlaps(appointment, candidate.startAt, candidate.endAt),
+              appointmentOverlapsSlot(appointment, candidate.startAt, candidate.endAt),
           ),
       )
       .map((candidate) => ({
