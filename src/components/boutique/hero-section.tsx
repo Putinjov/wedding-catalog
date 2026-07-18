@@ -31,12 +31,6 @@ export function HeroSection({ image }: HeroSectionProps) {
               <Link href="/rent">Rent a dress</Link>
             </Button>
           </div>
-          <Link
-            className="mt-5 inline-flex text-sm font-medium text-brand-deep-lavender underline decoration-brand-antique-gold underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            href="/book-a-fitting"
-          >
-            Book a fitting&nbsp;&middot;&nbsp;{formatFittingFee()}
-          </Link>
         </div>
 
         <div className="relative min-h-[26rem] overflow-hidden bg-secondary md:min-h-[34rem]">
