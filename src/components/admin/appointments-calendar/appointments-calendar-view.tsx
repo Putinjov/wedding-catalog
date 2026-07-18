@@ -7,7 +7,9 @@ import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTy
 import { AppointmentsCalendar } from './appointments-calendar'
 
 export async function AppointmentsCalendarView(props: AdminViewServerProps) {
-  if (!props.user) {
+  const user = props.initPageResult.req.user
+
+  if (!user) {
     return (
       <DefaultTemplate {...props} visibleEntities={props.initPageResult.visibleEntities}>
         <section aria-labelledby="calendar-auth-required" style={{ maxWidth: '48rem' }}>
@@ -18,7 +20,7 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
     )
   }
 
-  if (!hasRole(props.user, ['owner', 'manager', 'staff'])) {
+  if (!hasRole(user, ['owner', 'manager', 'staff'])) {
     return (
       <DefaultTemplate {...props} visibleEntities={props.initPageResult.visibleEntities}>
         <section aria-labelledby="calendar-access-denied" style={{ maxWidth: '48rem' }}>
@@ -41,7 +43,7 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
       overrideAccess: false,
       pagination: false,
       sort: 'name',
-      user: props.user,
+      user,
     })
     dresses = result.docs.map((dress) => ({
       id: dress.id,
