@@ -13,8 +13,10 @@ export const metadata: Metadata = {
 
 type Args = {
   searchParams: Promise<{
+    date?: string | string[]
     dress?: string | string[]
     purpose?: string | string[]
+    time?: string | string[]
   }>
 }
 
@@ -57,6 +59,12 @@ export default async function BookAFittingPage({ searchParams }: Args) {
         }
       : null
   const { maxDate, minDate } = getBookingDateBounds()
+  const requestedDate = getQueryValue(query.date)
+  const initialDate = requestedDate && requestedDate >= minDate && requestedDate <= maxDate
+    ? requestedDate
+    : ''
+  const requestedTime = getQueryValue(query.time)
+  const initialTime = requestedTime && /^\d{2}:\d{2}$/.test(requestedTime) ? requestedTime : ''
 
   return (
     <main className="bg-background">
@@ -81,10 +89,13 @@ export default async function BookAFittingPage({ searchParams }: Args) {
         </div>
 
         <BookingFlow
+          initialDate={initialDate}
           initialPurpose={getInitialPurpose(requestedPurpose, selectedDress)}
+          initialTime={initialTime}
           maxDate={maxDate}
           minDate={minDate}
           selectedDress={selectedDress}
+          syncURLState
         />
       </section>
     </main>

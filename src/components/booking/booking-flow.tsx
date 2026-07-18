@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { type FormEvent, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 
 import { BookingProgress } from '@/components/booking/booking-progress'
 import { BookingSummary } from '@/components/booking/booking-summary'
@@ -59,24 +59,33 @@ function getAvailablePurposeValues(dress: SelectedDress | null): BookingPurpose[
 }
 
 export function BookingFlow({
+  initialDate = '',
   initialPurpose,
+  initialTime = '',
   maxDate,
   minDate,
   selectedDress: initialSelectedDress,
+  syncURLState = false,
 }: {
+  initialDate?: string
   initialPurpose: BookingPurpose
+  initialTime?: string
   maxDate: string
   minDate: string
   selectedDress: SelectedDress | null
+  syncURLState?: boolean
 }) {
+  const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const requestId = useRef(0)
+  const requestedInitialTime = useRef(initialTime)
   const [step, setStep] = useState(1)
   const [purpose, setPurpose] = useState(initialPurpose)
   const [selectedDress, setSelectedDress] = useState<SelectedDress | null>(
     initialSelectedDress,
   )
-  const [date, setDate] = useState('')
+  const [date, setDate] = useState(initialDate)
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [availability, setAvailability] = useState<AvailabilityState>({
     slots: [],
@@ -90,20 +99,18 @@ export function BookingFlow({
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
   const availablePurposes = getAvailablePurposeValues(selectedDress)
 
-  function handleDateChange(value: string) {
+  useEffect(() => {
     requestId.current += 1
-    setDate(value)
-    setSelectedSlot(null)
-    setStepError('')
-
-    if (!value) {
-      setAvailability({ slots: [], status: 'idle' })
-      return
-    }
+    if (!date) return
 
     const currentRequestId = requestId.current
-    setAvailability({ slots: [], status: 'loading' })
-    void getAvailableSlots(value)
+    void Promise.resolve()
+      .then(() => {
+        if (currentRequestId === requestId.current) {
+          setAvailability({ slots: [], status: 'loading' })
+        }
+        return getAvailableSlots(date)
+      })
       .then((result) => {
         if (currentRequestId !== requestId.current) {
           return
@@ -111,6 +118,14 @@ export function BookingFlow({
 
         if (result.success) {
           setAvailability({ slots: result.slots, status: 'ready' })
+          const requestedTime = requestedInitialTime.current
+          if (requestedTime) {
+            const matchingSlot = result.slots.find(
+              (slot) => formatTimeInputValue(slot.startAt) === requestedTime,
+            )
+            if (matchingSlot) setSelectedSlot(matchingSlot)
+            requestedInitialTime.current = ''
+          }
         } else {
           setAvailability({ message: result.message, slots: [], status: 'error' })
         }
@@ -124,6 +139,31 @@ export function BookingFlow({
           })
         }
       })
+  }, [date])
+
+  useEffect(() => {
+    if (!syncURLState) return
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('purpose', purpose)
+    if (selectedDress) params.set('dress', selectedDress.slug)
+    else params.delete('dress')
+    if (date) params.set('date', date)
+    else params.delete('date')
+    if (selectedSlot) params.set('time', formatTimeInputValue(selectedSlot.startAt))
+    else params.delete('time')
+
+    const nextURL = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
+    const currentURL = searchParams.size > 0 ? `${pathname}?${searchParams.toString()}` : pathname
+    if (nextURL !== currentURL) router.replace(nextURL, { scroll: false })
+  }, [date, pathname, purpose, router, searchParams, selectedDress, selectedSlot, syncURLState])
+
+  function handleDateChange(value: string) {
+    requestedInitialTime.current = ''
+    setDate(value)
+    setSelectedSlot(null)
+    setStepError('')
+    if (!value) setAvailability({ slots: [], status: 'idle' })
   }
 
   function handleNext() {

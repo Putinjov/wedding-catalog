@@ -1,9 +1,11 @@
-import Link from 'next/link'
-
-import { Button } from '@/components/ui/button'
+import { BookingDialog } from '@/components/booking/booking-dialog'
+import { buttonVariants } from '@/components/ui/button'
 import { formatFittingFee } from '@/config/site'
+import { getBookingDateBounds } from '@/lib/booking/date'
 
 export function FittingCallout() {
+  const bounds = getBookingDateBounds()
+
   return (
     <section className="bg-secondary/65 py-16 md:py-24">
       <div className="container">
@@ -20,9 +22,16 @@ export function FittingCallout() {
               or rental credit details will be shared with the booking policy.
             </p>
           </div>
-          <Button asChild className="w-fit rounded-sm px-6" size="lg">
-            <Link href="/book-a-fitting">Book a fitting</Link>
-          </Button>
+          <BookingDialog
+            dialogID="generic-fitting"
+            fallbackHref="/book-a-fitting"
+            initialPurpose="buy"
+            maxDate={bounds.maxDate}
+            minDate={bounds.minDate}
+            primaryClassName={buttonVariants({ className: 'w-fit rounded-sm px-6', size: 'lg' })}
+            primaryLabel="Book a fitting"
+            selectedDress={null}
+          />
         </div>
       </div>
     </section>
