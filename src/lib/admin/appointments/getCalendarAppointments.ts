@@ -2,7 +2,7 @@ import type { Payload, TypedUser } from 'payload'
 
 import { toCalendarAppointment, type CalendarAppointment } from './calendarTypes'
 
-const MAX_RANGE_MILLISECONDS = 8 * 24 * 60 * 60 * 1000
+const MAX_RANGE_MILLISECONDS = 43 * 24 * 60 * 60 * 1000
 
 export class AdminAppointmentError extends Error {
   status: number
@@ -24,7 +24,7 @@ export function parseCalendarRange(fromValue: string | null, toValue: string | n
 
   const duration = to.getTime() - from.getTime()
   if (duration <= 0 || duration > MAX_RANGE_MILLISECONDS) {
-    throw new AdminAppointmentError('The calendar range must be between one and eight days.')
+    throw new AdminAppointmentError('The calendar range must be between one and forty-three days.')
   }
 
   return { from, to }
@@ -58,5 +58,12 @@ export async function getCalendarAppointments({
     },
   })
 
-  return result.docs.map(toCalendarAppointment)
+  return result.docs.flatMap((appointment) => {
+    try {
+      return [toCalendarAppointment(appointment)]
+    } catch {
+      console.warn(`[appointments-calendar] Appointment ${appointment.id} has invalid calendar dates.`)
+      return []
+    }
+  })
 }

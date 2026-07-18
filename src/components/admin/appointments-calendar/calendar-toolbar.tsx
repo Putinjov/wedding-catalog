@@ -39,8 +39,8 @@ export function CalendarToolbar({
       </div>
       <div className="appointments-calendar__toolbar-group">
         <div className="calendar-segmented" aria-label="Calendar view">
+          <button aria-pressed={view === 'month'} onClick={() => onViewChange('month')} type="button">Month</button>
           <button aria-pressed={view === 'week'} onClick={() => onViewChange('week')} type="button">Week</button>
-          <button aria-pressed={view === 'day'} onClick={() => onViewChange('day')} type="button">Day</button>
         </div>
         <button className="calendar-button calendar-button--primary" onClick={onNew} type="button">
           <Plus aria-hidden="true" /> New appointment

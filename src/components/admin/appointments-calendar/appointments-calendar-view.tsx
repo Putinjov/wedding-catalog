@@ -7,11 +7,15 @@ import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTy
 import { AppointmentsCalendar } from './appointments-calendar'
 
 export async function AppointmentsCalendarView(props: AdminViewServerProps) {
-  // Payload owns the admin authentication flow. Redirecting manually from a
-  // custom view can cause an RSC loop between the view and the login route.
-  // During unauthenticated rendering, let Payload's admin shell handle login.
   if (!props.user) {
-    return null
+    return (
+      <DefaultTemplate {...props} visibleEntities={props.initPageResult.visibleEntities}>
+        <section aria-labelledby="calendar-auth-required" style={{ maxWidth: '48rem' }}>
+          <h1 id="calendar-auth-required">Authentication required</h1>
+          <p>Sign in to Payload Admin to view the appointments calendar.</p>
+        </section>
+      </DefaultTemplate>
+    )
   }
 
   if (!hasRole(props.user, ['owner', 'manager', 'staff'])) {
@@ -25,27 +29,34 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
     )
   }
 
-  const result = await props.payload.find({
-    collection: 'dresses',
-    depth: 0,
-    limit: 500,
-    locale: 'en',
-    overrideAccess: false,
-    pagination: false,
-    sort: 'name',
-    user: props.user,
-  })
-  const dresses: ManualAppointmentDress[] = result.docs.map((dress) => ({
-    id: dress.id,
-    name: dress.name,
-    slug: dress.slug,
-    availableForRent: dress.availableForRent,
-    forSale: dress.forSale,
-  }))
+  let dresses: ManualAppointmentDress[] = []
+  let initialError = ''
+
+  try {
+    const result = await props.payload.find({
+      collection: 'dresses',
+      depth: 0,
+      limit: 500,
+      locale: 'en',
+      overrideAccess: false,
+      pagination: false,
+      sort: 'name',
+      user: props.user,
+    })
+    dresses = result.docs.map((dress) => ({
+      id: dress.id,
+      name: dress.name,
+      slug: dress.slug,
+      availableForRent: dress.availableForRent,
+      forSale: dress.forSale,
+    }))
+  } catch {
+    initialError = 'Dress options could not be loaded. Existing appointments are still available.'
+  }
 
   return (
     <DefaultTemplate {...props} visibleEntities={props.initPageResult.visibleEntities}>
-      <AppointmentsCalendar dresses={dresses} />
+      <AppointmentsCalendar dresses={dresses} initialError={initialError} />
     </DefaultTemplate>
   )
 }

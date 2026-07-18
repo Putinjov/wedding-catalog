@@ -1,6 +1,13 @@
 import { addCalendarDays, parseDateKey, zonedDateTimeToDate } from '@/lib/booking/date'
 
-export type CalendarViewMode = 'week' | 'day'
+export type CalendarViewMode = 'month' | 'week' | 'day'
+
+function getMonthGridStart(dateKey: string): string {
+  const parsed = parseDateKey(dateKey)
+  if (!parsed) return dateKey
+  const firstDay = `${parsed.year}-${parsed.month.toString().padStart(2, '0')}-01`
+  return getWeekStart(firstDay)
+}
 
 export function getWeekStart(dateKey: string): string {
   const parsed = parseDateKey(dateKey)
@@ -11,15 +18,15 @@ export function getWeekStart(dateKey: string): string {
 }
 
 export function getVisibleDateKeys(dateKey: string, view: CalendarViewMode): string[] {
-  const start = view === 'week' ? getWeekStart(dateKey) : dateKey
-  const length = view === 'week' ? 7 : 1
+  const start = view === 'month' ? getMonthGridStart(dateKey) : view === 'week' ? getWeekStart(dateKey) : dateKey
+  const length = view === 'month' ? 42 : view === 'week' ? 7 : 1
   return Array.from({ length }, (_, index) => addCalendarDays(start, index) ?? start)
 }
 
 export function getVisibleRange(dateKey: string, view: CalendarViewMode) {
   const keys = getVisibleDateKeys(dateKey, view)
   const startKey = keys[0]
-  const endKey = addCalendarDays(startKey, view === 'week' ? 7 : 1) ?? startKey
+  const endKey = addCalendarDays(startKey, view === 'month' ? 42 : view === 'week' ? 7 : 1) ?? startKey
   const from = zonedDateTimeToDate(startKey, '00:00')
   const to = zonedDateTimeToDate(endKey, '00:00')
   if (!from || !to) throw new Error('Invalid calendar date range.')

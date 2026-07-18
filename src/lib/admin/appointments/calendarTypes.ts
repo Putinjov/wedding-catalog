@@ -72,6 +72,16 @@ export function getRelatedDress(
 }
 
 export function toCalendarAppointment(appointment: Appointment): CalendarAppointment {
+  const startAt = new Date(appointment.startAt)
+  const endAt = new Date(appointment.endAt)
+  if (
+    Number.isNaN(startAt.getTime()) ||
+    Number.isNaN(endAt.getTime()) ||
+    endAt.getTime() <= startAt.getTime()
+  ) {
+    throw new Error(`Appointment ${appointment.id} has invalid calendar dates.`)
+  }
+
   return {
     id: appointment.id,
     publicReference: appointment.publicReference,
@@ -84,6 +94,29 @@ export function toCalendarAppointment(appointment: Appointment): CalendarAppoint
     needsAdminReview: appointment.needsAdminReview ?? false,
     dress: getRelatedDress(appointment.dress),
   }
+}
+
+function isCalendarAppointment(value: unknown): value is CalendarAppointment {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return (
+    (typeof item.id === 'string' || typeof item.id === 'number') &&
+    typeof item.customerName === 'string' &&
+    typeof item.startAt === 'string' &&
+    !Number.isNaN(new Date(item.startAt).getTime()) &&
+    typeof item.endAt === 'string' &&
+    !Number.isNaN(new Date(item.endAt).getTime()) &&
+    (item.purpose === 'buy' || item.purpose === 'rent') &&
+    appointmentStatuses.includes(item.status as AppointmentStatus) &&
+    paymentStatuses.includes(item.paymentStatus as PaymentStatus)
+  )
+}
+
+export function parseCalendarAppointments(value: unknown): CalendarAppointment[] {
+  if (!Array.isArray(value) || !value.every(isCalendarAppointment)) {
+    throw new Error('The calendar returned an unexpected response. Please refresh and try again.')
+  }
+  return value
 }
 
 export function toAppointmentDetail(appointment: Appointment): AppointmentDetail {
