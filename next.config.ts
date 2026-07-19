@@ -12,6 +12,28 @@ const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : process.env.__NEXT_PRIVATE_ORIGIN || 'http://localhost:3000'
 
+function toRemotePattern(value?: string) {
+  if (!value) return null
+
+  try {
+    const url = new URL(value)
+
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+
+    return {
+      hostname: url.hostname,
+      protocol: url.protocol.replace(':', '') as 'http' | 'https',
+    }
+  } catch {
+    return null
+  }
+}
+
+const remotePatterns = [
+  toRemotePattern(NEXT_PUBLIC_SERVER_URL),
+  toRemotePattern(process.env.R2_PUBLIC_URL),
+].filter((pattern): pattern is NonNullable<typeof pattern> => pattern !== null)
+
 const baselineSecurityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -53,16 +75,7 @@ const nextConfig: NextConfig = {
       },
     ],
     qualities: [65, 75, 85, 90],
-    remotePatterns: [
-      ...[NEXT_PUBLIC_SERVER_URL /* 'https://example.com' */].map((item) => {
-        const url = new URL(item)
-
-        return {
-          hostname: url.hostname,
-          protocol: url.protocol.replace(':', '') as 'http' | 'https',
-        }
-      }),
-    ],
+    remotePatterns,
   },
   async headers() {
     return [
