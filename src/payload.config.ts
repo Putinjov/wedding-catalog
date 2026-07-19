@@ -131,6 +131,7 @@ export default buildConfig({
     s3Storage({
       alwaysInsertFields: true,
       bucket: environment.R2_BUCKET ?? 'r2-disabled',
+      clientUploads: true,
       collections: {
         media: {
           disablePayloadAccessControl: true,
