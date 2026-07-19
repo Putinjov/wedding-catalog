@@ -1,15 +1,14 @@
-import { getServerSideSitemap } from 'next-sitemap'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 
+import { getCanonicalOrigin } from '@/config/site-url'
+import { createSitemapResponse } from '@/utilities/sitemap'
+
 const getPagesSitemap = unstable_cache(
   async () => {
     const payload = await getPayload({ config })
-    const SITE_URL =
-      process.env.NEXT_PUBLIC_SERVER_URL ||
-      process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-      'https://example.com'
+    const SITE_URL = getCanonicalOrigin()
 
     const results = await payload.find({
       collection: 'pages',
@@ -64,5 +63,5 @@ const getPagesSitemap = unstable_cache(
 export async function GET() {
   const sitemap = await getPagesSitemap()
 
-  return getServerSideSitemap(sitemap)
+  return createSitemapResponse(sitemap)
 }

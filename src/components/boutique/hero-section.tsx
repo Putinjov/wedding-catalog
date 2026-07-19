@@ -18,7 +18,7 @@ export function HeroSection({ image }: HeroSectionProps) {
             {siteConfig.name.toUpperCase()}
           </p>
           <h1 className="mt-5 font-serif text-5xl leading-[0.95] tracking-normal text-foreground sm:text-6xl lg:text-7xl">
-            Your dress, your way
+            Luxury, you can afford
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">
             Discover wedding dresses to buy or rent, with private fittings tailored to you.

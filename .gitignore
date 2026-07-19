@@ -5,6 +5,7 @@ node_modules
 .env
 .next
 next-env.d.ts
+*.tsbuildinfo
 .vercel
 
 # Payload default media upload directory

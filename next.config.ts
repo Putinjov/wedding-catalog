@@ -4,35 +4,18 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { redirects } from './redirects'
+import { getServerSideOrigin, normalizePublicAssetOrigin } from './src/config/site-url'
 
 const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
-const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : process.env.__NEXT_PRIVATE_ORIGIN || 'http://localhost:3000'
-
-function toRemotePattern(value?: string) {
-  if (!value) return null
-
-  try {
-    const url = new URL(value)
-
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
-
-    return {
-      hostname: url.hostname,
-      protocol: url.protocol.replace(':', '') as 'http' | 'https',
-    }
-  } catch {
-    return null
-  }
-}
-
-const remotePatterns = [
-  toRemotePattern(NEXT_PUBLIC_SERVER_URL),
-  toRemotePattern(process.env.R2_PUBLIC_URL),
-].filter((pattern): pattern is NonNullable<typeof pattern> => pattern !== null)
+const remoteImageOrigins = Array.from(
+  new Set(
+    [getServerSideOrigin(), normalizePublicAssetOrigin(process.env.R2_PUBLIC_URL)].filter(
+      (origin): origin is string => Boolean(origin),
+    ),
+  ),
+)
 
 const baselineSecurityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -75,7 +58,16 @@ const nextConfig: NextConfig = {
       },
     ],
     qualities: [65, 75, 85, 90],
-    remotePatterns,
+    remotePatterns: remoteImageOrigins.map((origin) => {
+      const url = new URL(origin)
+
+      return {
+        hostname: url.hostname,
+        pathname: `${url.pathname.replace(/\/+$/, '') || ''}/**`,
+        port: url.port,
+        protocol: url.protocol.replace(':', '') as 'http' | 'https',
+      }
+    }),
   },
   async headers() {
     return [

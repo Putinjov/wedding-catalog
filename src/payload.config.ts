@@ -1,37 +1,55 @@
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
+import { s3Storage } from '@payloadcms/storage-s3'
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest } from 'payload'
+import { buildConfig, type PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
-import { Categories } from './collections/Categories'
-import { Appointments } from './collections/Appointments'
+import { hasRole } from './access/roles'
 import { AppointmentAudits } from './collections/AppointmentAudits'
-import { ProcessedStripeEvents } from './collections/ProcessedStripeEvents'
-import { Media } from './collections/Media'
-import { Pages } from './collections/Pages'
-import {Dresses} from './collections/Dresses'
-import { Posts } from './collections/Posts'
-import { Users } from './collections/Users'
-import { Sizes } from './collections/Lookups/Sizes'
+import { AppointmentSlotLocks } from './collections/AppointmentSlotLocks'
+import { Appointments } from './collections/Appointments'
+import { Categories } from './collections/Categories'
+import { Dresses } from './collections/Dresses'
 import { Colors } from './collections/Lookups/Colors'
+import { Designers } from './collections/Lookups/Designers'
 import { Fabrics } from './collections/Lookups/Fabrics'
 import { Silhouettes } from './collections/Lookups/Silhouettes'
-import { Designers } from './collections/Lookups/Designers'
+import { Sizes } from './collections/Lookups/Sizes'
+import { Media } from './collections/Media'
+import { Pages } from './collections/Pages'
+import { Posts } from './collections/Posts'
+import { ProcessedStripeEvents } from './collections/ProcessedStripeEvents'
+import { Users } from './collections/Users'
+import { getServerEnvironment, isR2Configured } from './config/env'
+import { normalizePublicAssetOrigin } from './config/site-url'
 import { Footer } from './Footer/config'
+import { defaultLexical } from './fields/defaultLexical'
 import { Header } from './Header/config'
-import { plugins } from './plugins'
-import { defaultLexical } from '@/fields/defaultLexical'
-import { getServerSideURL } from './utilities/getURL'
-import { hasRole } from './access/roles'
 import { migrateLegacyUserRoles } from './lib/security/migrateLegacyUserRoles'
-import { s3Storage } from '@payloadcms/storage-s3'
+import { plugins } from './plugins'
+import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const environment = getServerEnvironment()
+const r2Enabled = isR2Configured(environment)
+const r2PublicOrigin = normalizePublicAssetOrigin(environment.R2_PUBLIC_URL)
+
+function getR2FileURL(filename: string, prefix?: string): string {
+  if (!r2PublicOrigin) return `/api/media/file/${encodeURIComponent(filename)}`
+
+  const key = [prefix, filename]
+    .filter((segment): segment is string => Boolean(segment))
+    .flatMap((segment) => segment.split('/'))
+    .map(encodeURIComponent)
+    .join('/')
+
+  return `${r2PublicOrigin}/${key}`
+}
 
 export default buildConfig({
-  localization:{
+  localization: {
     locales: ['en', 'uk'],
     defaultLocale: 'en',
     fallback: true,
@@ -87,7 +105,7 @@ export default buildConfig({
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: mongooseAdapter({
-    url: process.env.DATABASE_URL || '',
+    url: environment.DATABASE_URL ?? '',
   }),
   collections: [
     Pages,
@@ -103,6 +121,7 @@ export default buildConfig({
     Dresses,
     Appointments,
     AppointmentAudits,
+    AppointmentSlotLocks,
     ProcessedStripeEvents,
   ],
   cors: [getServerSideURL()].filter(Boolean),
@@ -110,40 +129,31 @@ export default buildConfig({
   plugins: [
     ...plugins,
     s3Storage({
-      enabled: Boolean(process.env.R2_BUCKET),
-
+      alwaysInsertFields: true,
+      bucket: environment.R2_BUCKET ?? 'r2-disabled',
+      clientUploads: true,
       collections: {
         media: {
-          prefix: 'media',
-
           disablePayloadAccessControl: true,
-
-          generateFileURL: ({ filename, prefix }) => {
-            const key = prefix ? `${prefix}/${filename}` : filename
-
-            return `${process.env.R2_PUBLIC_URL}/${key}`
-          },
+          generateFileURL: ({ filename, prefix }) => getR2FileURL(filename, prefix),
+          prefix: 'media',
         },
       },
-
-      bucket: process.env.R2_BUCKET!,
-
       config: {
         credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+          accessKeyId: environment.R2_ACCESS_KEY_ID ?? 'r2-disabled',
+          secretAccessKey: environment.R2_SECRET_ACCESS_KEY ?? 'r2-disabled',
         },
-
-        region: 'auto',
-
-        endpoint: process.env.R2_ENDPOINT,
-
+        endpoint: environment.R2_ENDPOINT,
         forcePathStyle: true,
+        region: 'auto',
       },
+      disableLocalStorage: r2Enabled,
+      enabled: r2Enabled,
     }),
   ],
   onInit: migrateLegacyUserRoles,
-  secret: process.env.PAYLOAD_SECRET,
+  secret: environment.PAYLOAD_SECRET ?? '',
   sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
@@ -153,7 +163,7 @@ export default buildConfig({
       run: ({ req }: { req: PayloadRequest }): boolean => {
         if (hasRole(req.user, ['owner'])) return true
 
-        const secret = process.env.CRON_SECRET
+        const secret = environment.CRON_SECRET
         if (!secret) return false
 
         // If there is no logged in user, then check

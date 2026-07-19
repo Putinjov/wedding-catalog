@@ -4,7 +4,7 @@ import { JourneySplit } from '@/components/boutique/journey-split'
 import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
-  title: `Wedding dresses | ${siteConfig.name}`,
+  title: 'Wedding dresses',
   description: 'Choose whether you would like to buy or rent your wedding dress.',
 }
 

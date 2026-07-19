@@ -4,7 +4,7 @@ import { CataloguePage } from '@/components/boutique/catalogue-page'
 import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
-  title: `Rent wedding dresses | ${siteConfig.name}`,
+  title: 'Rent wedding dresses',
   description: `Browse wedding dresses available to rent from ${siteConfig.name}.`,
 }
 
