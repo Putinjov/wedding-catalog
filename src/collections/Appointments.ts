@@ -11,6 +11,11 @@ import {
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import {
+  acquireAppointmentSlotLock,
+  getAppointmentSlotLockId,
+  releaseAppointmentSlotLock,
+} from '@/lib/booking/appointmentSlotLocks'
+import {
   assertProtectedAppointmentFields,
   getAppointmentPaymentContext,
   protectedAppointmentFieldWrite,
@@ -79,6 +84,24 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
     }))
   ) {
     throw new APIError('This appointment overlaps another active appointment.', 400)
+  }
+
+  const existingLockId = getAppointmentSlotLockId(originalDoc?.slotLock)
+  if (operation === 'update' && effectiveStatus === 'cancelled' && existingLockId) {
+    await releaseAppointmentSlotLock(req, existingLockId)
+    data.slotLock = null
+  } else if (scheduleChanged && effectiveStatus !== 'cancelled' && startAt && endAt) {
+    const nextLockId = await acquireAppointmentSlotLock({
+      endAt,
+      expiresAt: data.holdExpiresAt ?? originalDoc?.holdExpiresAt,
+      req,
+      startAt,
+    })
+
+    if (existingLockId && existingLockId !== nextLockId) {
+      await releaseAppointmentSlotLock(req, existingLockId)
+    }
+    data.slotLock = nextLockId
   }
 
   return data
@@ -162,6 +185,19 @@ export const Appointments: CollectionConfig = {
         position: 'sidebar',
         readOnly: true,
       },
+    },
+    {
+      name: 'slotLock',
+      type: 'relationship',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+      relationTo: 'appointment-slot-locks',
     },
     {
       name: 'purpose',

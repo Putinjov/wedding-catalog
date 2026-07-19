@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 
 import { BookingFlow } from '@/components/booking/booking-flow'
-import { formatFittingFee, siteConfig } from '@/config/site'
+import { formatFittingFee } from '@/config/site'
 import type { BookingPurpose } from '@/config/booking'
 import { getBookingDateBounds } from '@/lib/booking/date'
 import { getDressBySlug } from '@/lib/getDress'
 
 export const metadata: Metadata = {
-  title: `Book a fitting | ${siteConfig.name}`,
+  title: 'Book a fitting',
   description: 'Choose whether your private fitting is for buying or renting a wedding dress.',
 }
 

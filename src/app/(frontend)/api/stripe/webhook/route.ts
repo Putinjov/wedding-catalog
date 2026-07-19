@@ -13,6 +13,7 @@ import {
 } from '@/lib/stripe/fitting'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const conflictNotice =
   'Stripe fitting payment received; appointment slot conflict detected. Admin review required.'
@@ -20,7 +21,7 @@ const conflictNotice =
 class InvalidWebhookEvent extends Error {}
 class StripeEventInProgress extends Error {}
 
-type ClaimedEvent = { id: number | string }
+export type ClaimedEvent = { id: number | string }
 
 type SupportedEvent =
   | 'checkout.session.async_payment_failed'
@@ -28,7 +29,7 @@ type SupportedEvent =
   | 'checkout.session.completed'
   | 'checkout.session.expired'
 
-function isSupportedEvent(type: string): type is SupportedEvent {
+export function isSupportedEvent(type: string): type is SupportedEvent {
   return (
     type === 'checkout.session.async_payment_failed' ||
     type === 'checkout.session.async_payment_succeeded' ||
@@ -94,7 +95,7 @@ async function markAppointmentPaid(
   })
 }
 
-async function claimStripeEvent(event: Stripe.Event): Promise<ClaimedEvent | null> {
+export async function claimStripeEvent(event: Stripe.Event): Promise<ClaimedEvent | null> {
   const payload = await getBookingPayload()
   const existing = await payload.find({
     collection: 'processed-stripe-events',
@@ -156,7 +157,7 @@ async function finishStripeEvent(
   })
 }
 
-async function processSessionEvent(
+export async function processSessionEvent(
   event: Stripe.Event,
   session: Stripe.Checkout.Session,
 ): Promise<'ignored' | 'processed' | 'retry'> {
@@ -275,7 +276,24 @@ export async function POST(request: Request) {
     await finishStripeEvent(claim, 'processed', appointment)
     return NextResponse.json({ received: true })
   } catch (error) {
-    if (claim) await finishStripeEvent(claim, 'failed')
+    if (claim) {
+      try {
+        await finishStripeEvent(claim, 'failed')
+      } catch (claimError) {
+        console.error('[stripe-webhook] Failed to release event claim.', {
+          error: claimError instanceof Error ? claimError.message : 'Unknown claim error',
+          eventId: event.id,
+          eventType: event.type,
+        })
+      }
+    }
+
+    console.error('[stripe-webhook] Event processing failed.', {
+      error: error instanceof Error ? error.message : 'Unknown webhook error',
+      eventId: event.id,
+      eventType: event.type,
+    })
+
     if (error instanceof InvalidWebhookEvent) {
       return NextResponse.json({ message: 'Invalid fitting payment event.' }, { status: 400 })
     }

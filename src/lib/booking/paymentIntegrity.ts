@@ -34,6 +34,7 @@ export const protectedAppointmentFields = [
   'fittingFee',
   'currency',
   'publicReference',
+  'slotLock',
   'needsAdminReview',
   'reviewReason',
 ] as const satisfies readonly (keyof Appointment)[]

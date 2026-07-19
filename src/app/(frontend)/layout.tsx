@@ -9,6 +9,7 @@ import { AnnouncementBar } from '@/components/boutique/announcement-bar'
 import { BoutiqueFooter } from '@/components/boutique/boutique-footer'
 import { BoutiqueHeader } from '@/components/boutique/boutique-header'
 import { siteConfig } from '@/config/site'
+import { getCanonicalOrigin } from '@/config/site-url'
 import { Providers } from '@/providers'
 import { defaultTheme, themeLocalStorageKey } from '@/providers/Theme/shared'
 import { themeIsValid } from '@/providers/Theme/types'
@@ -16,7 +17,6 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { cookies, draftMode } from 'next/headers'
 
 import './globals.css'
-import { getServerSideURL } from '@/utilities/getURL'
 
 const sans = Inter({
   display: 'swap',
@@ -67,15 +67,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
   title: {
     default: siteConfig.name,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.tagline,
-  metadataBase: new URL(getServerSideURL()),
+  metadataBase: new URL(getCanonicalOrigin()),
   openGraph: mergeOpenGraph(),
   twitter: {
     card: 'summary_large_image',
-    creator: '@payloadcms',
   },
 }

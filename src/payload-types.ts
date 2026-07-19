@@ -80,6 +80,7 @@ export interface Config {
     dresses: Dress;
     appointments: Appointment;
     'appointment-audits': AppointmentAudit;
+    'appointment-slot-locks': AppointmentSlotLock;
     'processed-stripe-events': ProcessedStripeEvent;
     redirects: Redirect;
     forms: Form;
@@ -111,6 +112,7 @@ export interface Config {
     dresses: DressesSelect<false> | DressesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     'appointment-audits': AppointmentAuditsSelect<false> | AppointmentAuditsSelect<true>;
+    'appointment-slot-locks': AppointmentSlotLocksSelect<false> | AppointmentSlotLocksSelect<true>;
     'processed-stripe-events': ProcessedStripeEventsSelect<false> | ProcessedStripeEventsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
@@ -316,6 +318,7 @@ export interface Media {
     };
     [k: string]: unknown;
   } | null;
+  prefix?: string | null;
   folder?: (string | null) | FolderInterface;
   updatedAt: string;
   createdAt: string;
@@ -1005,6 +1008,7 @@ export interface Appointment {
    * Private-safe reference used on the pending payment page.
    */
   publicReference: string;
+  slotLock?: (string | null) | AppointmentSlotLock;
   purpose: 'buy' | 'rent';
   dress?: (string | null) | Dress;
   customerName: string;
@@ -1062,6 +1066,19 @@ export interface Appointment {
   needsAdminReview?: boolean | null;
   reviewReason?: string | null;
   internalNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointment-slot-locks".
+ */
+export interface AppointmentSlotLock {
+  id: string;
+  slotKey: string;
+  startAt: string;
+  endAt: string;
+  expiresAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1354,6 +1371,10 @@ export interface PayloadLockedDocument {
         value: string | AppointmentAudit;
       } | null)
     | ({
+        relationTo: 'appointment-slot-locks';
+        value: string | AppointmentSlotLock;
+      } | null)
+    | ({
         relationTo: 'processed-stripe-events';
         value: string | ProcessedStripeEvent;
       } | null)
@@ -1592,6 +1613,7 @@ export interface PostsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
+  prefix?: T;
   folder?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1852,6 +1874,7 @@ export interface DressesSelect<T extends boolean = true> {
  */
 export interface AppointmentsSelect<T extends boolean = true> {
   publicReference?: T;
+  slotLock?: T;
   purpose?: T;
   dress?: T;
   customerName?: T;
@@ -1892,6 +1915,18 @@ export interface AppointmentAuditsSelect<T extends boolean = true> {
   previousStatus?: T;
   newStatus?: T;
   metadata?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointment-slot-locks_select".
+ */
+export interface AppointmentSlotLocksSelect<T extends boolean = true> {
+  slotKey?: T;
+  startAt?: T;
+  endAt?: T;
+  expiresAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

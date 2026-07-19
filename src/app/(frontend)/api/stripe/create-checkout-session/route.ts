@@ -9,6 +9,7 @@ import {
 } from '@/lib/security/rateLimit'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const requestSchema = z.object({
   reference: z.string().regex(/^fit_[a-f0-9]{32}$/),
@@ -66,7 +67,12 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ message: result.message }, { status: 409 })
-  } catch {
+  } catch (error) {
+    console.error('[stripe-checkout] Session creation failed.', {
+      error: error instanceof Error ? error.message : 'Unknown checkout error',
+      referenceHash: parsed.data.reference.slice(-8),
+    })
+
     return NextResponse.json(
       { message: 'Payment is temporarily unavailable. Please try again shortly.' },
       { status: 500 },
