@@ -102,12 +102,6 @@ export function DressPricePanel({ dress, mode }: { dress: Dress; mode: DressMode
                 primaryLabel={`Book a fitting · ${formatFittingFee()}`}
                 selectedDress={selectedDress}
               />
-              <Link
-                className={secondaryClassName}
-                href={enquiryHref(dress)}
-              >
-                Enquire about this dress
-              </Link>
             </>
           ) : (
             <BookingDialog
