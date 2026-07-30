@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { DressDetail } from '@/components/boutique/dress-detail'
-import { siteConfig } from '@/config/site'
+import { formatSiteTitle, siteConfig } from '@/config/site'
 import { getDressBySlug, getRelatedDresses } from '@/lib/getDress'
 import type { DressMode } from '@/lib/catalogue'
 
@@ -58,23 +58,30 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
 
   if (!dress || (!dress.forSale && !dress.availableForRent)) {
     return {
-      title: `Dress not found | ${siteConfig.name}`,
+      title: {
+        absolute: `Dress not found | ${siteConfig.name}`,
+      },
     }
   }
 
-  const title = dress.meta?.title || `${dress.name} | ${siteConfig.name}`
+  const title = formatSiteTitle(dress.meta?.title || dress.name)
   const description =
     dress.meta?.description || dress.shortDescription || `${dress.name} from ${siteConfig.name}.`
   const image =
     typeof dress.meta?.image === 'object' && dress.meta.image?.url ? dress.meta.image.url : null
 
   return {
-    title,
+    alternates: {
+      canonical: `/dresses/${encodeURIComponent(dress.slug)}`,
+    },
     description,
     openGraph: {
       title,
       description,
       ...(image ? { images: [{ alt: dress.name, url: image }] } : {}),
+    },
+    title: {
+      absolute: title,
     },
   }
 }

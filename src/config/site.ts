@@ -18,3 +18,11 @@ export function formatFittingFee() {
     maximumFractionDigits: 0,
   })
 }
+
+export function formatSiteTitle(title: string) {
+  const normalizedTitle = title.trim()
+
+  return normalizedTitle.toLocaleLowerCase().includes(siteConfig.name.toLocaleLowerCase())
+    ? normalizedTitle
+    : `${normalizedTitle} | ${siteConfig.name}`
+}

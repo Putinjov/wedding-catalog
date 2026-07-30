@@ -28,16 +28,18 @@ const getPagesSitemap = unstable_cache(
       },
     })
 
-    const dateFallback = new Date().toISOString()
-
     const defaultSitemap = [
       {
-        loc: `${SITE_URL}/search`,
-        lastmod: dateFallback,
+        loc: `${SITE_URL}/buy`,
+      },
+      {
+        loc: `${SITE_URL}/rent`,
+      },
+      {
+        loc: `${SITE_URL}/book-a-fitting`,
       },
       {
         loc: `${SITE_URL}/posts`,
-        lastmod: dateFallback,
       },
     ]
 
@@ -47,7 +49,7 @@ const getPagesSitemap = unstable_cache(
           .map((page) => {
             return {
               loc: page?.slug === 'home' ? `${SITE_URL}/` : `${SITE_URL}/${page?.slug}`,
-              lastmod: page.updatedAt || dateFallback,
+              lastmod: page.updatedAt,
             }
           })
       : []

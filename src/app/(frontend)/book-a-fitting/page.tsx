@@ -7,8 +7,11 @@ import { getBookingDateBounds } from '@/lib/booking/date'
 import { getDressBySlug } from '@/lib/getDress'
 
 export const metadata: Metadata = {
-  title: 'Book a fitting',
+  alternates: {
+    canonical: '/book-a-fitting',
+  },
   description: 'Choose whether your private fitting is for buying or renting a wedding dress.',
+  title: 'Book a fitting',
 }
 
 type Args = {

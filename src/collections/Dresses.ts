@@ -3,6 +3,10 @@ import { slugField } from 'payload'
 
 import { ownerOrManager } from '@/access/roles'
 import { ownerOrManagerOrPublished } from '@/access/ownerOrPublished'
+import {
+  revalidateDress,
+  revalidateDressDelete,
+} from '@/collections/Dresses/hooks/revalidateDress'
 
 export const Dresses: CollectionConfig = {
   slug: 'dresses',
@@ -36,6 +40,11 @@ export const Dresses: CollectionConfig = {
 
   versions: {
     drafts: true,
+  },
+
+  hooks: {
+    afterChange: [revalidateDress],
+    afterDelete: [revalidateDressDelete],
   },
 
   fields: [

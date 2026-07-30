@@ -3,6 +3,8 @@ export type SitemapEntry = {
   loc: string
 }
 
+export const DRESSES_SITEMAP_CACHE_TAG = 'dresses-sitemap'
+
 function escapeXml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -10,6 +12,10 @@ function escapeXml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;')
+}
+
+export function isValidSitemapSlug(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-z0-9_]+(?:-+[a-z0-9_]+)*$/.test(value)
 }
 
 export function createSitemapResponse(entries: SitemapEntry[]): Response {

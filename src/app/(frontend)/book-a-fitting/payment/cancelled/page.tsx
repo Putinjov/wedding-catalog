@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation'
 import { BookingSummary } from '@/components/booking/booking-summary'
 import { Button } from '@/components/ui/button'
 import { bookingConfig } from '@/config/booking'
-import { formatCurrency, siteConfig } from '@/config/site'
+import { privatePageRobots } from '@/config/indexation'
+import { formatCurrency } from '@/config/site'
 import { formatDateForCustomer, formatTimeForCustomer, getDateKey } from '@/lib/booking/date'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 
@@ -23,12 +24,8 @@ function getQueryValue(value: string | string[] | undefined): string {
 }
 
 export const metadata: Metadata = {
-  robots: {
-    follow: false,
-    index: false,
-    nocache: true,
-  },
-  title: `Payment cancelled | ${siteConfig.name}`,
+  robots: privatePageRobots,
+  title: 'Payment cancelled',
 }
 
 export default async function FittingPaymentCancelledPage({ searchParams }: Args) {
