@@ -4,7 +4,11 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(): Promise<Response> {
   const origin = getCanonicalOrigin()
-  const sitemapLocations = [`${origin}/pages-sitemap.xml`, `${origin}/posts-sitemap.xml`]
+  const sitemapLocations = [
+    `${origin}/pages-sitemap.xml`,
+    `${origin}/posts-sitemap.xml`,
+    `${origin}/dresses-sitemap.xml`,
+  ]
   const entries = sitemapLocations.map((location) => `  <sitemap><loc>${location}</loc></sitemap>`)
   const body = [
     '<?xml version="1.0" encoding="UTF-8"?>',
