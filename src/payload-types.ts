@@ -931,6 +931,19 @@ export interface Dress {
   generateSlug?: boolean | null;
   slug: string;
   /**
+   * Required when changing the URL of a published dress. The previous URL will permanently redirect to the new one.
+   */
+  confirmSlugChange?: boolean | null;
+  /**
+   * Previous dress URL slugs retained for permanent redirects.
+   */
+  slugHistory?:
+    | {
+        slug: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Internal product code, for example WD-0001
    */
   sku: string;
@@ -1133,7 +1146,7 @@ export interface ProcessedStripeEvent {
 export interface Redirect {
   id: string;
   /**
-   * You will need to rebuild the website when changing this field.
+   * Internal source pathname, for example /dresses/old-name.
    */
   from: string;
   to?: {
@@ -1146,9 +1159,20 @@ export interface Redirect {
       | ({
           relationTo: 'posts';
           value: string | Post;
+        } | null)
+      | ({
+          relationTo: 'dresses';
+          value: string | Dress;
         } | null);
+    /**
+     * Safe internal paths only; external URLs are rejected.
+     */
     url?: string | null;
   };
+  /**
+   * Use 308 for permanent URL changes and 307 for temporary redirects.
+   */
+  type: '307' | '308';
   updatedAt: string;
   createdAt: string;
 }
@@ -1827,6 +1851,13 @@ export interface DressesSelect<T extends boolean = true> {
   name?: T;
   generateSlug?: T;
   slug?: T;
+  confirmSlugChange?: T;
+  slugHistory?:
+    | T
+    | {
+        slug?: T;
+        id?: T;
+      };
   sku?: T;
   shortDescription?: T;
   description?: T;
@@ -1955,6 +1986,7 @@ export interface RedirectsSelect<T extends boolean = true> {
         reference?: T;
         url?: T;
       };
+  type?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -13,6 +13,10 @@ import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
 import { ownerOnly, ownerOrManager } from '@/access/roles'
+import {
+  validateRedirectSource,
+  validateRedirectTarget,
+} from '@/utilities/redirects'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | Payload Website Template` : 'Payload Website Template'
@@ -26,7 +30,14 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
 
 export const plugins: Plugin[] = [
   redirectsPlugin({
-    collections: ['pages', 'posts'],
+    collections: ['pages', 'posts', 'dresses'],
+    redirectTypes: ['307', '308'],
+    redirectTypeFieldOverride: {
+      admin: {
+        description: 'Use 308 for permanent URL changes and 307 for temporary redirects.',
+      },
+      defaultValue: '308',
+    },
     overrides: {
       admin: {
         description: 'Owner-only URL redirects and legacy-path handling.',
@@ -46,10 +57,32 @@ export const plugins: Plugin[] = [
             return {
               ...field,
               admin: {
-                description: 'You will need to rebuild the website when changing this field.',
+                description: 'Internal source pathname, for example /dresses/old-name.',
               },
+              validate: validateRedirectSource,
             }
           }
+
+          if ('name' in field && field.name === 'to' && field.type === 'group') {
+            return {
+              ...field,
+              fields: field.fields.map((nestedField) => {
+                if ('name' in nestedField && nestedField.name === 'url') {
+                  return {
+                    ...nestedField,
+                    admin: {
+                      ...nestedField.admin,
+                      description: 'Safe internal paths only; external URLs are rejected.',
+                    },
+                    validate: validateRedirectTarget,
+                  }
+                }
+
+                return nestedField
+              }),
+            }
+          }
+
           return field
         })
       },
