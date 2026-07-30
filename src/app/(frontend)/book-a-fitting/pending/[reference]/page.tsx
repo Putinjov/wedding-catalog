@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 
 import { PaymentButton } from '@/components/booking/payment-button'
 import { bookingConfig } from '@/config/booking'
-import { formatCurrency, siteConfig } from '@/config/site'
+import { privatePageRobots } from '@/config/indexation'
+import { formatCurrency } from '@/config/site'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 
@@ -21,14 +22,8 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const appointment = await getAppointmentByReference(decodeURIComponent(reference))
 
   return {
-    robots: {
-      follow: false,
-      index: false,
-      nocache: true,
-    },
-    title: appointment
-      ? `Appointment pending | ${siteConfig.name}`
-      : `Appointment not found | ${siteConfig.name}`,
+    robots: privatePageRobots,
+    title: appointment ? 'Appointment pending' : 'Appointment not found',
   }
 }
 

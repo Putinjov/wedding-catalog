@@ -4,6 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { redirects } from './redirects'
+import { getPrivateBookingHeaderRules } from './src/config/indexation'
 import { getServerSideOrigin, normalizePublicAssetOrigin } from './src/config/site-url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -33,11 +34,6 @@ if (process.env.NODE_ENV === 'production') {
     value: 'max-age=63072000; includeSubDomains; preload',
   })
 }
-
-const privateBookingHeaders = [
-  { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
-  { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
-]
 
 const nextConfig: NextConfig = {
   // Temporarily required on Windows until Next.js fixes Turbopack Sass resolution.
@@ -75,14 +71,7 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: baselineSecurityHeaders,
       },
-      {
-        source: '/book-a-fitting/pending/:path*',
-        headers: privateBookingHeaders,
-      },
-      {
-        source: '/book-a-fitting/payment/:path*',
-        headers: privateBookingHeaders,
-      },
+      ...getPrivateBookingHeaderRules(),
     ]
   },
   webpack: (webpackConfig) => {

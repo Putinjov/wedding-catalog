@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation'
 import { BookingSummary } from '@/components/booking/booking-summary'
 import { Button } from '@/components/ui/button'
 import { bookingConfig } from '@/config/booking'
-import { formatCurrency, siteConfig } from '@/config/site'
+import { privatePageRobots } from '@/config/indexation'
+import { formatCurrency } from '@/config/site'
 import { formatDateForCustomer, formatTimeForCustomer, getDateKey } from '@/lib/booking/date'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { getFittingCheckoutSession } from '@/lib/stripe/getFittingCheckoutSession'
@@ -32,12 +33,8 @@ function getDressName(appointment: Awaited<ReturnType<typeof getAppointmentByRef
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    robots: {
-      follow: false,
-      index: false,
-      nocache: true,
-    },
-    title: `Fitting payment | ${siteConfig.name}`,
+    robots: privatePageRobots,
+    title: 'Fitting payment',
   }
 }
 

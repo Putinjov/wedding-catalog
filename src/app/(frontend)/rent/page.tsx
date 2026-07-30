@@ -4,8 +4,11 @@ import { CataloguePage } from '@/components/boutique/catalogue-page'
 import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
-  title: 'Rent wedding dresses',
+  alternates: {
+    canonical: '/rent',
+  },
   description: `Browse wedding dresses available to rent from ${siteConfig.name}.`,
+  title: 'Rent wedding dresses',
 }
 
 export default function RentPage() {

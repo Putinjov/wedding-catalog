@@ -11,8 +11,13 @@ import { getFeaturedDresses } from '@/lib/getFeaturedDresses'
 import type { Media } from '@/payload-types'
 
 export const metadata: Metadata = {
-  title: siteConfig.name,
+  alternates: {
+    canonical: '/',
+  },
   description: siteConfig.tagline,
+  title: {
+    absolute: siteConfig.name,
+  },
 }
 
 function getHeroImage(dresses: Awaited<ReturnType<typeof getFeaturedDresses>>): Media | null {

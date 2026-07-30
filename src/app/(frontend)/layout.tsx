@@ -66,9 +66,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 
 export const metadata: Metadata = {
-  alternates: {
-    canonical: '/',
-  },
   title: {
     default: siteConfig.name,
     template: `%s | ${siteConfig.name}`,

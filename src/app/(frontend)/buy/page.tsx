@@ -4,8 +4,11 @@ import { CataloguePage } from '@/components/boutique/catalogue-page'
 import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
-  title: 'Buy wedding dresses',
+  alternates: {
+    canonical: '/buy',
+  },
   description: `Explore wedding dresses available to purchase from ${siteConfig.name}.`,
+  title: 'Buy wedding dresses',
 }
 
 export default function BuyPage() {
