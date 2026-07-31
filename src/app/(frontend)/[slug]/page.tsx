@@ -12,6 +12,9 @@ import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
+import { siteConfig } from '@/config/site'
+
+export const dynamic = 'force-dynamic'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -87,6 +90,18 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const page = await queryPageBySlug({
     slug: decodedSlug,
   })
+
+  if (!page) {
+    return {
+      robots: {
+        follow: false,
+        index: false,
+      },
+      title: {
+        absolute: `Page not found | ${siteConfig.name}`,
+      },
+    }
+  }
 
   return generateMeta({ doc: page })
 }

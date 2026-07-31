@@ -10,6 +10,7 @@ import type { Dress } from '@/payload-types'
 
 const mocks = vi.hoisted(() => ({
   find: vi.fn(),
+  revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
 }))
 
@@ -18,6 +19,7 @@ vi.mock('@payload-config', () => ({
 }))
 
 vi.mock('next/cache', () => ({
+  revalidatePath: mocks.revalidatePath,
   revalidateTag: mocks.revalidateTag,
   unstable_cache: (callback: () => unknown) => callback,
 }))
@@ -140,6 +142,7 @@ describe('dress sitemap', () => {
 
 describe('dress sitemap revalidation', () => {
   beforeEach(() => {
+    mocks.revalidatePath.mockReset()
     mocks.revalidateTag.mockReset()
   })
 
@@ -164,6 +167,7 @@ describe('dress sitemap revalidation', () => {
 
     expect(mocks.revalidateTag).toHaveBeenCalledTimes(3)
     expect(mocks.revalidateTag).toHaveBeenCalledWith('dresses-sitemap', 'max')
+    expect(mocks.revalidatePath).toHaveBeenCalledWith('/dresses/grace')
   })
 
   it('skips draft-only and explicitly disabled revalidation', async () => {
@@ -176,9 +180,10 @@ describe('dress sitemap revalidation', () => {
       doc: dress(),
       previousDoc: dress(),
       req: { context: { disableRevalidate: true } },
-    } as Parameters<typeof revalidateDress>[0])
+    } as unknown as Parameters<typeof revalidateDress>[0])
 
     expect(mocks.revalidateTag).not.toHaveBeenCalled()
+    expect(mocks.revalidatePath).not.toHaveBeenCalled()
   })
 
   it('invalidates when a published dress is deleted', async () => {
