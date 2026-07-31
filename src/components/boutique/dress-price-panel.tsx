@@ -5,7 +5,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { formatCurrency, formatFittingFee } from '@/config/site'
 import { getBookingDateBounds } from '@/lib/booking/date'
 import type { DressMode } from '@/lib/catalogue'
-import { isUnavailableForMode } from '@/lib/dress-utils'
+import { isUnavailableForMode, supportsDressMode } from '@/lib/dress-utils'
 import type { Dress } from '@/payload-types'
 
 function fittingHref(dress: Dress, mode: DressMode): string {
@@ -18,7 +18,8 @@ function enquiryHref(dress: Dress): string {
 
 function PriceDetails({ dress, mode }: { dress: Dress; mode: DressMode }) {
   if (mode === 'buy') {
-    const salePrice = dress.forSale && dress.salePrice != null ? dress.salePrice : null
+    const salePrice =
+      supportsDressMode(dress, 'buy') && dress.salePrice != null ? dress.salePrice : null
     const previousSalePrice = dress.previousSalePrice
     const hasPreviousPrice = salePrice != null && previousSalePrice != null && previousSalePrice > salePrice
 
@@ -75,8 +76,8 @@ export function DressPricePanel({ dress, mode }: { dress: Dress; mode: DressMode
     id: dress.id,
     name: dress.name,
     slug: dress.slug,
-    supportsBuy: Boolean(dress.forSale),
-    supportsRent: Boolean(dress.availableForRent),
+    supportsBuy: supportsDressMode(dress, 'buy'),
+    supportsRent: supportsDressMode(dress, 'rent'),
   }
   const primaryClassName = buttonVariants({ className: 'rounded-sm px-6', size: 'lg' })
   const secondaryClassName =

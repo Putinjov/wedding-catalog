@@ -4,6 +4,7 @@ import { Media } from '@/components/Media'
 import { formatCurrency } from '@/config/site'
 import type { DressDisplayMode } from '@/lib/catalogue'
 import type { DressWithMedia } from '@/lib/dress-media'
+import { supportsDressMode } from '@/lib/dress-utils'
 
 export function DressCard({
   dress,
@@ -14,11 +15,15 @@ export function DressCard({
 }) {
   const image = dress.media.main
   const salePrice =
-    (mode === 'all' || mode === 'buy') && dress.forSale && dress.salePrice != null
+    (mode === 'all' || mode === 'buy') &&
+    supportsDressMode(dress, 'buy') &&
+    dress.salePrice != null
       ? dress.salePrice
       : null
   const rentalPrice =
-    (mode === 'all' || mode === 'rent') && dress.availableForRent && dress.rentalPrice != null
+    (mode === 'all' || mode === 'rent') &&
+    supportsDressMode(dress, 'rent') &&
+    dress.rentalPrice != null
       ? dress.rentalPrice
       : null
   const ctaLabel = mode === 'rent' ? 'View rental' : 'View dress'

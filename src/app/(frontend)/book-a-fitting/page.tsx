@@ -4,6 +4,7 @@ import { BookingFlow } from '@/components/booking/booking-flow'
 import { formatFittingFee } from '@/config/site'
 import type { BookingPurpose } from '@/config/booking'
 import { getBookingDateBounds } from '@/lib/booking/date'
+import { isDressAvailableForMode } from '@/lib/dress-utils'
 import { getDressBySlug } from '@/lib/getDress'
 
 export const metadata: Metadata = {
@@ -51,14 +52,16 @@ export default async function BookAFittingPage({ searchParams }: Args) {
   const dressSlug = getQueryValue(query.dress)
   const requestedPurpose = getQueryValue(query.purpose)
   const dress = dressSlug ? await getDressBySlug(decodeURIComponent(dressSlug)) : null
+  const supportsBuy = dress ? isDressAvailableForMode(dress, 'buy') : false
+  const supportsRent = dress ? isDressAvailableForMode(dress, 'rent') : false
   const selectedDress =
-    dress && (dress.forSale || dress.availableForRent)
+    dress && (supportsBuy || supportsRent)
       ? {
           id: dress.id,
           name: dress.name,
           slug: dress.slug,
-          supportsBuy: Boolean(dress.forSale),
-          supportsRent: Boolean(dress.availableForRent),
+          supportsBuy,
+          supportsRent,
         }
       : null
   const { maxDate, minDate } = getBookingDateBounds()

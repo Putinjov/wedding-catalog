@@ -16,13 +16,8 @@ const publishedDressFilters: QueryWhere[] = [
     },
   },
   {
-    isActive: {
-      equals: true,
-    },
-  },
-  {
-    availabilityStatus: {
-      not_equals: 'hidden',
+    publicVisibility: {
+      equals: 'public',
     },
   },
 ]
@@ -78,8 +73,8 @@ export async function getRelatedDresses({
   })
   const modeFilters: QueryWhere[] =
     mode === 'buy'
-      ? [{ forSale: { equals: true } }]
-      : [{ availableForRent: { equals: true } }]
+      ? [{ saleStatus: { equals: 'available' } }]
+      : [{ rentalStatus: { equals: 'available' } }]
   const sharedFilters = [
     ...publishedDressFilters,
     {

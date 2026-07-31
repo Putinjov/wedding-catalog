@@ -1,6 +1,11 @@
 import RichText from '@/components/RichText'
 import { formatCurrency, formatFittingFee } from '@/config/site'
-import { getConditionLabel, getRelationshipLabel, getRelationshipLabels } from '@/lib/dress-utils'
+import {
+  getConditionLabel,
+  getRelationshipLabel,
+  getRelationshipLabels,
+  supportsDressMode,
+} from '@/lib/dress-utils'
 import type { Dress } from '@/payload-types'
 
 function DetailRow({ label, value }: { label: string; value: string | null }) {
@@ -38,7 +43,6 @@ function DetailsSection({ dress }: { dress: Dress }) {
         <DetailRow label="Colours" value={colorLabels.join(', ') || null} />
         <DetailRow label="Available sizes" value={sizeLabels.join(', ') || null} />
         <DetailRow label="Condition" value={getConditionLabel(dress.condition)} />
-        <DetailRow label="SKU" value={dress.sku} />
       </dl>
     </details>
   )
@@ -67,7 +71,7 @@ function DescriptionSection({ dress }: { dress: Dress }) {
 }
 
 function RentalSection({ dress }: { dress: Dress }) {
-  if (!dress.availableForRent) {
+  if (!supportsDressMode(dress, 'rent')) {
     return null
   }
 

@@ -7,6 +7,7 @@ import { getPayload } from 'payload'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { bookingConfig } from '@/config/booking'
 import { siteConfig } from '@/config/site'
+import { isDressAvailableForMode } from '@/lib/dress-utils'
 import { getDressBySlug } from '@/lib/getDress'
 import {
   getBookingScheduleLabel,
@@ -105,7 +106,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   }
 
   if (dress) {
-    const purposeIsSupported = data.purpose === 'buy' ? dress.forSale : dress.availableForRent
+    const purposeIsSupported = isDressAvailableForMode(dress, data.purpose)
     if (!purposeIsSupported) {
       return invalidBooking('Choose a fitting purpose supported by the selected dress.', {
         purpose: 'This dress is not available for that purpose.',

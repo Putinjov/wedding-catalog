@@ -27,7 +27,10 @@ export function NewAppointmentDialog({
   const [busy, setBusy] = useState(false)
   const bounds = getBookingDateBounds()
   const dressOptions = useMemo(
-    () => dresses.filter((dress) => (purpose === 'buy' ? dress.forSale : dress.availableForRent)),
+    () =>
+      dresses.filter((dress) =>
+        purpose === 'buy' ? dress.availableForBuy : dress.availableForRent,
+      ),
     [dresses, purpose],
   )
 

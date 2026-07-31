@@ -37,8 +37,8 @@ export type AppointmentDetail = CalendarAppointment & {
 }
 
 export type ManualAppointmentDress = CalendarDress & {
-  availableForRent?: boolean | null
-  forSale?: boolean | null
+  availableForBuy: boolean
+  availableForRent: boolean
 }
 
 export const appointmentStatuses: AppointmentStatus[] = [

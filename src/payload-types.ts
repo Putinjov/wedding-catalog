@@ -975,14 +975,19 @@ export interface Dress {
   silhouette?: (string | null) | Silhouette;
   condition: 'new' | 'like-new' | 'excellent' | 'good' | 'needs-cleaning' | 'needs-repair';
   featured?: boolean | null;
-  availabilityStatus: 'available' | 'reserved' | 'rented' | 'sold' | 'cleaning' | 'repair' | 'hidden';
-  forSale?: boolean | null;
+  /**
+   * Controls Buy catalogue visibility and purchase enquiries independently of rental status.
+   */
+  saleStatus: 'not-for-sale' | 'available' | 'reserved' | 'sold';
   salePrice?: number | null;
   /**
    * Optional original price shown before discount
    */
   previousSalePrice?: number | null;
-  availableForRent?: boolean | null;
+  /**
+   * Controls Rent catalogue visibility and rental enquiries independently of sale status. Cleaning and repair block rental availability.
+   */
+  rentalStatus: 'not-for-rent' | 'available' | 'reserved' | 'rented' | 'cleaning' | 'repair';
   rentalPrice?: number | null;
   securityDeposit?: number | null;
   rentalPeriodDays?: number | null;
@@ -998,7 +1003,10 @@ export interface Dress {
    * YouTube, Vimeo or hosted video URL
    */
   videoUrl?: string | null;
-  isActive?: boolean | null;
+  /**
+   * Public dresses may remain viewable when sold or temporarily unavailable. Hidden and archived dresses are excluded from every public surface.
+   */
+  publicVisibility: 'public' | 'hidden' | 'archived';
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -1870,11 +1878,10 @@ export interface DressesSelect<T extends boolean = true> {
   silhouette?: T;
   condition?: T;
   featured?: T;
-  availabilityStatus?: T;
-  forSale?: T;
+  saleStatus?: T;
   salePrice?: T;
   previousSalePrice?: T;
-  availableForRent?: T;
+  rentalStatus?: T;
   rentalPrice?: T;
   securityDeposit?: T;
   rentalPeriodDays?: T;
@@ -1887,7 +1894,7 @@ export interface DressesSelect<T extends boolean = true> {
         id?: T;
       };
   videoUrl?: T;
-  isActive?: T;
+  publicVisibility?: T;
   meta?:
     | T
     | {

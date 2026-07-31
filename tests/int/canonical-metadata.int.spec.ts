@@ -83,18 +83,18 @@ const privateRobotsMetadata = {
 function dress(overrides: Partial<DressWithMedia> = {}): DressWithMedia {
   return {
     id: 'dress-1',
-    availabilityStatus: 'available',
-    availableForRent: true,
     category: 'category-1',
     condition: 'new',
     createdAt: '2026-01-01T00:00:00.000Z',
-    forSale: true,
     mainImage: 'media-1',
     media: {
       gallery: [],
       main: null,
     },
     name: 'Example',
+    publicVisibility: 'public',
+    rentalStatus: 'available',
+    saleStatus: 'available',
     sku: 'EXAMPLE-1',
     slug: 'example',
     updatedAt: '2026-01-01T00:00:00.000Z',

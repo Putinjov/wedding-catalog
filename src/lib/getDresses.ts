@@ -14,16 +14,16 @@ export async function getDresses(mode: CatalogueMode): Promise<DressWithMedia[]>
     mode === 'buy'
       ? [
           {
-          forSale: {
-            equals: true,
-          },
+            saleStatus: {
+              equals: 'available',
+            },
           },
         ]
       : [
           {
-          availableForRent: {
-            equals: true,
-          },
+            rentalStatus: {
+              equals: 'available',
+            },
           },
         ]
 
@@ -40,13 +40,8 @@ export async function getDresses(mode: CatalogueMode): Promise<DressWithMedia[]>
           },
         },
         {
-          isActive: {
-            equals: true,
-          },
-        },
-        {
-          availabilityStatus: {
-            not_equals: 'hidden',
+          publicVisibility: {
+            equals: 'public',
           },
         },
         ...modeFilters,

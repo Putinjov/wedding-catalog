@@ -36,13 +36,14 @@ vi.mock('@/components/boutique/dress-detail', () => ({
 function dress(overrides: Partial<Dress> = {}): Dress {
   return {
     id: 'dress-1',
-    availabilityStatus: 'available',
     category: 'category-1',
     condition: 'new',
     createdAt: '2026-01-01T00:00:00.000Z',
-    forSale: true,
     mainImage: 'media-1',
     name: 'Grace',
+    publicVisibility: 'public',
+    rentalStatus: 'not-for-rent',
+    saleStatus: 'available',
     sku: 'GRACE-1',
     slug: 'grace',
     updatedAt: '2026-07-30T12:00:00.000Z',
@@ -297,7 +298,7 @@ describe('dress redirect resolution', () => {
   it('keeps a sold dress public without making its redirect target external', async () => {
     vi.mocked(getCachedRedirects).mockReturnValue(async () => [redirect()])
     vi.mocked(getDressBySlug).mockResolvedValue(
-      dressWithMedia({ availabilityStatus: 'sold', forSale: true }),
+      dressWithMedia({ saleStatus: 'sold' }),
     )
 
     await expect(getPublicDressRedirect('old-grace', 'buy')).resolves.toBe(

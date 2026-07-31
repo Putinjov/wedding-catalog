@@ -3,6 +3,7 @@ import type { AdminViewServerProps } from 'payload'
 
 import { hasRole } from '@/access/roles'
 import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
+import { isDressAvailableForMode } from '@/lib/dress-utils'
 
 import { AppointmentsCalendar } from './appointments-calendar'
 
@@ -49,8 +50,8 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
       id: dress.id,
       name: dress.name,
       slug: dress.slug,
-      availableForRent: dress.availableForRent,
-      forSale: dress.forSale,
+      availableForBuy: isDressAvailableForMode(dress, 'buy'),
+      availableForRent: isDressAvailableForMode(dress, 'rent'),
     }))
   } catch {
     initialError = 'Dress options could not be loaded. Existing appointments are still available.'

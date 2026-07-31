@@ -8,16 +8,9 @@ import {
   getAvailabilityLabel,
   getConditionLabel,
   getRelationshipLabel,
+  getSupportedDressModes,
 } from '@/lib/dress-utils'
 import type { DressWithMedia } from '@/lib/dress-media'
-import type { Dress } from '@/payload-types'
-
-function getAvailableModes(dress: Dress): DressMode[] {
-  return [
-    ...(dress.forSale ? (['buy'] as const) : []),
-    ...(dress.availableForRent ? (['rent'] as const) : []),
-  ]
-}
 
 export function DressDetail({
   dress,
@@ -29,8 +22,8 @@ export function DressDetail({
   relatedDresses: DressWithMedia[]
 }) {
   const designer = getRelationshipLabel(dress.designer)
-  const modes = getAvailableModes(dress)
-  const availabilityLabel = getAvailabilityLabel(dress.availabilityStatus)
+  const modes = getSupportedDressModes(dress)
+  const availabilityLabel = getAvailabilityLabel(dress, initialMode)
 
   return (
     <>

@@ -44,26 +44,53 @@ export function getPopulatedMedia(value: unknown): MediaType | null {
   return value as unknown as MediaType
 }
 
-const availabilityLabels: Record<Dress['availabilityStatus'], string> = {
-  available: 'Available',
-  reserved: 'Reserved',
-  rented: 'Currently rented',
+const saleStatusLabels: Record<Dress['saleStatus'], string> = {
+  'not-for-sale': 'Not offered for sale',
+  available: 'Available to buy',
+  reserved: 'Reserved for sale',
   sold: 'Sold',
-  cleaning: 'Preparing',
-  repair: 'Temporarily unavailable',
-  hidden: 'Hidden',
 }
 
-export function getAvailabilityLabel(status: Dress['availabilityStatus']): string {
-  return availabilityLabels[status]
+const rentalStatusLabels: Record<Dress['rentalStatus'], string> = {
+  'not-for-rent': 'Not offered for rental',
+  available: 'Available to rent',
+  reserved: 'Reserved for rental',
+  rented: 'Currently rented',
+  cleaning: 'Preparing for rental',
+  repair: 'Temporarily unavailable for rental',
+}
+
+export function getAvailabilityLabel(dress: Dress, mode: DressMode): string {
+  return mode === 'buy'
+    ? saleStatusLabels[dress.saleStatus]
+    : rentalStatusLabels[dress.rentalStatus]
+}
+
+export function isDressAvailableForMode(dress: Dress, mode: DressMode): boolean {
+  return mode === 'buy'
+    ? dress.saleStatus === 'available'
+    : dress.rentalStatus === 'available'
+}
+
+export function isDressPublic(dress: Dress): boolean {
+  return dress.publicVisibility === 'public'
+}
+
+export function supportsDressMode(dress: Dress, mode: DressMode): boolean {
+  return mode === 'buy'
+    ? dress.saleStatus !== 'not-for-sale'
+    : dress.rentalStatus !== 'not-for-rent'
+}
+
+export function getSupportedDressModes(dress: Dress): DressMode[] {
+  return [
+    ...(supportsDressMode(dress, 'buy') ? (['buy'] as const) : []),
+    ...(supportsDressMode(dress, 'rent') ? (['rent'] as const) : []),
+  ]
 }
 
 export function isUnavailableForMode(dress: Dress, mode: DressMode): boolean {
-  if (mode === 'buy') {
-    return dress.availabilityStatus === 'sold'
-  }
-
-  return ['rented', 'reserved', 'cleaning', 'repair'].includes(dress.availabilityStatus)
+  return !isDressAvailableForMode(dress, mode)
 }
 
 export function getConditionLabel(condition: Dress['condition']): string {
