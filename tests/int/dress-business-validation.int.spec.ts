@@ -272,6 +272,27 @@ describe('dress business validation migration', () => {
     expect(dressVersions.collection.updateOne).not.toHaveBeenCalled()
   })
 
+  it('aborts before writing when existing published money rules are invalid', async () => {
+    const { dresses, dressVersions, upArgs } = migrationArgs({
+      documents: [
+        {
+          _id: 'dress-1',
+          condition: 'new',
+          publicVisibility: 'public',
+          rentalPrice: null,
+          rentalStatus: 'available',
+          salePrice: null,
+          saleStatus: 'available',
+          _status: 'published',
+        },
+      ],
+    })
+
+    await expect(up(upArgs)).rejects.toThrow('business rules for rentalPrice')
+    expect(dresses.collection.updateOne).not.toHaveBeenCalled()
+    expect(dressVersions.collection.updateOne).not.toHaveBeenCalled()
+  })
+
   it('rolls back only when the old implicit state remains equivalent', async () => {
     const safe = migrationArgs({
       documents: [

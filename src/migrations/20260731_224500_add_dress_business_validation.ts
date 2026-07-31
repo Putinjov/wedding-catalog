@@ -1,6 +1,9 @@
 import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-mongodb'
 import type { ObjectId } from 'mongodb'
 
+import { getDressBusinessValidationErrors } from '@/collections/Dresses/hooks/validateDressBusinessRules'
+import type { Dress } from '@/payload-types'
+
 const saleStatuses = ['not-for-sale', 'available', 'reserved', 'sold'] as const
 const migrationMarker = '_task06SalePriceOnRequestMigrated'
 
@@ -47,6 +50,26 @@ export function deriveSalePriceOnRequest(record: MigrationRecord): boolean {
   return record.saleStatus !== 'not-for-sale' && salePrice == null
 }
 
+function validatePublishedBusinessState(
+  record: MigrationRecord,
+  salePriceOnRequest: boolean,
+): void {
+  if (record._status !== 'published') return
+
+  const errors = getDressBusinessValidationErrors({
+    ...record,
+    gallery: [],
+    salePriceOnRequest,
+  } as Partial<Dress>)
+  if (errors.length === 0) return
+
+  throw new Error(
+    `Task 06 migration aborted: published dress violates business rules for ${errors
+      .map((error) => error.path)
+      .join(', ')}.`,
+  )
+}
+
 async function loadTargets({
   model,
   session,
@@ -86,6 +109,10 @@ function prepareUp(
           'Task 06 migration aborted: migration marker has no valid price-on-request state.',
         )
       }
+      validatePublishedBusinessState(
+        target.target,
+        target.target.salePriceOnRequest,
+      )
       return []
     }
 
@@ -95,10 +122,13 @@ function prepareUp(
       )
     }
 
+    const salePriceOnRequest = deriveSalePriceOnRequest(target.target)
+    validatePublishedBusinessState(target.target, salePriceOnRequest)
+
     return [
       {
         ...target,
-        salePriceOnRequest: deriveSalePriceOnRequest(target.target),
+        salePriceOnRequest,
       },
     ]
   })
