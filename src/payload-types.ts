@@ -981,6 +981,10 @@ export interface Dress {
   saleStatus: 'not-for-sale' | 'available' | 'reserved' | 'sold';
   salePrice?: number | null;
   /**
+   * Use only when the dress is offered for sale without a published price.
+   */
+  salePriceOnRequest?: boolean | null;
+  /**
    * Optional original price shown before discount
    */
   previousSalePrice?: number | null;
@@ -1880,6 +1884,7 @@ export interface DressesSelect<T extends boolean = true> {
   featured?: T;
   saleStatus?: T;
   salePrice?: T;
+  salePriceOnRequest?: T;
   previousSalePrice?: T;
   rentalStatus?: T;
   rentalPrice?: T;

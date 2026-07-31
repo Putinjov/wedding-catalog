@@ -9,6 +9,10 @@ import {
 } from '@/collections/Dresses/hooks/revalidateDress'
 import { protectAndTrackDressSlug } from '@/collections/Dresses/hooks/slugHistory'
 import { syncDressSlugRedirect } from '@/collections/Dresses/hooks/syncDressSlugRedirect'
+import {
+  rejectDuplicateDressSlug,
+  validateDressBusinessRules,
+} from '@/collections/Dresses/hooks/validateDressBusinessRules'
 
 export const Dresses: CollectionConfig = {
   slug: 'dresses',
@@ -47,6 +51,7 @@ export const Dresses: CollectionConfig = {
   },
 
   hooks: {
+    beforeValidate: [validateDressBusinessRules],
     beforeChange: [protectAndTrackDressSlug],
     afterChange: [syncDressSlugRedirect, revalidateDress],
     afterDelete: [revalidateDressDelete],
@@ -68,6 +73,23 @@ export const Dresses: CollectionConfig = {
 
             slugField({
               fieldToUse: 'name',
+              overrides: (field) => {
+                const generateSlug = field.fields.find(
+                  (nestedField) =>
+                    'name' in nestedField && nestedField.name === 'generateSlug',
+                )
+                if (generateSlug?.type === 'checkbox') {
+                  generateSlug.hooks = {
+                    ...generateSlug.hooks,
+                    beforeChange: [
+                      ...(generateSlug.hooks?.beforeChange ?? []),
+                      rejectDuplicateDressSlug,
+                    ],
+                  }
+                }
+
+                return field
+              },
             }),
 
             {
@@ -257,6 +279,19 @@ export const Dresses: CollectionConfig = {
                 condition: (_, siblingData) =>
                   siblingData?.saleStatus !== 'not-for-sale',
                 step: 0.01,
+              },
+            },
+
+            {
+              name: 'salePriceOnRequest',
+              type: 'checkbox',
+              defaultValue: false,
+              label: 'Price on request',
+              admin: {
+                condition: (_, siblingData) =>
+                  siblingData?.saleStatus !== 'not-for-sale',
+                description:
+                  'Use only when the dress is offered for sale without a published price.',
               },
             },
 
