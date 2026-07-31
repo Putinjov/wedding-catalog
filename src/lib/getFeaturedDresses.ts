@@ -22,19 +22,28 @@ export async function getFeaturedDresses(): Promise<DressWithMedia[]> {
           },
         },
         {
-          isActive: {
-            equals: true,
-          },
-        },
-        {
           featured: {
             equals: true,
           },
         },
         {
-          availabilityStatus: {
-            not_equals: 'hidden',
+          publicVisibility: {
+            equals: 'public',
           },
+        },
+        {
+          or: [
+            {
+              saleStatus: {
+                not_equals: 'not-for-sale',
+              },
+            },
+            {
+              rentalStatus: {
+                not_equals: 'not-for-rent',
+              },
+            },
+          ],
         },
       ],
     },

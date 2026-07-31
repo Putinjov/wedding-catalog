@@ -23,7 +23,9 @@ export const Dresses: CollectionConfig = {
     defaultColumns: [
       'name',
       'sku',
-      'availabilityStatus',
+      'publicVisibility',
+      'saleStatus',
+      'rentalStatus',
       'salePrice',
       'rentalPrice',
       'updatedAt',
@@ -218,46 +220,33 @@ export const Dresses: CollectionConfig = {
           label: 'Sale & Rental',
           fields: [
             {
-              name: 'availabilityStatus',
+              name: 'saleStatus',
               type: 'select',
               required: true,
               defaultValue: 'available',
+              label: 'Sale status',
+              admin: {
+                description:
+                  'Controls Buy catalogue visibility and purchase enquiries independently of rental status.',
+              },
               options: [
                 {
-                  label: 'Available',
+                  label: 'Not offered for sale',
+                  value: 'not-for-sale',
+                },
+                {
+                  label: 'Available for sale',
                   value: 'available',
                 },
                 {
-                  label: 'Reserved',
+                  label: 'Reserved for sale',
                   value: 'reserved',
-                },
-                {
-                  label: 'Rented',
-                  value: 'rented',
                 },
                 {
                   label: 'Sold',
                   value: 'sold',
                 },
-                {
-                  label: 'Cleaning',
-                  value: 'cleaning',
-                },
-                {
-                  label: 'Repair',
-                  value: 'repair',
-                },
-                {
-                  label: 'Hidden',
-                  value: 'hidden',
-                },
               ],
-            },
-
-            {
-              name: 'forSale',
-              type: 'checkbox',
-              defaultValue: true,
             },
 
             {
@@ -265,7 +254,8 @@ export const Dresses: CollectionConfig = {
               type: 'number',
               min: 0,
               admin: {
-                condition: (_, siblingData) => siblingData?.forSale === true,
+                condition: (_, siblingData) =>
+                  siblingData?.saleStatus !== 'not-for-sale',
                 step: 0.01,
               },
             },
@@ -275,16 +265,49 @@ export const Dresses: CollectionConfig = {
               type: 'number',
               min: 0,
               admin: {
-                condition: (_, siblingData) => siblingData?.forSale === true,
+                condition: (_, siblingData) =>
+                  siblingData?.saleStatus !== 'not-for-sale',
                 description: 'Optional original price shown before discount',
                 step: 0.01,
               },
             },
 
             {
-              name: 'availableForRent',
-              type: 'checkbox',
-              defaultValue: false,
+              name: 'rentalStatus',
+              type: 'select',
+              required: true,
+              defaultValue: 'not-for-rent',
+              label: 'Rental status',
+              admin: {
+                description:
+                  'Controls Rent catalogue visibility and rental enquiries independently of sale status. Cleaning and repair block rental availability.',
+              },
+              options: [
+                {
+                  label: 'Not offered for rental',
+                  value: 'not-for-rent',
+                },
+                {
+                  label: 'Available for rental',
+                  value: 'available',
+                },
+                {
+                  label: 'Reserved for rental',
+                  value: 'reserved',
+                },
+                {
+                  label: 'Currently rented',
+                  value: 'rented',
+                },
+                {
+                  label: 'Cleaning',
+                  value: 'cleaning',
+                },
+                {
+                  label: 'Repair',
+                  value: 'repair',
+                },
+              ],
             },
 
             {
@@ -293,7 +316,7 @@ export const Dresses: CollectionConfig = {
               min: 0,
               admin: {
                 condition: (_, siblingData) =>
-                  siblingData?.availableForRent === true,
+                  siblingData?.rentalStatus !== 'not-for-rent',
                 step: 0.01,
               },
             },
@@ -304,7 +327,7 @@ export const Dresses: CollectionConfig = {
               min: 0,
               admin: {
                 condition: (_, siblingData) =>
-                  siblingData?.availableForRent === true,
+                  siblingData?.rentalStatus !== 'not-for-rent',
                 step: 0.01,
               },
             },
@@ -316,7 +339,7 @@ export const Dresses: CollectionConfig = {
               defaultValue: 4,
               admin: {
                 condition: (_, siblingData) =>
-                  siblingData?.availableForRent === true,
+                  siblingData?.rentalStatus !== 'not-for-rent',
               },
             },
           ],
@@ -365,12 +388,30 @@ export const Dresses: CollectionConfig = {
     },
 
     {
-      name: 'isActive',
-      type: 'checkbox',
-      defaultValue: true,
+      name: 'publicVisibility',
+      type: 'select',
+      required: true,
+      defaultValue: 'public',
+      label: 'Public visibility',
       admin: {
+        description:
+          'Public dresses may remain viewable when sold or temporarily unavailable. Hidden and archived dresses are excluded from every public surface.',
         position: 'sidebar',
       },
+      options: [
+        {
+          label: 'Public',
+          value: 'public',
+        },
+        {
+          label: 'Hidden',
+          value: 'hidden',
+        },
+        {
+          label: 'Archived',
+          value: 'archived',
+        },
+      ],
     },
   ],
 }

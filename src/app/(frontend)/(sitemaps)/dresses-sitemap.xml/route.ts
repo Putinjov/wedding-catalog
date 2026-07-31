@@ -33,25 +33,20 @@ export async function queryDressesSitemap(): Promise<SitemapEntry[]> {
           },
         },
         {
-          isActive: {
-            equals: true,
-          },
-        },
-        {
-          availabilityStatus: {
-            not_equals: 'hidden',
+          publicVisibility: {
+            equals: 'public',
           },
         },
         {
           or: [
             {
-              forSale: {
-                equals: true,
+              saleStatus: {
+                not_equals: 'not-for-sale',
               },
             },
             {
-              availableForRent: {
-                equals: true,
+              rentalStatus: {
+                not_equals: 'not-for-rent',
               },
             },
           ],

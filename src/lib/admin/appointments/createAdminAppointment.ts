@@ -13,6 +13,7 @@ import {
 } from '@/lib/booking/date'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
+import { isDressAvailableForMode } from '@/lib/dress-utils'
 
 import { AdminAppointmentError } from './getCalendarAppointments'
 import { validateAppointmentStatusTransition } from './updateAppointmentStatus'
@@ -66,7 +67,7 @@ export async function createAdminAppointment({
       overrideAccess: false,
       user,
     })
-    const supportsPurpose = input.purpose === 'buy' ? dress.forSale : dress.availableForRent
+    const supportsPurpose = isDressAvailableForMode(dress, input.purpose)
     if (!supportsPurpose) {
       throw new AdminAppointmentError('The selected dress is not available for that purpose.')
     }

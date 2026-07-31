@@ -6,6 +6,7 @@ import { formatSiteTitle, siteConfig } from '@/config/site'
 import { getDressBySlug, getRelatedDresses } from '@/lib/getDress'
 import { getPublicDressRedirect } from '@/lib/dress-redirects'
 import { getRequestedDressMode, type DressMode } from '@/lib/catalogue'
+import { getSupportedDressModes, supportsDressMode } from '@/lib/dress-utils'
 
 type Args = {
   params: Promise<{
@@ -20,15 +21,15 @@ function getInitialMode(
   dress: NonNullable<Awaited<ReturnType<typeof getDressBySlug>>>,
   requestedMode: DressMode | null,
 ): DressMode {
-  if (requestedMode === 'buy' && dress.forSale) {
+  if (requestedMode === 'buy' && supportsDressMode(dress, 'buy')) {
     return 'buy'
   }
 
-  if (requestedMode === 'rent' && dress.availableForRent) {
+  if (requestedMode === 'rent' && supportsDressMode(dress, 'rent')) {
     return 'rent'
   }
 
-  return dress.forSale ? 'buy' : 'rent'
+  return getSupportedDressModes(dress)[0] ?? 'buy'
 }
 
 export default async function DressPage({ params: paramsPromise, searchParams }: Args) {
@@ -50,7 +51,7 @@ export default async function DressPage({ params: paramsPromise, searchParams }:
     notFound()
   }
 
-  if (!dress.forSale && !dress.availableForRent) {
+  if (getSupportedDressModes(dress).length === 0) {
     notFound()
   }
 
@@ -67,7 +68,7 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const { slug = '' } = await paramsPromise
   const dress = await getDressBySlug(decodeURIComponent(slug))
 
-  if (!dress || (!dress.forSale && !dress.availableForRent)) {
+  if (!dress || getSupportedDressModes(dress).length === 0) {
     return {
       title: {
         absolute: `Dress not found | ${siteConfig.name}`,

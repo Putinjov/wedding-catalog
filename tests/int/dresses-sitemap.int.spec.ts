@@ -33,12 +33,14 @@ vi.mock('payload', () => ({
 function dress(overrides: Partial<Dress> = {}): Dress {
   return {
     id: 'dress-1',
-    availabilityStatus: 'available',
     category: 'category-1',
     condition: 'new',
     createdAt: '2026-01-01T00:00:00.000Z',
     mainImage: 'media-1',
     name: 'Grace',
+    publicVisibility: 'public',
+    rentalStatus: 'not-for-rent',
+    saleStatus: 'available',
     sku: 'GRACE-1',
     slug: 'grace',
     updatedAt: '2026-07-30T12:00:00.000Z',
@@ -78,12 +80,11 @@ describe('dress sitemap', () => {
       where: {
         and: [
           { _status: { equals: 'published' } },
-          { isActive: { equals: true } },
-          { availabilityStatus: { not_equals: 'hidden' } },
+          { publicVisibility: { equals: 'public' } },
           {
             or: [
-              { forSale: { equals: true } },
-              { availableForRent: { equals: true } },
+              { saleStatus: { not_equals: 'not-for-sale' } },
+              { rentalStatus: { not_equals: 'not-for-rent' } },
             ],
           },
         ],
@@ -155,8 +156,8 @@ describe('dress sitemap revalidation', () => {
       req: { context: {} },
     } as Parameters<typeof revalidateDress>[0])
     await revalidateDress({
-      doc: dress({ isActive: false }),
-      previousDoc: dress({ isActive: true }),
+      doc: dress({ publicVisibility: 'archived' }),
+      previousDoc: dress({ publicVisibility: 'public' }),
       req: { context: {} },
     } as Parameters<typeof revalidateDress>[0])
     await revalidateDress({
