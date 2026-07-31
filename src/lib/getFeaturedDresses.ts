@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 
 import type { Dress } from '@/payload-types'
 import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
+import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
 export async function getFeaturedDresses(): Promise<DressWithMedia[]> {
   const payload = await getPayload({
@@ -13,40 +14,9 @@ export async function getFeaturedDresses(): Promise<DressWithMedia[]> {
     collection: 'dresses',
     depth: 2,
     limit: 4,
+    overrideAccess: false,
     sort: '-createdAt',
-    where: {
-      and: [
-        {
-          _status: {
-            equals: 'published',
-          },
-        },
-        {
-          featured: {
-            equals: true,
-          },
-        },
-        {
-          publicVisibility: {
-            equals: 'public',
-          },
-        },
-        {
-          or: [
-            {
-              saleStatus: {
-                not_equals: 'not-for-sale',
-              },
-            },
-            {
-              rentalStatus: {
-                not_equals: 'not-for-rent',
-              },
-            },
-          ],
-        },
-      ],
-    },
+    where: buildPublicDressWhere({}, [{ featured: { equals: true } }]),
   })
 
   return attachDressMedia(result.docs as Dress[], payload)

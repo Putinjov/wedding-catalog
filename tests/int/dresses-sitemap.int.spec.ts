@@ -7,6 +7,7 @@ import {
   revalidateDressDelete,
 } from '@/collections/Dresses/hooks/revalidateDress'
 import type { Dress } from '@/payload-types'
+import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
 const mocks = vi.hoisted(() => ({
   find: vi.fn(),
@@ -77,18 +78,7 @@ describe('dress sitemap', () => {
         updatedAt: true,
       },
       sort: 'slug',
-      where: {
-        and: [
-          { _status: { equals: 'published' } },
-          { publicVisibility: { equals: 'public' } },
-          {
-            or: [
-              { saleStatus: { not_equals: 'not-for-sale' } },
-              { rentalStatus: { not_equals: 'not-for-rent' } },
-            ],
-          },
-        ],
-      },
+      where: buildPublicDressWhere(),
     })
   })
 
