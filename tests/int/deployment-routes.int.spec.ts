@@ -35,6 +35,7 @@ describe('deployment routes', () => {
 
     expect(body.match(/pages-sitemap\.xml/g)).toHaveLength(1)
     expect(body.match(/posts-sitemap\.xml/g)).toHaveLength(1)
+    expect(body.match(/dresses-sitemap\.xml/g)).toHaveLength(1)
   })
 
   it('disables the destructive demo seed endpoint in production', async () => {

@@ -1,9 +1,9 @@
 import type React from 'react'
-import type { Page, Post } from '@/payload-types'
+import type { Dress, Page, Post } from '@/payload-types'
 
-import { getCachedDocument } from '@/utilities/getDocument'
 import { getCachedRedirects } from '@/utilities/getRedirects'
-import { notFound, redirect } from 'next/navigation'
+import { normalizeInternalRedirectPath } from '@/utilities/redirects'
+import { notFound, permanentRedirect, redirect } from 'next/navigation'
 
 interface Props {
   disableNotFound?: boolean
@@ -17,29 +17,29 @@ export const PayloadRedirects: React.FC<Props> = async ({ disableNotFound, url }
   const redirectItem = redirects.find((redirect) => redirect.from === url)
 
   if (redirectItem) {
-    if (redirectItem.to?.url) {
-      redirect(redirectItem.to.url)
+    const customURL =
+      redirectItem.to?.type === 'custom'
+        ? normalizeInternalRedirectPath(redirectItem.to.url)
+        : null
+    const reference =
+      redirectItem.to?.type === 'reference' ? redirectItem.to.reference : null
+    const document =
+      reference && typeof reference.value === 'object'
+        ? (reference.value as Dress | Page | Post)
+        : null
+    const referenceURL =
+      reference && document?.slug
+        ? `${reference.relationTo === 'pages' ? '' : `/${reference.relationTo}`}/${encodeURIComponent(document.slug)}`
+        : null
+    const redirectURL = customURL ?? referenceURL
+
+    if (redirectURL) {
+      if (redirectItem.type === '308') {
+        permanentRedirect(redirectURL)
+      }
+
+      redirect(redirectURL)
     }
-
-    let redirectUrl: string
-
-    if (typeof redirectItem.to?.reference?.value === 'string') {
-      const collection = redirectItem.to?.reference?.relationTo
-      const id = redirectItem.to?.reference?.value
-
-      const document = (await getCachedDocument(collection, id)()) as Page | Post
-      redirectUrl = `${redirectItem.to?.reference?.relationTo !== 'pages' ? `/${redirectItem.to?.reference?.relationTo}` : ''}/${
-        document?.slug
-      }`
-    } else {
-      redirectUrl = `${redirectItem.to?.reference?.relationTo !== 'pages' ? `/${redirectItem.to?.reference?.relationTo}` : ''}/${
-        typeof redirectItem.to?.reference?.value === 'object'
-          ? redirectItem.to?.reference?.value?.slug
-          : ''
-      }`
-    }
-
-    if (redirectUrl) redirect(redirectUrl)
   }
 
   if (disableNotFound) return null

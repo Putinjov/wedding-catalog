@@ -2,6 +2,13 @@ export type DressMode = 'buy' | 'rent'
 export type CatalogueMode = DressMode
 export type DressDisplayMode = 'all' | CatalogueMode
 
+export function getRequestedDressMode(
+  mode: string | string[] | undefined,
+): DressMode | null {
+  const requestedMode = Array.isArray(mode) ? mode[0] : mode
+  return requestedMode === 'buy' || requestedMode === 'rent' ? requestedMode : null
+}
+
 export const catalogueContent: Record<
   CatalogueMode,
   {

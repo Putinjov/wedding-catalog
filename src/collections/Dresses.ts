@@ -3,6 +3,12 @@ import { slugField } from 'payload'
 
 import { ownerOrManager } from '@/access/roles'
 import { ownerOrManagerOrPublished } from '@/access/ownerOrPublished'
+import {
+  revalidateDress,
+  revalidateDressDelete,
+} from '@/collections/Dresses/hooks/revalidateDress'
+import { protectAndTrackDressSlug } from '@/collections/Dresses/hooks/slugHistory'
+import { syncDressSlugRedirect } from '@/collections/Dresses/hooks/syncDressSlugRedirect'
 
 export const Dresses: CollectionConfig = {
   slug: 'dresses',
@@ -38,6 +44,12 @@ export const Dresses: CollectionConfig = {
     drafts: true,
   },
 
+  hooks: {
+    beforeChange: [protectAndTrackDressSlug],
+    afterChange: [syncDressSlugRedirect, revalidateDress],
+    afterDelete: [revalidateDressDelete],
+  },
+
   fields: [
     {
       type: 'tabs',
@@ -55,6 +67,34 @@ export const Dresses: CollectionConfig = {
             slugField({
               fieldToUse: 'name',
             }),
+
+            {
+              name: 'confirmSlugChange',
+              type: 'checkbox',
+              virtual: true,
+              admin: {
+                condition: (data) => data?._status === 'published',
+                description:
+                  'Required when changing the URL of a published dress. The previous URL will permanently redirect to the new one.',
+              },
+              label: 'Confirm published URL change',
+            },
+
+            {
+              name: 'slugHistory',
+              type: 'array',
+              admin: {
+                description: 'Previous dress URL slugs retained for permanent redirects.',
+                readOnly: true,
+              },
+              fields: [
+                {
+                  name: 'slug',
+                  type: 'text',
+                  required: true,
+                },
+              ],
+            },
 
             {
               name: 'sku',

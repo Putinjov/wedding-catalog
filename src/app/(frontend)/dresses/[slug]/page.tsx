@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 
 import { DressDetail } from '@/components/boutique/dress-detail'
 import { formatSiteTitle, siteConfig } from '@/config/site'
 import { getDressBySlug, getRelatedDresses } from '@/lib/getDress'
-import type { DressMode } from '@/lib/catalogue'
+import { getPublicDressRedirect } from '@/lib/dress-redirects'
+import { getRequestedDressMode, type DressMode } from '@/lib/catalogue'
 
 type Args = {
   params: Promise<{
@@ -13,11 +14,6 @@ type Args = {
   searchParams: Promise<{
     mode?: string | string[]
   }>
-}
-
-function getRequestedMode(mode: string | string[] | undefined): DressMode | null {
-  const requestedMode = Array.isArray(mode) ? mode[0] : mode
-  return requestedMode === 'buy' || requestedMode === 'rent' ? requestedMode : null
 }
 
 function getInitialMode(
@@ -37,14 +33,29 @@ function getInitialMode(
 
 export default async function DressPage({ params: paramsPromise, searchParams }: Args) {
   const { slug = '' } = await paramsPromise
-  const dress = await getDressBySlug(decodeURIComponent(slug))
+  const decodedSlug = decodeURIComponent(slug)
+  const dress = await getDressBySlug(decodedSlug)
 
-  if (!dress || (!dress.forSale && !dress.availableForRent)) {
+  if (!dress) {
+    const { mode } = await searchParams
+    const redirectURL = await getPublicDressRedirect(
+      decodedSlug,
+      getRequestedDressMode(mode),
+    )
+
+    if (redirectURL) {
+      permanentRedirect(redirectURL)
+    }
+
+    notFound()
+  }
+
+  if (!dress.forSale && !dress.availableForRent) {
     notFound()
   }
 
   const { mode } = await searchParams
-  const initialMode = getInitialMode(dress, getRequestedMode(mode))
+  const initialMode = getInitialMode(dress, getRequestedDressMode(mode))
   const relatedDresses = await getRelatedDresses({ dress, mode: initialMode })
 
   return (
