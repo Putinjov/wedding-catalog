@@ -31,9 +31,9 @@ function PriceDetails({ dress, mode }: { dress: Dress; mode: DressMode }) {
             <p className="font-serif text-4xl text-brand-deep-lavender">{formatCurrency(salePrice)}</p>
             {hasPreviousPrice ? <del className="text-sm text-muted-foreground">{formatCurrency(previousSalePrice)}</del> : null}
           </div>
-        ) : (
+        ) : dress.salePriceOnRequest ? (
           <p className="mt-2 font-serif text-3xl text-brand-deep-lavender">Price on request</p>
-        )}
+        ) : null}
       </div>
     )
   }
