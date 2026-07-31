@@ -1,26 +1,11 @@
 import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 import { cache } from 'react'
 
 import type { DressMode } from '@/lib/catalogue'
 import type { Dress } from '@/payload-types'
 import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
-
-type QueryWhereField = Record<string, string | number | boolean | string[] | null>
-type QueryWhere = Record<string, QueryWhere[] | QueryWhereField>
-
-const publishedDressFilters: QueryWhere[] = [
-  {
-    _status: {
-      equals: 'published',
-    },
-  },
-  {
-    publicVisibility: {
-      equals: 'public',
-    },
-  },
-]
+import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
 function getRelationshipId(value: unknown): string | null {
   if (typeof value === 'string') {
@@ -35,31 +20,41 @@ function getRelationshipId(value: unknown): string | null {
   return null
 }
 
-export const getDressBySlug = cache(async (slug: string): Promise<DressWithMedia | null> => {
+const queryPublicDressBySlug = cache(async (
+  slug: string,
+  mode: DressMode | null,
+): Promise<DressWithMedia | null> => {
   const payload = await getPayload({
     config: configPromise,
   })
+
+  const filterOptions = mode
+    ? ({ availability: 'available', mode } as const)
+    : ({} as const)
 
   const result = await payload.find({
     collection: 'dresses',
     depth: 2,
     limit: 1,
-    where: {
-      and: [
-        ...publishedDressFilters,
-        {
-          slug: {
-            equals: slug,
-          },
-        },
-      ],
-    },
+    overrideAccess: false,
+    where: buildPublicDressWhere(filterOptions, [{ slug: { equals: slug } }]),
   })
 
   const dress = result.docs[0]
   if (!dress) return null
   return (await attachDressMedia([dress], payload))[0] ?? null
 })
+
+export function getDressBySlug(slug: string): Promise<DressWithMedia | null> {
+  return queryPublicDressBySlug(slug, null)
+}
+
+export function getAvailableDressBySlug(
+  slug: string,
+  mode: DressMode,
+): Promise<DressWithMedia | null> {
+  return queryPublicDressBySlug(slug, mode)
+}
 
 export async function getRelatedDresses({
   dress,
@@ -71,22 +66,16 @@ export async function getRelatedDresses({
   const payload = await getPayload({
     config: configPromise,
   })
-  const modeFilters: QueryWhere[] =
-    mode === 'buy'
-      ? [{ saleStatus: { equals: 'available' } }]
-      : [{ rentalStatus: { equals: 'available' } }]
-  const sharedFilters = [
-    ...publishedDressFilters,
+  const sharedConditions: Where[] = [
     {
       id: {
         not_equals: dress.id,
       },
     },
-    ...modeFilters,
   ]
   const categoryId = getRelationshipId(dress.category)
   const silhouetteId = getRelationshipId(dress.silhouette)
-  const preferredFilters: QueryWhere[] = [
+  const preferredFilters: Where[] = [
     ...(categoryId ? [{ category: { equals: categoryId } }] : []),
     ...(silhouetteId ? [{ silhouette: { equals: silhouetteId } }] : []),
   ]
@@ -96,10 +85,12 @@ export async function getRelatedDresses({
       collection: 'dresses',
       depth: 2,
       limit: 4,
+      overrideAccess: false,
       sort: '-createdAt',
-      where: {
-        and: sharedFilters,
-      },
+      where: buildPublicDressWhere(
+        { availability: 'available', mode },
+        sharedConditions,
+      ),
     })
 
     return attachDressMedia(result.docs, payload)
@@ -109,15 +100,12 @@ export async function getRelatedDresses({
     collection: 'dresses',
     depth: 2,
     limit: 4,
+    overrideAccess: false,
     sort: '-createdAt',
-    where: {
-      and: [
-        ...sharedFilters,
-        {
-          or: preferredFilters,
-        },
-      ],
-    },
+    where: buildPublicDressWhere(
+      { availability: 'available', mode },
+      [...sharedConditions, { or: preferredFilters }],
+    ),
   })
 
   if (preferredResult.docs.length >= 4) {
@@ -129,13 +117,15 @@ export async function getRelatedDresses({
     collection: 'dresses',
     depth: 2,
     limit: 4 - preferredResult.docs.length,
+    overrideAccess: false,
     sort: '-createdAt',
-    where: {
-      and: [
-        ...sharedFilters,
+    where: buildPublicDressWhere(
+      { availability: 'available', mode },
+      [
+        ...sharedConditions,
         ...(preferredIds.length > 0 ? [{ id: { not_in: preferredIds } }] : []),
       ],
-    },
+    ),
   })
 
   return attachDressMedia([...preferredResult.docs, ...fallbackResult.docs], payload)

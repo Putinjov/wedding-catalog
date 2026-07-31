@@ -9,6 +9,7 @@ import {
   supportsDressMode,
 } from '@/lib/dress-utils'
 import { getDresses } from '@/lib/getDresses'
+import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 import { Dresses } from '@/collections/Dresses'
 import {
   down,
@@ -159,11 +160,7 @@ describe('public catalogue queries', () => {
     expect(mocks.find).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          and: [
-            { _status: { equals: 'published' } },
-            { publicVisibility: { equals: 'public' } },
-            { saleStatus: { equals: 'available' } },
-          ],
+          ...buildPublicDressWhere({ availability: 'available', mode: 'buy' }),
         },
       }),
     )
@@ -175,11 +172,7 @@ describe('public catalogue queries', () => {
     expect(mocks.find).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          and: [
-            { _status: { equals: 'published' } },
-            { publicVisibility: { equals: 'public' } },
-            { rentalStatus: { equals: 'available' } },
-          ],
+          ...buildPublicDressWhere({ availability: 'available', mode: 'rent' }),
         },
       }),
     )

@@ -7,8 +7,7 @@ import { getPayload } from 'payload'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { bookingConfig } from '@/config/booking'
 import { siteConfig } from '@/config/site'
-import { isDressAvailableForMode } from '@/lib/dress-utils'
-import { getDressBySlug } from '@/lib/getDress'
+import { getAvailableDressBySlug } from '@/lib/getDress'
 import {
   getBookingScheduleLabel,
   getBookingWindowLabel,
@@ -98,20 +97,12 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   }
 
   const dressSlug = data.dressSlug || undefined
-  const dress = dressSlug ? await getDressBySlug(dressSlug) : null
+  const dress = dressSlug ? await getAvailableDressBySlug(dressSlug, data.purpose) : null
   if (dressSlug && !dress) {
-    return invalidBooking('That dress is no longer available to select.', {
-      dressSlug: 'Please remove this dress and choose another option.',
+    return invalidBooking('That dress is no longer available for the selected purpose.', {
+      dressSlug: 'Please remove this dress or choose another option.',
+      purpose: 'This dress is not available for that purpose.',
     })
-  }
-
-  if (dress) {
-    const purposeIsSupported = isDressAvailableForMode(dress, data.purpose)
-    if (!purposeIsSupported) {
-      return invalidBooking('Choose a fitting purpose supported by the selected dress.', {
-        purpose: 'This dress is not available for that purpose.',
-      })
-    }
   }
 
   const payload = await getPayload({ config: configPromise })

@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 
 import { getCanonicalOrigin } from '@/config/site-url'
+import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 import {
   createSitemapResponse,
   DRESSES_SITEMAP_CACHE_TAG,
@@ -25,34 +26,7 @@ export async function queryDressesSitemap(): Promise<SitemapEntry[]> {
       updatedAt: true,
     },
     sort: 'slug',
-    where: {
-      and: [
-        {
-          _status: {
-            equals: 'published',
-          },
-        },
-        {
-          publicVisibility: {
-            equals: 'public',
-          },
-        },
-        {
-          or: [
-            {
-              saleStatus: {
-                not_equals: 'not-for-sale',
-              },
-            },
-            {
-              rentalStatus: {
-                not_equals: 'not-for-rent',
-              },
-            },
-          ],
-        },
-      ],
-    },
+    where: buildPublicDressWhere(),
   })
 
   return result.docs
