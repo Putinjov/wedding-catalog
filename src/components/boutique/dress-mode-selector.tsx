@@ -5,9 +5,11 @@ import type { DressMode } from '@/lib/catalogue'
 export function DressModeSelector({
   initialMode,
   modes,
+  returnTo,
 }: {
   initialMode: DressMode
   modes: DressMode[]
+  returnTo: string
 }) {
   if (modes.length < 2) {
     return null
@@ -21,13 +23,16 @@ export function DressModeSelector({
       <div className="mt-3 inline-flex border border-brand-warm-border bg-background p-1">
         {modes.map((mode) => {
           const selected = initialMode === mode
+          const params = new URLSearchParams({ mode })
+          const returnMode = returnTo.startsWith(`/${mode}`) ? returnTo : `/${mode}#catalogue-results`
+          params.set('returnTo', returnMode)
 
           return (
             <Link
               aria-current={selected ? 'page' : undefined}
               className="min-w-24 px-4 py-2 text-center text-sm font-medium capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 data-[selected=true]:bg-brand-deep-lavender data-[selected=true]:text-white"
               data-selected={selected}
-              href={`?mode=${mode}`}
+              href={`?${params.toString()}`}
               key={mode}
               scroll={false}
             >

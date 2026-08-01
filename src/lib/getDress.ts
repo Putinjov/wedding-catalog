@@ -1,5 +1,5 @@
 import configPromise from '@payload-config'
-import { getPayload, type Where } from 'payload'
+import { getPayload } from 'payload'
 import { cache } from 'react'
 
 import type { DressMode } from '@/lib/catalogue'
@@ -7,7 +7,7 @@ import type { Dress } from '@/payload-types'
 import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
 import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
-function getRelationshipId(value: unknown): string | null {
+export function getRelationshipId(value: unknown): string | null {
   if (typeof value === 'string') {
     return value
   }
@@ -56,77 +56,120 @@ export function getAvailableDressBySlug(
   return queryPublicDressBySlug(slug, mode)
 }
 
-export async function getRelatedDresses({
+type RelatedDressReference = {
+  categoryId: string | null
+  designerId: string | null
+  id: string
+  mode: DressMode
+  price: number | null
+  silhouetteId: string | null
+}
+
+function getModePrice(dress: Dress, mode: DressMode): number | null {
+  const price = mode === 'buy' ? dress.salePrice : dress.rentalPrice
+  return typeof price === 'number' ? price : null
+}
+
+export function rankRelatedDresses(
+  candidates: readonly Dress[],
+  reference: RelatedDressReference,
+  limit = 4,
+): Dress[] {
+  function tier(candidate: Dress): number {
+    const sameCategory =
+      reference.categoryId !== null && getRelationshipId(candidate.category) === reference.categoryId
+    const sameSilhouette =
+      reference.silhouetteId !== null &&
+      getRelationshipId(candidate.silhouette) === reference.silhouetteId
+    const sameDesigner =
+      reference.designerId !== null && getRelationshipId(candidate.designer) === reference.designerId
+
+    if (sameCategory && sameSilhouette) return 0
+    if (sameSilhouette) return 1
+    if (sameDesigner) return 2
+    if (reference.price !== null && getModePrice(candidate, reference.mode) !== null) return 3
+    if (candidate.featured) return 4
+    return 5
+  }
+
+  function priceDifference(candidate: Dress): number {
+    const candidatePrice = getModePrice(candidate, reference.mode)
+    return reference.price === null || candidatePrice === null
+      ? Number.POSITIVE_INFINITY
+      : Math.abs(candidatePrice - reference.price)
+  }
+
+  return [...candidates]
+    .filter((candidate) => candidate.id !== reference.id)
+    .sort((first, second) => {
+      const tierDifference = tier(first) - tier(second)
+      if (tierDifference !== 0) return tierDifference
+
+      const firstPriceDifference = priceDifference(first)
+      const secondPriceDifference = priceDifference(second)
+      if (firstPriceDifference !== secondPriceDifference) {
+        return firstPriceDifference - secondPriceDifference
+      }
+
+      const featuredDifference = Number(Boolean(second.featured)) - Number(Boolean(first.featured))
+      if (featuredDifference !== 0) return featuredDifference
+
+      const orderDifference = (first.displayOrder ?? 0) - (second.displayOrder ?? 0)
+      if (orderDifference !== 0) return orderDifference
+
+      const createdDifference = second.createdAt.localeCompare(first.createdAt)
+      return createdDifference !== 0 ? createdDifference : first.id.localeCompare(second.id)
+    })
+    .slice(0, limit)
+}
+
+const queryRelatedDresses = cache(async (
+  dressId: string,
+  mode: DressMode,
+  categoryId: string | null,
+  silhouetteId: string | null,
+  designerId: string | null,
+  price: number | null,
+): Promise<DressWithMedia[]> => {
+  const payload = await getPayload({
+    config: configPromise,
+  })
+  const result = await payload.find({
+    collection: 'dresses',
+    depth: 2,
+    limit: 100,
+    overrideAccess: false,
+    sort: ['-featured', 'displayOrder', '-createdAt', 'id'],
+    where: buildPublicDressWhere(
+      { availability: 'available', mode },
+      [{ id: { not_equals: dressId } }],
+    ),
+  })
+  const ranked = rankRelatedDresses(result.docs, {
+    categoryId,
+    designerId,
+    id: dressId,
+    mode,
+    price,
+    silhouetteId,
+  })
+
+  return attachDressMedia(ranked, payload)
+})
+
+export function getRelatedDresses({
   dress,
   mode,
 }: {
   dress: Dress
   mode: DressMode
 }): Promise<DressWithMedia[]> {
-  const payload = await getPayload({
-    config: configPromise,
-  })
-  const sharedConditions: Where[] = [
-    {
-      id: {
-        not_equals: dress.id,
-      },
-    },
-  ]
-  const categoryId = getRelationshipId(dress.category)
-  const silhouetteId = getRelationshipId(dress.silhouette)
-  const preferredFilters: Where[] = [
-    ...(categoryId ? [{ category: { equals: categoryId } }] : []),
-    ...(silhouetteId ? [{ silhouette: { equals: silhouetteId } }] : []),
-  ]
-
-  if (preferredFilters.length === 0) {
-    const result = await payload.find({
-      collection: 'dresses',
-      depth: 2,
-      limit: 4,
-      overrideAccess: false,
-      sort: '-createdAt',
-      where: buildPublicDressWhere(
-        { availability: 'available', mode },
-        sharedConditions,
-      ),
-    })
-
-    return attachDressMedia(result.docs, payload)
-  }
-
-  const preferredResult = await payload.find({
-    collection: 'dresses',
-    depth: 2,
-    limit: 4,
-    overrideAccess: false,
-    sort: '-createdAt',
-    where: buildPublicDressWhere(
-      { availability: 'available', mode },
-      [...sharedConditions, { or: preferredFilters }],
-    ),
-  })
-
-  if (preferredResult.docs.length >= 4) {
-    return attachDressMedia(preferredResult.docs, payload)
-  }
-
-  const preferredIds = preferredResult.docs.map((relatedDress) => relatedDress.id)
-  const fallbackResult = await payload.find({
-    collection: 'dresses',
-    depth: 2,
-    limit: 4 - preferredResult.docs.length,
-    overrideAccess: false,
-    sort: '-createdAt',
-    where: buildPublicDressWhere(
-      { availability: 'available', mode },
-      [
-        ...sharedConditions,
-        ...(preferredIds.length > 0 ? [{ id: { not_in: preferredIds } }] : []),
-      ],
-    ),
-  })
-
-  return attachDressMedia([...preferredResult.docs, ...fallbackResult.docs], payload)
+  return queryRelatedDresses(
+    dress.id,
+    mode,
+    getRelationshipId(dress.category),
+    getRelationshipId(dress.silhouette),
+    getRelationshipId(dress.designer),
+    getModePrice(dress, mode),
+  )
 }

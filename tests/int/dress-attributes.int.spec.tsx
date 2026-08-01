@@ -197,9 +197,12 @@ describe('dress attribute storefront presentation', () => {
     expect(screen.getByText('Alteration possibilities: Test alteration possibility')).toBeTruthy()
     expect(screen.getByText('Alteration limitations: Test alteration limitation')).toBeTruthy()
     expect(
-      screen.getByText('Every dress is individually fitted and professionally altered for you.'),
+      screen.getByText(
+        'Every dress is individually fitted and professionally altered for you by our boutique team.',
+      ),
     ).toBeTruthy()
     expect(screen.queryByText('INTERNAL-TEST-SKU')).toBeNull()
+    expect(screen.queryByText('Available sizes')).toBeNull()
   })
 
   it('keeps optional attribute rows hidden while retaining the fitting promise', () => {
@@ -208,7 +211,9 @@ describe('dress attribute storefront presentation', () => {
     expect(screen.queryByText('Neckline')).toBeNull()
     expect(screen.queryByText('Included accessories')).toBeNull()
     expect(
-      screen.getByText('Every dress is individually fitted and professionally altered for you.'),
+      screen.getByText(
+        'Every dress is individually fitted and professionally altered for you by our boutique team.',
+      ),
     ).toBeTruthy()
   })
 })

@@ -71,6 +71,12 @@ export async function CataloguePage({
 
   const content = catalogueContent[mode]
   const currentPage = dresses.page ?? requestedPage.page
+  const returnTo = getCataloguePageURL({
+    includeResultsAnchor: true,
+    mode,
+    page: currentPage,
+    searchParams: normalizedSearchParams,
+  })
 
   return (
     <main className="bg-background">
@@ -112,7 +118,7 @@ export async function CataloguePage({
           >
             {dresses.docs.length > 0 ? (
               <>
-                <DressGrid dresses={dresses.docs} mode={mode} />
+                <DressGrid dresses={dresses.docs} mode={mode} returnTo={returnTo} />
                 <CataloguePagination
                   mode={mode}
                   page={currentPage}

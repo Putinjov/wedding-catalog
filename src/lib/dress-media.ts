@@ -20,10 +20,46 @@ export type DressWithMedia = Dress & {
   media: DressMediaViewModel
 }
 
+export type DressVideo = {
+  kind: 'hosted' | 'vimeo' | 'youtube'
+  url: string
+}
+
 type MediaLookup = ReadonlyMap<string, Media>
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+export function normalizeDressVideoUrl(value: string | null | undefined): DressVideo | null {
+  const trimmed = value?.trim()
+  if (!trimmed || trimmed.length > 2048) return null
+
+  let url: URL
+  try {
+    url = new URL(trimmed)
+  } catch {
+    return null
+  }
+
+  if (url.protocol !== 'https:' || url.username || url.password) return null
+
+  const hostname = url.hostname.toLowerCase().replace(/^www\./, '')
+  if (hostname === 'youtu.be' || hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+    const candidate = hostname === 'youtu.be' ? url.pathname.slice(1) : url.searchParams.get('v')
+    if (!candidate || !/^[A-Za-z0-9_-]{11}$/.test(candidate)) return null
+    return { kind: 'youtube', url: `https://www.youtube-nocookie.com/embed/${candidate}` }
+  }
+
+  if (hostname === 'vimeo.com' || hostname === 'player.vimeo.com') {
+    const pathParts = url.pathname.split('/').filter(Boolean)
+    const candidate = [...pathParts].reverse().find((part) => /^\d+$/.test(part))
+    if (!candidate) return null
+    return { kind: 'vimeo', url: `https://player.vimeo.com/video/${candidate}` }
+  }
+
+  if (!/\.(?:mp4|webm|ogg|mov)$/i.test(url.pathname)) return null
+  return { kind: 'hosted', url: url.toString() }
 }
 
 function getMediaID(value: unknown): string | null {
@@ -131,6 +167,7 @@ export async function attachDressMedia(
       collection: 'media',
       depth: 0,
       limit: unresolvedIDs.length,
+      overrideAccess: false,
       pagination: false,
       where: { id: { in: unresolvedIDs } },
     })

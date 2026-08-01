@@ -22,6 +22,8 @@ export function BookingDialog({
   initialPurpose,
   maxDate,
   minDate,
+  mobileClassName,
+  mobileLabel,
   primaryClassName,
   primaryLabel,
   secondaryClassName,
@@ -33,6 +35,8 @@ export function BookingDialog({
   initialPurpose: BookingPurpose
   maxDate: string
   minDate: string
+  mobileClassName?: string
+  mobileLabel?: string
   primaryClassName?: string
   primaryLabel: string
   secondaryClassName?: string
@@ -74,7 +78,8 @@ export function BookingDialog({
     <Dialog onOpenChange={updateOpen} open={open}>
       {trigger(primaryLabel, primaryClassName)}
       {secondaryLabel ? trigger(secondaryLabel, secondaryClassName) : null}
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))] sm:max-h-[calc(100dvh-3rem)] sm:p-7 sm:pt-14">
+      {mobileLabel ? trigger(mobileLabel, mobileClassName) : null}
+      <DialogContent closeLabel="Close booking dialog" className="max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))] sm:max-h-[calc(100dvh-3rem)] sm:p-7 sm:pt-14">
         <DialogTitle className="sr-only">Book a private fitting</DialogTitle>
         <DialogDescription className="sr-only">
           Choose a fitting purpose, date and time, enter your details, then continue to payment.

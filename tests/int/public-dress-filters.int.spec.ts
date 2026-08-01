@@ -252,21 +252,13 @@ describe('public dress query consumers', () => {
       { availability: 'available', mode: 'rent' },
       [{ id: { not_equals: 'dress-1' } }],
     )
-    const expectedPreferred = buildPublicDressWhere(
-      { availability: 'available', mode: 'rent' },
-      [
-        { id: { not_equals: 'dress-1' } },
-        { or: [{ category: { equals: 'category-1' } }] },
-      ],
-    )
-
-    expect(mocks.find).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ where: expectedPreferred }),
-    )
-    expect(mocks.find).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ where: expectedBase }),
+    expect(mocks.find).toHaveBeenCalledTimes(1)
+    expect(mocks.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        limit: 100,
+        overrideAccess: false,
+        where: expectedBase,
+      }),
     )
   })
 

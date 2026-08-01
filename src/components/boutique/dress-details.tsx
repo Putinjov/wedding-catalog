@@ -1,10 +1,9 @@
 import RichText from '@/components/RichText'
-import { formatCurrency, formatFittingFee } from '@/config/site'
+import { formatFittingFee } from '@/config/site'
 import {
   getConditionLabel,
   getRelationshipLabel,
   getRelationshipLabels,
-  supportsDressMode,
 } from '@/lib/dress-utils'
 import type { Dress } from '@/payload-types'
 
@@ -22,7 +21,6 @@ function DetailRow({ label, value }: { label: string; value: string | null }) {
 }
 
 function DetailsSection({ dress }: { dress: Dress }) {
-  const sizeLabels = getRelationshipLabels(dress.sizes)
   const colorLabels = getRelationshipLabels(dress.colors)
   const fabricLabels = getRelationshipLabels(dress.fabrics)
   const embellishmentLabels = getRelationshipLabels(dress.embellishments)
@@ -50,7 +48,6 @@ function DetailsSection({ dress }: { dress: Dress }) {
         <DetailRow label="Embellishments" value={embellishmentLabels.join(', ') || null} />
         <DetailRow label="Fabrics" value={fabricLabels.join(', ') || null} />
         <DetailRow label="Colours" value={colorLabels.join(', ') || null} />
-        <DetailRow label="Available sizes" value={sizeLabels.join(', ') || null} />
         <DetailRow label="Condition" value={getConditionLabel(dress.condition)} />
         <DetailRow label="Included accessories" value={includedAccessories.join(', ') || null} />
         <DetailRow label="Optional accessories" value={optionalAccessories.join(', ') || null} />
@@ -81,38 +78,6 @@ function DescriptionSection({ dress }: { dress: Dress }) {
   )
 }
 
-function RentalSection({ dress }: { dress: Dress }) {
-  if (!supportsDressMode(dress, 'rent')) {
-    return null
-  }
-
-  return (
-    <details className="group border-t border-brand-warm-border py-5">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-serif text-2xl text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-4 [&::-webkit-details-marker]:hidden">
-        Rental information
-        <span aria-hidden="true" className="text-xl text-brand-antique-gold transition-transform group-open:rotate-45">
-          +
-        </span>
-      </summary>
-      <div className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
-        <p>
-          {dress.rentalPrice != null
-            ? `From ${formatCurrency(dress.rentalPrice)} rental.`
-            : 'Rental pricing will be confirmed during booking.'}
-        </p>
-        <p>
-          Security deposit:{' '}
-          {dress.securityDeposit != null
-            ? formatCurrency(dress.securityDeposit)
-            : 'confirmed during booking'}
-          . Standard rental period: {dress.rentalPeriodDays ?? 4} days.
-        </p>
-        <p>Final availability is confirmed during booking.</p>
-      </div>
-    </details>
-  )
-}
-
 function CareSection({ dress }: { dress: Dress }) {
   return (
     <details className="group border-y border-brand-warm-border py-5">
@@ -123,7 +88,7 @@ function CareSection({ dress }: { dress: Dress }) {
         </span>
       </summary>
       <div className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
-        <p>Every dress is individually fitted and professionally altered for you.</p>
+        <p>Every dress is individually fitted and professionally altered for you by our boutique team.</p>
         {dress.fitNotes ? <p>{dress.fitNotes}</p> : null}
         {dress.alterationPossibilities ? (
           <p>Alteration possibilities: {dress.alterationPossibilities}</p>
@@ -131,7 +96,7 @@ function CareSection({ dress }: { dress: Dress }) {
         {dress.alterationLimitations ? (
           <p>Alteration limitations: {dress.alterationLimitations}</p>
         ) : null}
-        <p>Fittings are private and shaped around your ceremony plans.</p>
+        <p>Your private fitting gives us time to understand your ceremony plans and agree the appropriate alterations for this individual dress.</p>
         <p>The fitting booking fee is {formatFittingFee()}.</p>
         <p>
           Final alterations, cleaning, collection and return policies will be confirmed separately.
@@ -146,7 +111,6 @@ export function DressDetails({ dress }: { dress: Dress }) {
     <section aria-label="Dress information" className="mt-12">
       <DetailsSection dress={dress} />
       <DescriptionSection dress={dress} />
-      <RentalSection dress={dress} />
       <CareSection dress={dress} />
     </section>
   )

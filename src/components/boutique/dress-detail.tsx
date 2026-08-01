@@ -1,4 +1,5 @@
 import { DressDetails } from '@/components/boutique/dress-details'
+import { DressBreadcrumbs } from '@/components/boutique/dress-breadcrumbs'
 import { DressGallery } from '@/components/boutique/dress-gallery'
 import { DressModeSelector } from '@/components/boutique/dress-mode-selector'
 import { DressPricePanel } from '@/components/boutique/dress-price-panel'
@@ -16,10 +17,12 @@ export function DressDetail({
   dress,
   initialMode,
   relatedDresses,
+  returnTo,
 }: {
   dress: DressWithMedia
   initialMode: DressMode
   relatedDresses: DressWithMedia[]
+  returnTo: string
 }) {
   const designer = getRelationshipLabel(dress.designer)
   const modes = getSupportedDressModes(dress)
@@ -27,9 +30,15 @@ export function DressDetail({
 
   return (
     <>
-      <main className="container py-10 md:py-16">
+      <DressBreadcrumbs
+        dressName={dress.name}
+        dressSlug={dress.slug}
+        mode={initialMode}
+        returnTo={returnTo}
+      />
+      <main className="container pb-28 pt-8 md:py-12 lg:pb-16">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)] lg:gap-16">
-          <DressGallery images={dress.media.gallery} name={dress.name} />
+          <DressGallery images={dress.media.gallery} name={dress.name} videoUrl={dress.videoUrl} />
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div className="border-b border-brand-warm-border pb-8">
@@ -63,14 +72,14 @@ export function DressDetail({
               </div>
             </div>
 
-            <DressModeSelector initialMode={initialMode} modes={modes} />
+            <DressModeSelector initialMode={initialMode} modes={modes} returnTo={returnTo} />
             <DressPricePanel dress={dress} mode={initialMode} />
             <DressDetails dress={dress} />
           </aside>
         </div>
       </main>
 
-      <RelatedDresses dresses={relatedDresses} mode={initialMode} />
+      <RelatedDresses dresses={relatedDresses} mode={initialMode} returnTo={returnTo} />
     </>
   )
 }

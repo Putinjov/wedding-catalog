@@ -7,6 +7,7 @@ import { getDressBySlug, getRelatedDresses } from '@/lib/getDress'
 import { getPublicDressRedirect } from '@/lib/dress-redirects'
 import { getRequestedDressMode, type DressMode } from '@/lib/catalogue'
 import { getSupportedDressModes, supportsDressMode } from '@/lib/dress-utils'
+import { normalizeCatalogueReturnTo } from '@/utilities/dress-routing'
 
 type Args = {
   params: Promise<{
@@ -14,6 +15,7 @@ type Args = {
   }>
   searchParams: Promise<{
     mode?: string | string[]
+    returnTo?: string | string[]
   }>
 }
 
@@ -38,10 +40,12 @@ export default async function DressPage({ params: paramsPromise, searchParams }:
   const dress = await getDressBySlug(decodedSlug)
 
   if (!dress) {
-    const { mode } = await searchParams
+    const { mode, returnTo } = await searchParams
+    const requestedMode = getRequestedDressMode(mode)
     const redirectURL = await getPublicDressRedirect(
       decodedSlug,
-      getRequestedDressMode(mode),
+      requestedMode,
+      normalizeCatalogueReturnTo(returnTo, requestedMode ?? undefined),
     )
 
     if (redirectURL) {
@@ -55,12 +59,19 @@ export default async function DressPage({ params: paramsPromise, searchParams }:
     notFound()
   }
 
-  const { mode } = await searchParams
+  const { mode, returnTo } = await searchParams
   const initialMode = getInitialMode(dress, getRequestedDressMode(mode))
+  const normalizedReturnTo =
+    normalizeCatalogueReturnTo(returnTo, initialMode) ?? `/${initialMode}#catalogue-results`
   const relatedDresses = await getRelatedDresses({ dress, mode: initialMode })
 
   return (
-    <DressDetail dress={dress} initialMode={initialMode} relatedDresses={relatedDresses} />
+    <DressDetail
+      dress={dress}
+      initialMode={initialMode}
+      relatedDresses={relatedDresses}
+      returnTo={normalizedReturnTo}
+    />
   )
 }
 
