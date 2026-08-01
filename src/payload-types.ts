@@ -77,6 +77,12 @@ export interface Config {
     fabrics: Fabric;
     silhouettes: Silhouette;
     designers: Designer;
+    necklines: Neckline;
+    sleeves: Sleeve;
+    trains: Train;
+    backs: Back;
+    waistlines: Waistline;
+    embellishments: Embellishment;
     dresses: Dress;
     appointments: Appointment;
     'appointment-audits': AppointmentAudit;
@@ -109,6 +115,12 @@ export interface Config {
     fabrics: FabricsSelect<false> | FabricsSelect<true>;
     silhouettes: SilhouettesSelect<false> | SilhouettesSelect<true>;
     designers: DesignersSelect<false> | DesignersSelect<true>;
+    necklines: NecklinesSelect<false> | NecklinesSelect<true>;
+    sleeves: SleevesSelect<false> | SleevesSelect<true>;
+    trains: TrainsSelect<false> | TrainsSelect<true>;
+    backs: BacksSelect<false> | BacksSelect<true>;
+    waistlines: WaistlinesSelect<false> | WaistlinesSelect<true>;
+    embellishments: EmbellishmentsSelect<false> | EmbellishmentsSelect<true>;
     dresses: DressesSelect<false> | DressesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     'appointment-audits': AppointmentAuditsSelect<false> | AppointmentAuditsSelect<true>;
@@ -917,6 +929,126 @@ export interface Designer {
   createdAt: string;
 }
 /**
+ * Dress neckline attributes
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "necklines".
+ */
+export interface Neckline {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  description?: string | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Dress sleeve attributes
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sleeves".
+ */
+export interface Sleeve {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  description?: string | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Dress train attributes
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trains".
+ */
+export interface Train {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  description?: string | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Dress back attributes
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "backs".
+ */
+export interface Back {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  description?: string | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Dress waistline attributes
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "waistlines".
+ */
+export interface Waistline {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  description?: string | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Dress embellishment attributes
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "embellishments".
+ */
+export interface Embellishment {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  description?: string | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Wedding dresses available to buy or rent, including pricing, availability and imagery.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -973,8 +1105,44 @@ export interface Dress {
   colors?: (string | Color)[] | null;
   fabrics?: (string | Fabric)[] | null;
   silhouette?: (string | null) | Silhouette;
+  neckline?: (string | null) | Neckline;
+  sleeves?: (string | null) | Sleeve;
+  train?: (string | null) | Train;
+  back?: (string | null) | Back;
+  waistline?: (string | null) | Waistline;
+  embellishments?: (string | Embellishment)[] | null;
   condition: 'new' | 'like-new' | 'excellent' | 'good' | 'needs-cleaning' | 'needs-repair';
   featured?: boolean | null;
+  /**
+   * Optional fit guidance suitable for the public dress page.
+   */
+  fitNotes?: string | null;
+  /**
+   * Alterations that may be discussed during an individual fitting.
+   */
+  alterationPossibilities?: string | null;
+  /**
+   * Known alteration constraints to communicate before booking.
+   */
+  alterationLimitations?: string | null;
+  /**
+   * Accessories included with this individual dress.
+   */
+  includedAccessories?:
+    | {
+        item: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Accessories available separately; do not imply they are included.
+   */
+  optionalAccessories?:
+    | {
+        item: string;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Controls Buy catalogue visibility and purchase enquiries independently of rental status.
    */
@@ -1393,6 +1561,30 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'designers';
         value: string | Designer;
+      } | null)
+    | ({
+        relationTo: 'necklines';
+        value: string | Neckline;
+      } | null)
+    | ({
+        relationTo: 'sleeves';
+        value: string | Sleeve;
+      } | null)
+    | ({
+        relationTo: 'trains';
+        value: string | Train;
+      } | null)
+    | ({
+        relationTo: 'backs';
+        value: string | Back;
+      } | null)
+    | ({
+        relationTo: 'waistlines';
+        value: string | Waistline;
+      } | null)
+    | ({
+        relationTo: 'embellishments';
+        value: string | Embellishment;
       } | null)
     | ({
         relationTo: 'dresses';
@@ -1857,6 +2049,90 @@ export interface DesignersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "necklines_select".
+ */
+export interface NecklinesSelect<T extends boolean = true> {
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  description?: T;
+  isActive?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sleeves_select".
+ */
+export interface SleevesSelect<T extends boolean = true> {
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  description?: T;
+  isActive?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trains_select".
+ */
+export interface TrainsSelect<T extends boolean = true> {
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  description?: T;
+  isActive?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "backs_select".
+ */
+export interface BacksSelect<T extends boolean = true> {
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  description?: T;
+  isActive?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "waistlines_select".
+ */
+export interface WaistlinesSelect<T extends boolean = true> {
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  description?: T;
+  isActive?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "embellishments_select".
+ */
+export interface EmbellishmentsSelect<T extends boolean = true> {
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  description?: T;
+  isActive?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "dresses_select".
  */
 export interface DressesSelect<T extends boolean = true> {
@@ -1880,8 +2156,29 @@ export interface DressesSelect<T extends boolean = true> {
   colors?: T;
   fabrics?: T;
   silhouette?: T;
+  neckline?: T;
+  sleeves?: T;
+  train?: T;
+  back?: T;
+  waistline?: T;
+  embellishments?: T;
   condition?: T;
   featured?: T;
+  fitNotes?: T;
+  alterationPossibilities?: T;
+  alterationLimitations?: T;
+  includedAccessories?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
+  optionalAccessories?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
   saleStatus?: T;
   salePrice?: T;
   salePriceOnRequest?: T;

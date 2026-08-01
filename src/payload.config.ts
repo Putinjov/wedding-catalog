@@ -11,11 +11,17 @@ import { AppointmentSlotLocks } from './collections/AppointmentSlotLocks'
 import { Appointments } from './collections/Appointments'
 import { Categories } from './collections/Categories'
 import { Dresses } from './collections/Dresses'
+import { Backs } from './collections/Lookups/Backs'
 import { Colors } from './collections/Lookups/Colors'
 import { Designers } from './collections/Lookups/Designers'
+import { Embellishments } from './collections/Lookups/Embellishments'
 import { Fabrics } from './collections/Lookups/Fabrics'
+import { Necklines } from './collections/Lookups/Necklines'
+import { Sleeves } from './collections/Lookups/Sleeves'
 import { Silhouettes } from './collections/Lookups/Silhouettes'
 import { Sizes } from './collections/Lookups/Sizes'
+import { Trains } from './collections/Lookups/Trains'
+import { Waistlines } from './collections/Lookups/Waistlines'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
@@ -120,6 +126,12 @@ export default buildConfig({
     Fabrics,
     Silhouettes,
     Designers,
+    Necklines,
+    Sleeves,
+    Trains,
+    Backs,
+    Waistlines,
+    Embellishments,
     Dresses,
     Appointments,
     AppointmentAudits,

@@ -25,6 +25,9 @@ function DetailsSection({ dress }: { dress: Dress }) {
   const sizeLabels = getRelationshipLabels(dress.sizes)
   const colorLabels = getRelationshipLabels(dress.colors)
   const fabricLabels = getRelationshipLabels(dress.fabrics)
+  const embellishmentLabels = getRelationshipLabels(dress.embellishments)
+  const includedAccessories = dress.includedAccessories?.map(({ item }) => item) ?? []
+  const optionalAccessories = dress.optionalAccessories?.map(({ item }) => item) ?? []
 
   return (
     <details className="group border-t border-brand-warm-border py-5" open>
@@ -39,10 +42,18 @@ function DetailsSection({ dress }: { dress: Dress }) {
         <DetailRow label="Designer" value={getRelationshipLabel(dress.designer)} />
         <DetailRow label="Collection" value={dress.collectionName ?? null} />
         <DetailRow label="Silhouette" value={getRelationshipLabel(dress.silhouette)} />
+        <DetailRow label="Neckline" value={getRelationshipLabel(dress.neckline)} />
+        <DetailRow label="Sleeves" value={getRelationshipLabel(dress.sleeves)} />
+        <DetailRow label="Train" value={getRelationshipLabel(dress.train)} />
+        <DetailRow label="Back" value={getRelationshipLabel(dress.back)} />
+        <DetailRow label="Waistline" value={getRelationshipLabel(dress.waistline)} />
+        <DetailRow label="Embellishments" value={embellishmentLabels.join(', ') || null} />
         <DetailRow label="Fabrics" value={fabricLabels.join(', ') || null} />
         <DetailRow label="Colours" value={colorLabels.join(', ') || null} />
         <DetailRow label="Available sizes" value={sizeLabels.join(', ') || null} />
         <DetailRow label="Condition" value={getConditionLabel(dress.condition)} />
+        <DetailRow label="Included accessories" value={includedAccessories.join(', ') || null} />
+        <DetailRow label="Optional accessories" value={optionalAccessories.join(', ') || null} />
       </dl>
     </details>
   )
@@ -102,7 +113,7 @@ function RentalSection({ dress }: { dress: Dress }) {
   )
 }
 
-function CareSection() {
+function CareSection({ dress }: { dress: Dress }) {
   return (
     <details className="group border-y border-brand-warm-border py-5">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-serif text-2xl text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-4 [&::-webkit-details-marker]:hidden">
@@ -112,6 +123,14 @@ function CareSection() {
         </span>
       </summary>
       <div className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
+        <p>Every dress is individually fitted and professionally altered for you.</p>
+        {dress.fitNotes ? <p>{dress.fitNotes}</p> : null}
+        {dress.alterationPossibilities ? (
+          <p>Alteration possibilities: {dress.alterationPossibilities}</p>
+        ) : null}
+        {dress.alterationLimitations ? (
+          <p>Alteration limitations: {dress.alterationLimitations}</p>
+        ) : null}
         <p>Fittings are private and shaped around your ceremony plans.</p>
         <p>The fitting booking fee is {formatFittingFee()}.</p>
         <p>
@@ -128,7 +147,7 @@ export function DressDetails({ dress }: { dress: Dress }) {
       <DetailsSection dress={dress} />
       <DescriptionSection dress={dress} />
       <RentalSection dress={dress} />
-      <CareSection />
+      <CareSection dress={dress} />
     </section>
   )
 }

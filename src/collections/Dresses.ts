@@ -198,6 +198,43 @@ export const Dresses: CollectionConfig = {
             },
 
             {
+              name: 'neckline',
+              type: 'relationship',
+              relationTo: 'necklines',
+            },
+
+            {
+              name: 'sleeves',
+              type: 'relationship',
+              relationTo: 'sleeves',
+            },
+
+            {
+              name: 'train',
+              type: 'relationship',
+              relationTo: 'trains',
+            },
+
+            {
+              name: 'back',
+              type: 'relationship',
+              relationTo: 'backs',
+            },
+
+            {
+              name: 'waistline',
+              type: 'relationship',
+              relationTo: 'waistlines',
+            },
+
+            {
+              name: 'embellishments',
+              type: 'relationship',
+              relationTo: 'embellishments',
+              hasMany: true,
+            },
+
+            {
               name: 'condition',
               type: 'select',
               required: true,
@@ -234,6 +271,70 @@ export const Dresses: CollectionConfig = {
               name: 'featured',
               type: 'checkbox',
               defaultValue: false,
+            },
+          ],
+        },
+
+        {
+          label: 'Fit & Alterations',
+          fields: [
+            {
+              name: 'fitNotes',
+              type: 'textarea',
+              localized: true,
+              admin: {
+                description: 'Optional fit guidance suitable for the public dress page.',
+              },
+            },
+
+            {
+              name: 'alterationPossibilities',
+              type: 'textarea',
+              localized: true,
+              admin: {
+                description: 'Alterations that may be discussed during an individual fitting.',
+              },
+            },
+
+            {
+              name: 'alterationLimitations',
+              type: 'textarea',
+              localized: true,
+              admin: {
+                description: 'Known alteration constraints to communicate before booking.',
+              },
+            },
+
+            {
+              name: 'includedAccessories',
+              type: 'array',
+              admin: {
+                description: 'Accessories included with this individual dress.',
+              },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'text',
+                  localized: true,
+                  required: true,
+                },
+              ],
+            },
+
+            {
+              name: 'optionalAccessories',
+              type: 'array',
+              admin: {
+                description: 'Accessories available separately; do not imply they are included.',
+              },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'text',
+                  localized: true,
+                  required: true,
+                },
+              ],
             },
           ],
         },
