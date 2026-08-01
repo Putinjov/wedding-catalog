@@ -1,13 +1,9 @@
 import { getDressBySlug } from '@/lib/getDress'
 import type { DressMode } from '@/lib/catalogue'
-import { getDressPath } from '@/utilities/dress-routing'
+import { appendDressMode, getDressPath } from '@/utilities/dress-routing'
 import { getCachedRedirects } from '@/utilities/getRedirects'
 
-export { getDressPath }
-
-export function appendDressMode(path: string, mode: DressMode | null): string {
-  return mode ? `${path}?mode=${mode}` : path
-}
+export { appendDressMode, getDressPath }
 
 export async function getPublicDressRedirect(
   slug: string,
