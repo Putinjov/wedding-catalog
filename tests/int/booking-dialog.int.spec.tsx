@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BookingDialog } from '@/components/booking/booking-dialog'
 
@@ -36,6 +36,8 @@ const props = {
     supportsRent: true,
   },
 }
+
+afterEach(cleanup)
 
 describe('booking dialog', () => {
   beforeEach(() => {
