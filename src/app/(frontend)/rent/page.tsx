@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { CataloguePage } from '@/components/boutique/catalogue-page'
 import { siteConfig } from '@/config/site'
+import type { CatalogueSearchParams } from '@/lib/catalogue'
 
 export const metadata: Metadata = {
   alternates: {
@@ -11,6 +12,10 @@ export const metadata: Metadata = {
   title: 'Rent wedding dresses',
 }
 
-export default function RentPage() {
-  return <CataloguePage mode="rent" />
+export default async function RentPage({
+  searchParams,
+}: {
+  searchParams: Promise<CatalogueSearchParams>
+}) {
+  return <CataloguePage mode="rent" searchParams={await searchParams} />
 }

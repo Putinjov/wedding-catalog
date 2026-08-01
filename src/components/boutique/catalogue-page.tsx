@@ -1,12 +1,41 @@
 import type { CatalogueMode } from '@/lib/catalogue'
-import { catalogueContent } from '@/lib/catalogue'
+import {
+  CATALOGUE_PAGE_SIZE,
+  catalogueContent,
+  getCataloguePageURL,
+  getOutOfRangeCataloguePage,
+  parseCataloguePage,
+  type CatalogueSearchParams,
+} from '@/lib/catalogue'
 import { getDresses } from '@/lib/getDresses'
+import { redirect } from 'next/navigation'
 
+import { PageRange } from '@/components/PageRange'
+import { CataloguePagination } from './catalogue-pagination'
 import { DressGrid } from './dress-grid'
 
-export async function CataloguePage({ mode }: { mode: CatalogueMode }) {
-  const dresses = await getDresses(mode)
+export async function CataloguePage({
+  mode,
+  searchParams,
+}: {
+  mode: CatalogueMode
+  searchParams: CatalogueSearchParams
+}) {
+  const requestedPage = parseCataloguePage(searchParams.page)
+
+  if (requestedPage.shouldRedirect) {
+    redirect(getCataloguePageURL({ mode, page: requestedPage.page, searchParams }))
+  }
+
+  const dresses = await getDresses(mode, { page: requestedPage.page })
+  const outOfRangePage = getOutOfRangeCataloguePage(requestedPage.page, dresses.totalPages)
+
+  if (outOfRangePage !== null) {
+    redirect(getCataloguePageURL({ mode, page: outOfRangePage, searchParams }))
+  }
+
   const content = catalogueContent[mode]
+  const currentPage = dresses.page ?? requestedPage.page
 
   return (
     <main className="bg-background">
@@ -23,9 +52,24 @@ export async function CataloguePage({ mode }: { mode: CatalogueMode }) {
           </p>
         </div>
 
-        <div className="mt-14">
-          {dresses.length > 0 ? (
-            <DressGrid dresses={dresses} mode={mode} />
+        <div className="mt-14 scroll-mt-8" id="catalogue-results">
+          {dresses.docs.length > 0 ? (
+            <>
+              <PageRange
+                className="mb-6 text-sm text-muted-foreground"
+                collectionLabels={{ plural: 'dresses', singular: 'dress' }}
+                currentPage={currentPage}
+                limit={CATALOGUE_PAGE_SIZE}
+                totalDocs={dresses.totalDocs}
+              />
+              <DressGrid dresses={dresses.docs} mode={mode} />
+              <CataloguePagination
+                mode={mode}
+                page={currentPage}
+                searchParams={searchParams}
+                totalPages={dresses.totalPages}
+              />
+            </>
           ) : (
             <div className="border border-border bg-secondary/45 px-6 py-10 text-muted-foreground">
               This collection will appear here once dresses have been published and made available.

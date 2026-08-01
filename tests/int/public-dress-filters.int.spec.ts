@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAvailableDressBySlug, getRelatedDresses } from '@/lib/getDress'
 import { getDresses } from '@/lib/getDresses'
 import { getFeaturedDresses } from '@/lib/getFeaturedDresses'
+import { CATALOGUE_PAGE_SIZE } from '@/lib/catalogue'
 import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 import { searchPublicDresses } from '@/lib/searchDresses'
 import type { Dress } from '@/payload-types'
@@ -165,8 +166,21 @@ describe('public dress query consumers', () => {
     expect(mocks.find).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'dresses',
+        limit: CATALOGUE_PAGE_SIZE,
         overrideAccess: false,
+        page: 1,
         where: buildPublicDressWhere({ availability: 'available', mode }),
+      }),
+    )
+  })
+
+  it('passes the requested catalogue page to Payload pagination', async () => {
+    await getDresses('buy', { page: 3 })
+
+    expect(mocks.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        limit: CATALOGUE_PAGE_SIZE,
+        page: 3,
       }),
     )
   })
