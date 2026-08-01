@@ -5,6 +5,7 @@ import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConf
 import { getBookingPayload } from '@/lib/booking/getBookingPayload'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
+import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 import { getStripeClient } from '@/lib/stripe/client'
 import {
   getSessionCustomerEmail,
@@ -68,7 +69,8 @@ async function markAppointmentPaid(
   }
 
   const payload = await getBookingPayload()
-  const hasConflict = await hasAppointmentSlotConflict(payload, appointment)
+  const settings = await getBookingSettingsFromPayload(payload)
+  const hasConflict = await hasAppointmentSlotConflict(payload, appointment, settings)
   const existingNotes = appointment.internalNotes?.trim() ?? ''
   const internalNotes =
     hasConflict && !existingNotes.includes(conflictNotice)

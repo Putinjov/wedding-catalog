@@ -3,17 +3,20 @@ import type { CalendarAppointment } from '@/lib/admin/appointments/calendarTypes
 import { formatTimeInputValue, getConfiguredSlotTimes, getDateKey, isClosedDate } from '@/lib/booking/date'
 
 import { AppointmentCard } from './appointment-card'
+import type { ResolvedBookingSettings } from '@/config/booking'
 
 export function DayView({
   allAppointments,
   appointments,
   dateKey,
   onOpen,
+  settings,
 }: {
   allAppointments: CalendarAppointment[]
   appointments: CalendarAppointment[]
   dateKey: string
   onOpen: (id: string) => void
+  settings: ResolvedBookingSettings
 }) {
   const visibleIDs = new Set(appointments.map((appointment) => appointment.id))
   const dayAppointments = allAppointments.filter(
@@ -24,13 +27,13 @@ export function DayView({
     <section className="day-view" aria-label="Daily appointment schedule">
       <header>
         <div><span>Day schedule</span><h2>{formatCalendarDate(dateKey, { dateStyle: 'full' })}</h2></div>
-        {isClosedDate(dateKey) ? <strong className="day-view__closed">Closed</strong> : null}
+        {isClosedDate(dateKey, settings) ? <strong className="day-view__closed">Closed</strong> : null}
       </header>
-      {isClosedDate(dateKey) ? (
+      {isClosedDate(dateKey, settings) ? (
         <p className="calendar-empty">The boutique is closed. No fitting slots are available.</p>
       ) : (
         <ol className="day-view__slots">
-          {getConfiguredSlotTimes().map((time) => {
+          {getConfiguredSlotTimes(settings, dateKey).map((time) => {
             const atTime = dayAppointments.filter(
               (appointment) => formatTimeInputValue(appointment.startAt) === time,
             )

@@ -2,6 +2,7 @@ import { BookingDialog } from '@/components/booking/booking-dialog'
 import { buttonVariants } from '@/components/ui/button'
 import { formatCurrency, formatFittingFee } from '@/config/site'
 import { getBookingDateBounds } from '@/lib/booking/date'
+import type { ResolvedBookingSettings } from '@/config/booking'
 import type { DressMode } from '@/lib/catalogue'
 import {
   getAvailabilityLabel,
@@ -91,9 +92,17 @@ function UnavailableMessage({ dress, mode }: { dress: Dress; mode: DressMode }) 
   )
 }
 
-export function DressPricePanel({ dress, mode }: { dress: Dress; mode: DressMode }) {
+export function DressPricePanel({
+  dress,
+  mode,
+  settings,
+}: {
+  dress: Dress
+  mode: DressMode
+  settings: ResolvedBookingSettings
+}) {
   const unavailable = isUnavailableForMode(dress, mode)
-  const bounds = getBookingDateBounds()
+  const bounds = getBookingDateBounds(settings)
   const selectedDress = {
     id: dress.id,
     name: dress.name,
@@ -130,6 +139,7 @@ export function DressPricePanel({ dress, mode }: { dress: Dress; mode: DressMode
             secondaryClassName={mode === 'rent' ? secondaryClassName : undefined}
             secondaryLabel={mode === 'rent' ? `Book a fitting · ${formatFittingFee()}` : undefined}
             selectedDress={selectedDress}
+            settings={settings}
           />
         </div>
       )}
