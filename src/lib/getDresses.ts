@@ -9,15 +9,27 @@ import {
   type CatalogueMode,
   type CatalogueSort,
 } from '@/lib/catalogue'
+import {
+  buildCatalogueFilterConditions,
+  type CatalogueFilterOptions,
+  type CatalogueFilterValues,
+} from '@/lib/catalogue-filters'
 import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
 import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
 export async function getDresses(
   mode: CatalogueMode,
   {
+    filterOptions,
+    filters,
     page = 1,
     sort = DEFAULT_CATALOGUE_SORT,
-  }: { page?: number; sort?: CatalogueSort } = {},
+  }: {
+    filterOptions?: CatalogueFilterOptions
+    filters?: CatalogueFilterValues
+    page?: number
+    sort?: CatalogueSort
+  } = {},
 ): Promise<PaginatedDocs<DressWithMedia>> {
   const payload = await getPayload({
     config: configPromise,
@@ -30,7 +42,12 @@ export async function getDresses(
     overrideAccess: false,
     page,
     sort: getCatalogueDressSort(mode, sort),
-    where: buildPublicDressWhere({ availability: 'available', mode }),
+    where: buildPublicDressWhere(
+      { availability: 'available', mode },
+      filters && filterOptions
+        ? buildCatalogueFilterConditions(mode, filters, filterOptions)
+        : [],
+    ),
   })
 
   const docs = await attachDressMedia(result.docs as Dress[], payload)

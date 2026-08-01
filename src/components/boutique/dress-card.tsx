@@ -1,10 +1,16 @@
 import Link from 'next/link'
 
 import { Media } from '@/components/Media'
+import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/config/site'
 import type { DressDisplayMode } from '@/lib/catalogue'
 import type { DressWithMedia } from '@/lib/dress-media'
-import { supportsDressMode } from '@/lib/dress-utils'
+import {
+  getAvailabilityLabel,
+  getRelationshipLabel,
+  getSupportedDressModes,
+  isDressAvailableForMode,
+} from '@/lib/dress-utils'
 import { appendDressMode, getDressPath } from '@/utilities/dress-routing'
 
 export function DressCard({
@@ -17,17 +23,28 @@ export function DressCard({
   const image = dress.media.main
   const salePrice =
     (mode === 'all' || mode === 'buy') &&
-    supportsDressMode(dress, 'buy') &&
+    isDressAvailableForMode(dress, 'buy') &&
     dress.salePrice != null
       ? dress.salePrice
       : null
   const rentalPrice =
     (mode === 'all' || mode === 'rent') &&
-    supportsDressMode(dress, 'rent') &&
+    isDressAvailableForMode(dress, 'rent') &&
     dress.rentalPrice != null
       ? dress.rentalPrice
       : null
-  const ctaLabel = mode === 'rent' ? 'View rental' : 'View dress'
+  const previousSalePrice =
+    salePrice !== null &&
+    dress.previousSalePrice != null &&
+    dress.previousSalePrice > salePrice
+      ? dress.previousSalePrice
+      : null
+  const designer = getRelationshipLabel(dress.designer)
+  const silhouette = getRelationshipLabel(dress.silhouette)
+  const statusModes = mode === 'all' ? getSupportedDressModes(dress) : [mode]
+  const isSold =
+    dress.saleStatus === 'sold' &&
+    (mode === 'buy' || (mode === 'all' && dress.rentalStatus === 'not-for-rent'))
   const href = appendDressMode(getDressPath(dress.slug), mode === 'all' ? null : mode)
 
   return (
@@ -36,7 +53,7 @@ export function DressCard({
         className="block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
         href={href}
       >
-        <div className="aspect-[3/4] overflow-hidden bg-secondary">
+        <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
           {image ? (
             <Media
               alt={image.alt || dress.name}
@@ -52,22 +69,73 @@ export function DressCard({
               Image coming soon
             </div>
           )}
-        </div>
-        <div className="mt-4">
-          <h3 className="font-serif text-2xl leading-tight text-foreground">{dress.name}</h3>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            {salePrice != null ? (
-              <span>Sale {formatCurrency(salePrice)}</span>
+          <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-2">
+            {statusModes.map((statusMode) => (
+              <Badge
+                className="border-0 bg-background/92 text-foreground shadow-sm backdrop-blur-sm"
+                key={statusMode}
+                variant="outline"
+              >
+                {getAvailabilityLabel(dress, statusMode)}
+              </Badge>
+            ))}
+            {dress.featured ? (
+              <Badge className="border-0 bg-brand-deep-lavender text-white">Featured</Badge>
             ) : null}
-            {rentalPrice != null ? (
-              <span>From {formatCurrency(rentalPrice)} rental</span>
+            {dress.condition === 'new' ? (
+              <Badge className="border-0 bg-brand-antique-gold text-foreground">New</Badge>
             ) : null}
           </div>
-          <span className="mt-4 inline-flex text-sm font-medium text-brand-deep-lavender underline decoration-brand-antique-gold underline-offset-4">
-            {ctaLabel}
-          </span>
+        </div>
+        <div className="mt-4">
+          {designer || silhouette ? (
+            <p className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              {[designer, silhouette].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
+          <h3 className="font-serif text-2xl leading-tight text-foreground">{dress.name}</h3>
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            {salePrice != null ? (
+              <>
+                <span className={mode === 'buy' ? 'text-lg font-semibold text-foreground' : ''}>
+                  {formatCurrency(salePrice)}
+                </span>
+                {previousSalePrice !== null ? (
+                  <span className="line-through">
+                    <span className="sr-only">Previous price </span>
+                    {formatCurrency(previousSalePrice)}
+                  </span>
+                ) : null}
+              </>
+            ) : null}
+            {(mode === 'all' || mode === 'buy') &&
+            isDressAvailableForMode(dress, 'buy') &&
+            dress.salePriceOnRequest ? (
+              <span className={mode === 'buy' ? 'text-base font-semibold text-foreground' : ''}>
+                Price on request
+              </span>
+            ) : null}
+            {rentalPrice != null ? (
+              <span className={mode === 'rent' ? 'text-lg font-semibold text-foreground' : ''}>
+                Rent from {formatCurrency(rentalPrice)}
+              </span>
+            ) : null}
+          </div>
+          {!isSold ? (
+            <span className="mt-4 inline-flex text-sm font-medium text-brand-deep-lavender underline decoration-brand-antique-gold underline-offset-4">
+              View dress
+            </span>
+          ) : null}
         </div>
       </Link>
+      {isSold ? (
+        <Link
+          className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-brand-deep-lavender underline decoration-brand-antique-gold underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          href="/buy#catalogue-results"
+        >
+          View similar dresses
+        </Link>
+      ) : null}
     </article>
   )
 }

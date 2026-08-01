@@ -5,6 +5,11 @@ import { getAvailableDressBySlug, getRelatedDresses } from '@/lib/getDress'
 import { getDresses } from '@/lib/getDresses'
 import { getFeaturedDresses } from '@/lib/getFeaturedDresses'
 import { CATALOGUE_PAGE_SIZE, getCatalogueDressSort } from '@/lib/catalogue'
+import {
+  buildCatalogueFilterConditions,
+  parseCatalogueFilters,
+  type CatalogueFilterOptions,
+} from '@/lib/catalogue-filters'
 import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 import { searchPublicDresses } from '@/lib/searchDresses'
 import type { Dress } from '@/payload-types'
@@ -47,6 +52,14 @@ const rentalStatuses: Dress['rentalStatus'][] = [
   'repair',
 ]
 const publicVisibilities: Dress['publicVisibility'][] = ['public', 'hidden', 'archived']
+
+const catalogueFilterOptions: CatalogueFilterOptions = {
+  categories: [{ id: 'category-1', label: 'Bridal', slug: 'bridal' }],
+  colours: [{ id: 'colour-1', label: 'Ivory', slug: 'ivory' }],
+  designers: [{ id: 'designer-1', label: 'Designer', slug: 'designer' }],
+  fabrics: [{ id: 'fabric-1', label: 'Lace', slug: 'lace' }],
+  silhouettes: [{ id: 'silhouette-1', label: 'A-line', slug: 'a-line' }],
+}
 
 const statusCases = publicVisibilities.flatMap((publicVisibility) =>
   saleStatuses.flatMap((saleStatus) =>
@@ -182,6 +195,24 @@ describe('public dress query consumers', () => {
       expect.objectContaining({
         limit: CATALOGUE_PAGE_SIZE,
         page: 3,
+      }),
+    )
+  })
+
+  it('combines normalized catalogue filters with authoritative availability rules', async () => {
+    const { filters } = parseCatalogueFilters(
+      { designer: 'designer', priceMax: '2500', silhouette: 'a-line' },
+      catalogueFilterOptions,
+    )
+
+    await getDresses('buy', { filterOptions: catalogueFilterOptions, filters })
+
+    expect(mocks.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: buildPublicDressWhere(
+          { availability: 'available', mode: 'buy' },
+          buildCatalogueFilterConditions('buy', filters, catalogueFilterOptions),
+        ),
       }),
     )
   })

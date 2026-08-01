@@ -1,15 +1,15 @@
 import type { Metadata } from 'next'
 
 import { CataloguePage } from '@/components/boutique/catalogue-page'
-import { siteConfig } from '@/config/site'
 import type { CatalogueSearchParams } from '@/lib/catalogue'
+import { getCatalogueMetadata } from '@/lib/catalogue-metadata'
 
-export const metadata: Metadata = {
-  alternates: {
-    canonical: '/rent',
-  },
-  description: `Browse wedding dresses available to rent from ${siteConfig.name}.`,
-  title: 'Rent wedding dresses',
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<CatalogueSearchParams>
+}): Promise<Metadata> {
+  return getCatalogueMetadata('rent', await searchParams)
 }
 
 export default async function RentPage({
