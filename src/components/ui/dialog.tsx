@@ -27,8 +27,8 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 export const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ children, className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { closeLabel?: string }
+>(({ children, className, closeLabel = 'Close dialog', ...props }, ref) => (
   <DialogPrimitive.Portal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -41,7 +41,7 @@ export const DialogContent = React.forwardRef<
     >
       {children}
       <DialogPrimitive.Close
-        aria-label="Close booking dialog"
+        aria-label={closeLabel}
         className="absolute right-3 top-3 z-10 flex size-11 items-center justify-center bg-background/95 text-foreground outline-none transition-colors hover:text-brand-deep-lavender focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
       >
         <X aria-hidden="true" className="size-5" />

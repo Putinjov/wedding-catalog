@@ -55,9 +55,32 @@ describe('catalogue mode dress links', () => {
   })
 
   it('retains the current mode in related dress cards', () => {
-    render(<RelatedDresses dresses={[dress()]} mode="rent" />)
+    render(
+      <RelatedDresses
+        dresses={[dress()]}
+        mode="rent"
+        returnTo="/rent?designer=atelier-one&page=2#catalogue-results"
+      />,
+    )
 
-    expect(getOnlyLinkHref()).toBe('/dresses/test-dress?mode=rent')
+    expect(getOnlyLinkHref()).toBe(
+      '/dresses/test-dress?mode=rent&returnTo=%2Frent%3Fdesigner%3Datelier-one%26page%3D2%23catalogue-results&source=related',
+    )
+    expect(screen.getByRole('link').getAttribute('data-attribution')).toBe('related')
+  })
+
+  it('retains normalized catalogue context in a dress-card link', () => {
+    render(
+      <DressCard
+        dress={dress()}
+        mode="buy"
+        returnTo="/buy?silhouette=a-line&page=2#catalogue-results"
+      />,
+    )
+
+    expect(getOnlyLinkHref()).toBe(
+      '/dresses/test-dress?mode=buy&returnTo=%2Fbuy%3Fsilhouette%3Da-line%26page%3D2%23catalogue-results',
+    )
   })
 
   it('encodes the authoritative dress slug before adding the mode', () => {

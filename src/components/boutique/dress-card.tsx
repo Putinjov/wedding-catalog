@@ -11,14 +11,18 @@ import {
   getSupportedDressModes,
   isDressAvailableForMode,
 } from '@/lib/dress-utils'
-import { appendDressMode, getDressPath } from '@/utilities/dress-routing'
+import { getDressHref } from '@/utilities/dress-routing'
 
 export function DressCard({
   dress,
   mode = 'all',
+  returnTo,
+  source,
 }: {
   dress: DressWithMedia
   mode?: DressDisplayMode
+  returnTo?: string | null
+  source?: 'related' | null
 }) {
   const image = dress.media.main
   const salePrice =
@@ -45,12 +49,18 @@ export function DressCard({
   const isSold =
     dress.saleStatus === 'sold' &&
     (mode === 'buy' || (mode === 'all' && dress.rentalStatus === 'not-for-rent'))
-  const href = appendDressMode(getDressPath(dress.slug), mode === 'all' ? null : mode)
+  const href = getDressHref({
+    mode: mode === 'all' ? null : mode,
+    returnTo,
+    slug: dress.slug,
+    source,
+  })
 
   return (
     <article className="group">
       <Link
         className="block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+        data-attribution={source ?? undefined}
         href={href}
       >
         <div className="relative aspect-[3/4] overflow-hidden bg-secondary">

@@ -8,6 +8,7 @@ export { appendDressMode, getDressPath }
 export async function getPublicDressRedirect(
   slug: string,
   mode: DressMode | null,
+  returnTo?: string | null,
 ): Promise<string | null> {
   const sourcePath = getDressPath(slug)
   const redirects = await getCachedRedirects()()
@@ -36,5 +37,10 @@ export async function getPublicDressRedirect(
     return null
   }
 
-  return appendDressMode(destination, mode)
+  if (!returnTo) return appendDressMode(destination, mode)
+
+  const params = new URLSearchParams()
+  if (mode) params.set('mode', mode)
+  params.set('returnTo', returnTo)
+  return `${destination}?${params.toString()}`
 }
