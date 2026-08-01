@@ -6,6 +6,7 @@ import { metadata as cancelledPaymentMetadata } from '@/app/(frontend)/book-a-fi
 import { generateMetadata as generateSuccessPaymentMetadata } from '@/app/(frontend)/book-a-fitting/payment/success/page'
 import { metadata as buyMetadata } from '@/app/(frontend)/buy/page'
 import { generateMetadata as generateDressMetadata } from '@/app/(frontend)/dresses/[slug]/page'
+import { metadata as dressesMetadata } from '@/app/(frontend)/dresses/page'
 import { metadata as homeMetadata } from '@/app/(frontend)/page'
 import { metadata as rentMetadata } from '@/app/(frontend)/rent/page'
 import { getPrivateBookingHeaderRules } from '@/config/indexation'
@@ -111,6 +112,7 @@ describe('canonical metadata', () => {
 
   it('defines a self-canonical on every primary public route', () => {
     expect(homeMetadata.alternates?.canonical).toBe('/')
+    expect(dressesMetadata.alternates?.canonical).toBe('/dresses')
     expect(buyMetadata.alternates?.canonical).toBe('/buy')
     expect(rentMetadata.alternates?.canonical).toBe('/rent')
     expect(bookingMetadata.alternates?.canonical).toBe('/book-a-fitting')
