@@ -144,12 +144,10 @@ export interface Config {
   globals: {
     header: Header;
     footer: Footer;
-    'booking-settings': BookingSetting;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
-    'booking-settings': BookingSettingsSelect<false> | BookingSettingsSelect<true>;
   };
   locale: 'en' | 'uk';
   widgets: {
@@ -2631,70 +2629,6 @@ export interface Footer {
   createdAt?: string | null;
 }
 /**
- * Authoritative fitting schedule and availability rules. Times use Europe/Dublin.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "booking-settings".
- */
-export interface BookingSetting {
-  id: string;
-  timezone: 'Europe/Dublin';
-  durationMinutes: number;
-  holdMinutes: number;
-  bookingWindowDays: number;
-  /**
-   * Stored for Task 19 enforcement.
-   */
-  minimumNoticeHours: number;
-  /**
-   * Optional Europe/Dublin cutoff in HH:mm. Stored for Task 19 enforcement.
-   */
-  nextDayCutoffTime?: string | null;
-  closedWeekdays: ('0' | '1' | '2' | '3' | '4' | '5' | '6')[];
-  weekdayHours: {
-    start: string;
-    end: string;
-  };
-  saturdayHours: {
-    enabled: boolean;
-    start: string;
-    end: string;
-  };
-  lunchBreaks?:
-    | {
-        weekdays: ('0' | '1' | '2' | '3' | '4' | '5' | '6')[];
-        start: string;
-        end: string;
-        id?: string | null;
-      }[]
-    | null;
-  bufferBeforeMinutes: number;
-  bufferAfterMinutes: number;
-  holidays?:
-    | {
-        date: string;
-        id?: string | null;
-      }[]
-    | null;
-  closures?:
-    | {
-        startDate: string;
-        endDate: string;
-        id?: string | null;
-      }[]
-    | null;
-  blockedIntervals?:
-    | {
-        date: string;
-        start: string;
-        end: string;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
@@ -2734,66 +2668,6 @@ export interface FooterSelect<T extends boolean = true> {
               url?: T;
               label?: T;
             };
-        id?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "booking-settings_select".
- */
-export interface BookingSettingsSelect<T extends boolean = true> {
-  timezone?: T;
-  durationMinutes?: T;
-  holdMinutes?: T;
-  bookingWindowDays?: T;
-  minimumNoticeHours?: T;
-  nextDayCutoffTime?: T;
-  closedWeekdays?: T;
-  weekdayHours?:
-    | T
-    | {
-        start?: T;
-        end?: T;
-      };
-  saturdayHours?:
-    | T
-    | {
-        enabled?: T;
-        start?: T;
-        end?: T;
-      };
-  lunchBreaks?:
-    | T
-    | {
-        weekdays?: T;
-        start?: T;
-        end?: T;
-        id?: T;
-      };
-  bufferBeforeMinutes?: T;
-  bufferAfterMinutes?: T;
-  holidays?:
-    | T
-    | {
-        date?: T;
-        id?: T;
-      };
-  closures?:
-    | T
-    | {
-        startDate?: T;
-        endDate?: T;
-        id?: T;
-      };
-  blockedIntervals?:
-    | T
-    | {
-        date?: T;
-        start?: T;
-        end?: T;
         id?: T;
       };
   updatedAt?: T;

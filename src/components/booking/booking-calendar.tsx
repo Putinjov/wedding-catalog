@@ -2,7 +2,6 @@
 
 import { Calendar } from '@/components/ui/calendar'
 import { isClosedDate } from '@/lib/booking/date'
-import type { ResolvedBookingSettings } from '@/config/booking'
 
 function dateKeyToLocalDate(dateKey: string): Date | undefined {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey)
@@ -19,19 +18,17 @@ export function isBookingDateUnavailable({
   fullyBookedDates,
   maxDate,
   minDate,
-  settings,
 }: {
   date: Date
   fullyBookedDates: ReadonlySet<string>
   maxDate: string
   minDate: string
-  settings: ResolvedBookingSettings
 }): boolean {
   const dateKey = localDateToDateKey(date)
   return (
     dateKey < minDate ||
     dateKey > maxDate ||
-    isClosedDate(dateKey, settings) ||
+    isClosedDate(dateKey) ||
     fullyBookedDates.has(dateKey)
   )
 }
@@ -42,14 +39,12 @@ export function BookingCalendar({
   minDate,
   onSelect,
   selectedDate,
-  settings,
 }: {
   fullyBookedDates: string[]
   maxDate: string
   minDate: string
   onSelect: (dateKey: string) => void
   selectedDate: string
-  settings: ResolvedBookingSettings
 }) {
   const fullyBooked = new Set(fullyBookedDates)
   const selected = dateKeyToLocalDate(selectedDate)
@@ -61,7 +56,7 @@ export function BookingCalendar({
       <Calendar
         defaultMonth={selected ?? startMonth}
         disabled={(date) =>
-          isBookingDateUnavailable({ date, fullyBookedDates: fullyBooked, maxDate, minDate, settings })
+          isBookingDateUnavailable({ date, fullyBookedDates: fullyBooked, maxDate, minDate })
         }
         endMonth={endMonth}
         fixedWeeks

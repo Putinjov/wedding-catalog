@@ -7,7 +7,6 @@ import { type FormEvent, useMemo, useState } from 'react'
 import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
 import { getBookingDateBounds, getConfiguredSlotTimes } from '@/lib/booking/date'
 import { UNPAID_MANUAL_CONFIRMATION_WARNING } from '@/lib/admin/appointments/statusWarnings'
-import type { ResolvedBookingSettings } from '@/config/booking'
 
 type CreateResponse = { message?: string }
 
@@ -16,20 +15,17 @@ export function NewAppointmentDialog({
   onCreated,
   onOpenChange,
   open,
-  settings,
 }: {
   dresses: ManualAppointmentDress[]
   onCreated: () => Promise<void>
   onOpenChange: (open: boolean) => void
   open: boolean
-  settings: ResolvedBookingSettings
 }) {
   const [purpose, setPurpose] = useState<'buy' | 'rent'>('buy')
   const [initialStatus, setInitialStatus] = useState<'pending' | 'confirmed'>('pending')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [date, setDate] = useState('')
-  const bounds = getBookingDateBounds(settings)
+  const bounds = getBookingDateBounds()
   const dressOptions = useMemo(
     () =>
       dresses.filter((dress) =>
@@ -73,7 +69,6 @@ export function NewAppointmentDialog({
       form.reset()
       setPurpose('buy')
       setInitialStatus('pending')
-      setDate('')
       onOpenChange(false)
       await onCreated()
     } catch (createError) {
@@ -96,8 +91,8 @@ export function NewAppointmentDialog({
             <label><span>Purpose</span><select onChange={(event) => setPurpose(event.target.value as 'buy' | 'rent')} value={purpose}><option value="buy">Buy</option><option value="rent">Rent</option></select></label>
             <label><span>Dress (optional)</span><select name="dressId" defaultValue=""><option value="">No dress selected</option>{dressOptions.map((dress) => <option key={dress.id} value={dress.id}>{dress.name}</option>)}</select></label>
             <div className="new-appointment-form__row">
-              <label><span>Date</span><input max={bounds.maxDate} min={bounds.minDate} name="date" onChange={(event) => setDate(event.target.value)} required type="date" value={date} /></label>
-              <label><span>Time</span><select name="time" required defaultValue=""><option disabled value="">Choose time</option>{getConfiguredSlotTimes(settings, date || undefined).map((time) => <option key={time} value={time}>{time}</option>)}</select></label>
+              <label><span>Date</span><input max={bounds.maxDate} min={bounds.minDate} name="date" required type="date" /></label>
+              <label><span>Time</span><select name="time" required defaultValue=""><option disabled value="">Choose time</option>{getConfiguredSlotTimes().map((time) => <option key={time} value={time}>{time}</option>)}</select></label>
             </div>
             <label><span>Customer name</span><input autoComplete="name" maxLength={120} minLength={2} name="customerName" required /></label>
             <label><span>Email</span><input autoComplete="email" name="email" required type="email" /></label>

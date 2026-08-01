@@ -13,7 +13,6 @@ import {
 } from '@/lib/booking/date'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
-import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 import { isDressAvailableForMode } from '@/lib/dress-utils'
 
 import { AdminAppointmentError } from './getCalendarAppointments'
@@ -34,13 +33,6 @@ export const createAdminAppointmentSchema = z.object({
 
 export type CreateAdminAppointmentInput = z.infer<typeof createAdminAppointmentSchema>
 
-function isBookingConflict(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    /already reserved|being processed for this date|overlaps another/i.test(error.message)
-  )
-}
-
 export async function createAdminAppointment({
   payload,
   user,
@@ -50,18 +42,17 @@ export async function createAdminAppointment({
   user: TypedUser
   input: CreateAdminAppointmentInput
 }) {
-  const settings = await getBookingSettingsFromPayload(payload)
-  if (!isDateWithinBookingWindow(input.date, settings)) {
-    throw new AdminAppointmentError(getBookingWindowLabel(settings))
+  if (!isDateWithinBookingWindow(input.date)) {
+    throw new AdminAppointmentError(getBookingWindowLabel())
   }
-  if (isClosedDate(input.date, settings)) {
-    throw new AdminAppointmentError(getBookingScheduleLabel(settings))
+  if (isClosedDate(input.date)) {
+    throw new AdminAppointmentError(getBookingScheduleLabel())
   }
-  if (!isValidSlotTime(input.date, input.time, settings)) {
+  if (!isValidSlotTime(input.date, input.time)) {
     throw new AdminAppointmentError('Choose one of the configured fitting times.')
   }
 
-  const dateTimes = getSlotDateTimes(input.date, input.time, settings)
+  const dateTimes = getSlotDateTimes(input.date, input.time)
   if (!dateTimes || dateTimes.startAt <= new Date()) {
     throw new AdminAppointmentError('Choose a future fitting time.')
   }
@@ -87,7 +78,7 @@ export async function createAdminAppointment({
     startAt: dateTimes.startAt.toISOString(),
     endAt: dateTimes.endAt.toISOString(),
   }
-  if (await hasAppointmentSlotConflict(payload, slot, settings)) {
+  if (await hasAppointmentSlotConflict(payload, slot)) {
     throw new AdminAppointmentError('That fitting time overlaps another active appointment.')
   }
 
@@ -107,37 +98,30 @@ export async function createAdminAppointment({
     })
   }
 
-  try {
-    return await payload.create({
-      collection: 'appointments',
-      data: {
-        customerName: input.customerName,
-        dress: dressId,
-        email: input.email,
-        endAt: slot.endAt,
-        fittingFee: siteConfig.fittingFee,
-        notes: input.notes || undefined,
-        paymentStatus: 'unpaid',
-        phone: input.phone,
-        publicReference: createPublicReference(),
-        purpose: input.purpose,
-        source: 'admin',
-        startAt: slot.startAt,
-        status: input.initialStatus,
-        currency: siteConfig.currency,
-      },
-      context: {
-        ...appointmentPaymentContext('admin-create'),
-        appointmentStatusTransition: transitionOptions,
-      },
-      depth: 1,
-      overrideAccess: false,
-      user,
-    })
-  } catch (error) {
-    if (isBookingConflict(error)) {
-      throw new AdminAppointmentError('That fitting time is being reserved. Please try again.')
-    }
-    throw error
-  }
+  return payload.create({
+    collection: 'appointments',
+    data: {
+      customerName: input.customerName,
+      dress: dressId,
+      email: input.email,
+      endAt: slot.endAt,
+      fittingFee: siteConfig.fittingFee,
+      notes: input.notes || undefined,
+      paymentStatus: 'unpaid',
+      phone: input.phone,
+      publicReference: createPublicReference(),
+      purpose: input.purpose,
+      source: 'admin',
+      startAt: slot.startAt,
+      status: input.initialStatus,
+      currency: siteConfig.currency,
+    },
+    context: {
+      ...appointmentPaymentContext('admin-create'),
+      appointmentStatusTransition: transitionOptions,
+    },
+    depth: 1,
+    overrideAccess: false,
+    user,
+  })
 }

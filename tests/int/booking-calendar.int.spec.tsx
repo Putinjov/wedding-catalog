@@ -1,8 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { defaultBookingSettings } from '@/config/booking'
-
 import {
   BookingCalendar,
   isBookingDateUnavailable,
@@ -17,7 +15,6 @@ describe('booking calendar', () => {
         fullyBookedDates,
         minDate: '2026-07-19',
         maxDate: '2026-09-16',
-        settings: defaultBookingSettings,
       })
 
     expect(check(18)).toBe(true)
@@ -36,7 +33,6 @@ describe('booking calendar', () => {
         minDate="2026-07-19"
         onSelect={onSelect}
         selectedDate=""
-        settings={defaultBookingSettings}
       />,
     )
 
@@ -54,7 +50,6 @@ describe('booking calendar', () => {
         minDate="2026-07-19"
         onSelect={() => undefined}
         selectedDate="2026-07-21"
-        settings={defaultBookingSettings}
       />,
     )
 

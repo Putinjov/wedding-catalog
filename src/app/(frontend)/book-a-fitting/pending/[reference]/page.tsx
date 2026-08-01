@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { PaymentButton } from '@/components/booking/payment-button'
+import { bookingConfig } from '@/config/booking'
 import { privatePageRobots } from '@/config/indexation'
 import { formatCurrency } from '@/config/site'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
@@ -40,9 +41,6 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
       : null
   const isPaid = appointment.paymentStatus === 'paid'
   const isConfirmed = isPaid && appointment.status === 'confirmed'
-  const durationMinutes = Math.round(
-    (new Date(appointment.endAt).getTime() - new Date(appointment.startAt).getTime()) / 60_000,
-  )
 
   return (
     <main className="bg-background">
@@ -81,7 +79,7 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
             </div>
             <div className="grid gap-2 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
               <dt className="text-sm text-muted-foreground">Duration</dt>
-              <dd className="font-medium text-foreground">{durationMinutes} minutes</dd>
+              <dd className="font-medium text-foreground">{bookingConfig.durationMinutes} minutes</dd>
             </div>
             <div className="grid gap-2 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
               <dt className="text-sm text-muted-foreground">Fitting fee</dt>

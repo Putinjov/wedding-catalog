@@ -10,7 +10,7 @@ import { SelectedDressSummary } from '@/components/booking/selected-dress-summar
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { AvailableSlot, BookingPurpose, ResolvedBookingSettings } from '@/config/booking'
+import { bookingConfig, type AvailableSlot, type BookingPurpose } from '@/config/booking'
 import { formatFittingFee } from '@/config/site'
 import {
   getBookingScheduleLabel,
@@ -67,7 +67,6 @@ export function BookingFlow({
   maxDate,
   minDate,
   selectedDress: initialSelectedDress,
-  settings,
   syncURLState = false,
 }: {
   initialDate?: string
@@ -76,7 +75,6 @@ export function BookingFlow({
   maxDate: string
   minDate: string
   selectedDress: SelectedDress | null
-  settings: ResolvedBookingSettings
   syncURLState?: boolean
 }) {
   const pathname = usePathname()
@@ -328,7 +326,7 @@ export function BookingFlow({
             Choose a date and time
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Fittings last {settings.durationMinutes} minutes. Choose a date first and we will
+            Fittings last {bookingConfig.durationMinutes} minutes. Choose a date first and we will
             show the currently available times.
           </p>
           <div className="mt-7 min-w-0">
@@ -342,11 +340,10 @@ export function BookingFlow({
                 minDate={minDate}
                 onSelect={handleDateChange}
                 selectedDate={date}
-                settings={settings}
               />
             </div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground" id="fitting-date-help">
-              {getBookingWindowLabel(settings)} {getBookingScheduleLabel(settings)}
+              {getBookingWindowLabel()} {getBookingScheduleLabel()}
             </p>
             {calendarAvailabilityError ? (
               <p className="mt-2 text-sm text-muted-foreground" role="status">
@@ -505,7 +502,7 @@ export function BookingFlow({
             <BookingSummary
               date={summaryDate}
               dressName={selectedDress?.name}
-              duration={`${settings.durationMinutes} minutes`}
+              duration={`${bookingConfig.durationMinutes} minutes`}
               fee={formatFittingFee()}
               purpose={purpose}
               time={summaryTime}

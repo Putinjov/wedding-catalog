@@ -2,11 +2,9 @@ import { BookingDialog } from '@/components/booking/booking-dialog'
 import { buttonVariants } from '@/components/ui/button'
 import { formatFittingFee } from '@/config/site'
 import { getBookingDateBounds } from '@/lib/booking/date'
-import { getBookingSettings } from '@/lib/booking/settings'
 
-export async function FittingCallout() {
-  const settings = await getBookingSettings()
-  const bounds = getBookingDateBounds(settings)
+export function FittingCallout() {
+  const bounds = getBookingDateBounds()
 
   return (
     <section className="bg-secondary/65 py-16 md:py-24">
@@ -33,7 +31,6 @@ export async function FittingCallout() {
             primaryClassName={buttonVariants({ className: 'w-fit rounded-sm px-6', size: 'lg' })}
             primaryLabel="Book a fitting"
             selectedDress={null}
-            settings={settings}
           />
         </div>
       </div>

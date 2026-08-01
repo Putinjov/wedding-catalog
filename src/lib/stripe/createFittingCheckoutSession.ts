@@ -6,7 +6,6 @@ import { isAppointmentSlotValid } from '@/lib/booking/appointmentIntegrity'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
-import { getBookingSettings } from '@/lib/booking/settings'
 import { getServerSideURL } from '@/utilities/getURL'
 
 import { getStripeClient } from './client'
@@ -51,8 +50,7 @@ export async function createFittingCheckoutSession(
     }
   }
 
-  const settings = await getBookingSettings()
-  if (!isAppointmentSlotValid(appointment, settings)) {
+  if (!isAppointmentSlotValid(appointment)) {
     return {
       message: 'This fitting time is no longer available. Please contact us for help.',
       status: 'unavailable',
@@ -60,7 +58,7 @@ export async function createFittingCheckoutSession(
   }
 
   const payload = await getPayload({ config: configPromise })
-  if (await hasAppointmentSlotConflict(payload, appointment, settings)) {
+  if (await hasAppointmentSlotConflict(payload, appointment)) {
     return {
       message: 'This fitting time is no longer available. Please contact us for help.',
       status: 'unavailable',

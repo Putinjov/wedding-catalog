@@ -1,4 +1,4 @@
-import type { ResolvedBookingSettings } from '@/config/booking'
+import { bookingConfig } from '@/config/booking'
 import { formatCalendarDate } from '@/lib/admin/appointments/calendarDate'
 import type { CalendarAppointment } from '@/lib/admin/appointments/calendarTypes'
 import { formatTimeInputValue, getConfiguredSlotTimes, getDateKey, isClosedDate } from '@/lib/booking/date'
@@ -10,20 +10,18 @@ export function WeekView({
   dateKeys,
   onOpen,
   onSelectDay,
-  settings,
 }: {
   appointments: CalendarAppointment[]
   dateKeys: string[]
   onOpen: (id: string) => void
   onSelectDay: (date: string) => void
-  settings: ResolvedBookingSettings
 }) {
   const today = getDateKey()
-  const slots = getConfiguredSlotTimes(settings)
+  const slots = getConfiguredSlotTimes()
 
   return (
     <div className="week-view" aria-label="Weekly appointment calendar">
-      <div className="week-view__corner">{settings.timezone}</div>
+      <div className="week-view__corner">{bookingConfig.timezone}</div>
       {dateKeys.map((dateKey) => (
         <button
           aria-current={dateKey === today ? 'date' : undefined}
@@ -34,7 +32,7 @@ export function WeekView({
         >
           <span>{formatCalendarDate(dateKey, { weekday: 'short' })}</span>
           <strong>{formatCalendarDate(dateKey, { day: 'numeric', month: 'short' })}</strong>
-          {isClosedDate(dateKey, settings) ? <small>Closed</small> : null}
+          {isClosedDate(dateKey) ? <small>Closed</small> : null}
         </button>
       ))}
       {slots.map((time) => (
@@ -47,8 +45,8 @@ export function WeekView({
                 formatTimeInputValue(appointment.startAt) === time,
             )
             return (
-              <div className={`week-view__slot${isClosedDate(dateKey, settings) ? ' is-closed' : ''}`} key={dateKey}>
-                {isClosedDate(dateKey, settings) ? (
+              <div className={`week-view__slot${isClosedDate(dateKey) ? ' is-closed' : ''}`} key={dateKey}>
+                {isClosedDate(dateKey) ? (
                   <span className="week-view__closed-label">Closed</span>
                 ) : (
                   slotAppointments.map((appointment) => (
