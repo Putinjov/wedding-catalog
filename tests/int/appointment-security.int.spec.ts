@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { defaultBookingSettings } from '@/config/booking'
 import { isAppointmentBlockingSlot } from '@/lib/booking/appointmentConflicts'
 import {
   appointmentPaymentContext,
@@ -35,6 +36,7 @@ describe('appointment payment integrity', () => {
         data: { paymentStatus: 'paid', status: 'confirmed' },
         operation: 'update',
         originalDoc: appointment(),
+        settings: defaultBookingSettings,
       }),
     ).toThrow(/server-controlled/i)
   })
@@ -46,6 +48,7 @@ describe('appointment payment integrity', () => {
         data: { paymentStatus: 'paid' },
         operation: 'update',
         originalDoc: appointment(),
+        settings: defaultBookingSettings,
       }),
     ).not.toThrow()
   })
@@ -57,6 +60,7 @@ describe('appointment payment integrity', () => {
         data: { paymentStatus: 'unpaid' },
         operation: 'update',
         originalDoc: appointment({ paymentStatus: 'paid' }),
+        settings: defaultBookingSettings,
       }),
     ).toThrow(/cannot be downgraded/i)
   })

@@ -30,14 +30,15 @@ export function appointmentOverlapsSlot(
   appointment: Pick<Appointment, 'startAt' | 'endAt'>,
   startAt: Date,
   endAt: Date,
+  bufferMinutes = 0,
 ): boolean {
   const appointmentStart = new Date(appointment.startAt).getTime()
   const appointmentEnd = new Date(appointment.endAt).getTime()
   return (
     !Number.isNaN(appointmentStart) &&
     !Number.isNaN(appointmentEnd) &&
-    appointmentStart < endAt.getTime() &&
-    appointmentEnd > startAt.getTime()
+    appointmentStart < endAt.getTime() + bufferMinutes * 60 * 1000 &&
+    appointmentEnd > startAt.getTime() - bufferMinutes * 60 * 1000
   )
 }
 

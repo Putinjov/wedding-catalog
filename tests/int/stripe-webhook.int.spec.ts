@@ -2,6 +2,7 @@ import type Stripe from 'stripe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Appointment } from '@/payload-types'
+import { defaultBookingSettings } from '@/config/booking'
 
 const mocks = vi.hoisted(() => ({
   constructEvent: vi.fn(),
@@ -18,6 +19,9 @@ vi.mock('@/lib/booking/getBookingPayload', () => ({
 }))
 vi.mock('@/lib/booking/hasAppointmentSlotConflict', () => ({
   hasAppointmentSlotConflict: mocks.hasAppointmentSlotConflict,
+}))
+vi.mock('@/lib/booking/settings', () => ({
+  getBookingSettingsFromPayload: vi.fn(async () => defaultBookingSettings),
 }))
 vi.mock('@/lib/stripe/client', () => ({
   getStripeClient: () => ({

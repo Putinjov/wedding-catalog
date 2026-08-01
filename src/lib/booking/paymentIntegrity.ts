@@ -1,6 +1,6 @@
 import { APIError, type FieldAccess, type RequestContext } from 'payload'
 
-import { bookingConfig } from '@/config/booking'
+import type { ResolvedBookingSettings } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import type { Appointment } from '@/payload-types'
 
@@ -72,6 +72,7 @@ function valuesDiffer(left: unknown, right: unknown): boolean {
 function isSafeUntrustedCreateField(
   data: Partial<Appointment>,
   field: (typeof protectedAppointmentFields)[number],
+  settings: ResolvedBookingSettings,
 ): boolean {
   if (field === 'currency') return data.currency === siteConfig.currency
   if (field === 'fittingFee') return data.fittingFee === siteConfig.fittingFee
@@ -83,7 +84,7 @@ function isSafeUntrustedCreateField(
   }
   if (field === 'holdExpiresAt' && data.holdExpiresAt) {
     const expiry = new Date(data.holdExpiresAt).getTime()
-    const maximum = Date.now() + (bookingConfig.holdMinutes + 1) * 60 * 1000
+    const maximum = Date.now() + (settings.holdMinutes + 1) * 60 * 1000
     return !Number.isNaN(expiry) && expiry <= maximum
   }
   return false
@@ -94,11 +95,13 @@ export function assertProtectedAppointmentFields({
   operation,
   originalDoc,
   context,
+  settings,
 }: {
   data: Partial<Appointment>
   operation: 'create' | 'update'
   originalDoc?: Appointment
   context?: RequestContext
+  settings: ResolvedBookingSettings
 }): void {
   const paymentContext = getAppointmentPaymentContext(context)
 
@@ -107,7 +110,7 @@ export function assertProtectedAppointmentFields({
       const unsafeCreate = protectedAppointmentFields.some(
         (field) =>
           hasOwnField(data, field) &&
-          !isSafeUntrustedCreateField(data, field),
+          !isSafeUntrustedCreateField(data, field, settings),
       )
       if (unsafeCreate || data.paymentStatus === 'paid' || data.source === 'admin') {
         throw new APIError('Server-controlled appointment fields cannot be supplied directly.', 403)

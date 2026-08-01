@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createPendingAppointment } from '@/lib/booking/createAppointment'
+import { defaultBookingSettings } from '@/config/booking'
 
 const mocks = vi.hoisted(() => ({
   getAvailableDressBySlug: vi.fn(),
@@ -26,6 +27,10 @@ vi.mock('payload', async (importOriginal) => {
 
 vi.mock('@/lib/getDress', () => ({
   getAvailableDressBySlug: mocks.getAvailableDressBySlug,
+}))
+
+vi.mock('@/lib/booking/settings', () => ({
+  getBookingSettings: vi.fn(async () => defaultBookingSettings),
 }))
 
 vi.mock('@/lib/booking/date', () => ({

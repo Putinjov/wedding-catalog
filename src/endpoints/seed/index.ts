@@ -1,4 +1,4 @@
-import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import type { CollectionSlug, Payload, PayloadRequest, File } from 'payload'
 
 import { contactForm as contactFormData } from './contact-form'
 import { contact as contactPageData } from './contact-page'
@@ -19,8 +19,6 @@ const collections: CollectionSlug[] = [
   'form-submissions',
   'search',
 ]
-
-const globals: GlobalSlug[] = ['header', 'footer']
 
 const categoryTitles = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
 
@@ -51,20 +49,20 @@ export const seed = async ({
   payload.logger.info(`— Clearing collections and globals...`)
 
   // clear the database
-  await Promise.all(
-    globals.map((global) =>
-      payload.updateGlobal({
-        slug: global,
-        data: {
-          navItems: [],
-        },
-        depth: 0,
-        context: {
-          disableRevalidate: true,
-        },
-      }),
-    ),
-  )
+  await Promise.all([
+    payload.updateGlobal({
+      slug: 'header',
+      data: { navItems: [] },
+      depth: 0,
+      context: { disableRevalidate: true },
+    }),
+    payload.updateGlobal({
+      slug: 'footer',
+      data: { navItems: [] },
+      depth: 0,
+      context: { disableRevalidate: true },
+    }),
+  ])
 
   await Promise.all(
     collections.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),

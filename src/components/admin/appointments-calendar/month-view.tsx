@@ -1,6 +1,8 @@
 import { formatCalendarDate } from '@/lib/admin/appointments/calendarDate'
 import type { CalendarAppointment } from '@/lib/admin/appointments/calendarTypes'
 import { getDateKey } from '@/lib/booking/date'
+import { isClosedDate } from '@/lib/booking/date'
+import type { ResolvedBookingSettings } from '@/config/booking'
 
 import { AppointmentCard } from './appointment-card'
 
@@ -10,12 +12,14 @@ export function MonthView({
   selectedDate,
   onOpen,
   onSelectDay,
+  settings,
 }: {
   appointments: CalendarAppointment[]
   dateKeys: string[]
   selectedDate: string
   onOpen: (id: string) => void
   onSelectDay: (date: string) => void
+  settings: ResolvedBookingSettings
 }) {
   const today = getDateKey()
   const selectedMonth = selectedDate.slice(0, 7)
@@ -47,6 +51,7 @@ export function MonthView({
               >
                 <span>{formatCalendarDate(dateKey, { day: 'numeric' })}</span>
                 {dateKey === today ? <small>Today</small> : null}
+                {isClosedDate(dateKey, settings) ? <small>Closed</small> : null}
               </button>
               <div className="month-view__events">
                 {dayAppointments.map((appointment) => (
