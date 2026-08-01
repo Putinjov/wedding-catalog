@@ -12,7 +12,6 @@ import { Appointments } from './collections/Appointments'
 import { Categories } from './collections/Categories'
 import { Dresses } from './collections/Dresses'
 import { Backs } from './collections/Lookups/Backs'
-import { BookingSettings } from './BookingSettings/config'
 import { Colors } from './collections/Lookups/Colors'
 import { Designers } from './collections/Lookups/Designers'
 import { Embellishments } from './collections/Lookups/Embellishments'
@@ -141,7 +140,7 @@ export default buildConfig({
     ProcessedStripeEvents,
   ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Header, Footer, BookingSettings],
+  globals: [Header, Footer],
   plugins: [
     ...plugins,
     s3Storage({

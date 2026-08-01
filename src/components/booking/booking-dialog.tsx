@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import type { BookingPurpose, ResolvedBookingSettings } from '@/config/booking'
+import type { BookingPurpose } from '@/config/booking'
 import { cn } from '@/utilities/ui'
 
 export function BookingDialog({
@@ -29,7 +29,6 @@ export function BookingDialog({
   secondaryClassName,
   secondaryLabel,
   selectedDress,
-  settings,
 }: {
   dialogID: string
   fallbackHref: string
@@ -43,7 +42,6 @@ export function BookingDialog({
   secondaryClassName?: string
   secondaryLabel?: string
   selectedDress: SelectedDressSummary | null
-  settings: ResolvedBookingSettings
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -93,7 +91,6 @@ export function BookingDialog({
           maxDate={maxDate}
           minDate={minDate}
           selectedDress={selectedDress}
-          settings={settings}
           syncURLState
         />
         <p className={cn('mt-4 text-center text-xs text-muted-foreground')}>

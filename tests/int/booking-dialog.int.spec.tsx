@@ -2,7 +2,6 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BookingDialog } from '@/components/booking/booking-dialog'
-import { defaultBookingSettings } from '@/config/booking'
 
 let currentSearch = 'mode=rent'
 const push = vi.fn()
@@ -36,7 +35,6 @@ const props = {
     supportsBuy: true,
     supportsRent: true,
   },
-  settings: defaultBookingSettings,
 }
 
 afterEach(cleanup)

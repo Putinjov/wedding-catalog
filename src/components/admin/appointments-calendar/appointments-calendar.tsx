@@ -10,7 +10,6 @@ import {
   type ManualAppointmentDress,
 } from '@/lib/admin/appointments/calendarTypes'
 import { addCalendarDays, getDateKey } from '@/lib/booking/date'
-import type { ResolvedBookingSettings } from '@/config/booking'
 
 import { AppointmentDrawer } from './appointment-drawer'
 import { CalendarEmptyState } from './calendar-empty-state'
@@ -44,11 +43,9 @@ function addCalendarMonths(dateKey: string, months: number): string {
 export function AppointmentsCalendar({
   dresses,
   initialError = '',
-  settings,
 }: {
   dresses: ManualAppointmentDress[]
   initialError?: string
-  settings: ResolvedBookingSettings
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -150,7 +147,7 @@ export function AppointmentsCalendar({
         <div>
           <span className="appointments-calendar__eyebrow">Appointments</span>
           <h1>Appointments calendar</h1>
-          <p>Times shown in {settings.timezone}. Payment and booking states are managed separately.</p>
+          <p>Times shown in Europe/Dublin. Payment and booking states are managed separately.</p>
         </div>
       </header>
       <CalendarToolbar
@@ -176,7 +173,6 @@ export function AppointmentsCalendar({
               onOpen={setSelectedID}
               onSelectDay={selectDay}
               selectedDate={date}
-              settings={settings}
             />
           ) : activeView === 'week' ? (
             <WeekView
@@ -184,7 +180,6 @@ export function AppointmentsCalendar({
               dateKeys={range.keys}
               onOpen={setSelectedID}
               onSelectDay={selectDay}
-              settings={settings}
             />
           ) : (
             <DayView
@@ -192,7 +187,6 @@ export function AppointmentsCalendar({
               appointments={filtered}
               dateKey={date}
               onOpen={setSelectedID}
-              settings={settings}
             />
           )}
         </div>
@@ -209,7 +203,6 @@ export function AppointmentsCalendar({
         onCreated={() => loadAppointments()}
         onOpenChange={setNewAppointmentOpen}
         open={newOpen}
-        settings={settings}
       />
     </main>
   )

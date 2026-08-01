@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { BookingSummary } from '@/components/booking/booking-summary'
 import { Button } from '@/components/ui/button'
+import { bookingConfig } from '@/config/booking'
 import { privatePageRobots } from '@/config/indexation'
 import { formatCurrency } from '@/config/site'
 import { formatDateForCustomer, formatTimeForCustomer, getDateKey } from '@/lib/booking/date'
@@ -62,9 +63,6 @@ export default async function FittingPaymentSuccessPage({ searchParams }: Args) 
   const dressName = getDressName(appointment)
   const dateKey = getDateKey(new Date(appointment.startAt))
   const amountPaid = appointment.amountPaid ?? (session?.amount_total ?? 0)
-  const durationMinutes = Math.round(
-    (new Date(appointment.endAt).getTime() - new Date(appointment.startAt).getTime()) / 60_000,
-  )
 
   return (
     <main className="bg-background">
@@ -91,7 +89,7 @@ export default async function FittingPaymentSuccessPage({ searchParams }: Args) 
           <BookingSummary
             date={formatDateForCustomer(dateKey)}
             dressName={dressName}
-            duration={`${durationMinutes} minutes`}
+            duration={`${bookingConfig.durationMinutes} minutes`}
             fee={
               isConfirmed || isProcessing
                 ? formatCurrency(amountPaid / 100, { maximumFractionDigits: 0 })

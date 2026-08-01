@@ -1,12 +1,7 @@
-import {
-  APIError,
-  type CollectionAfterChangeHook,
-  type CollectionAfterErrorHook,
-  type CollectionBeforeChangeHook,
-  type CollectionConfig,
-} from 'payload'
+import { APIError, type CollectionBeforeChangeHook, type CollectionConfig } from 'payload'
 
 import { appointmentTeam, ownerOrManager } from '@/access/roles'
+import { bookingConfig } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import { appointmentCalendarEndpoints } from '@/lib/admin/appointments/endpoints'
 import {
@@ -17,10 +12,8 @@ import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConf
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import {
   acquireAppointmentSlotLock,
-  acquireAppointmentDateMutex,
   getAppointmentSlotLockId,
   releaseAppointmentSlotLock,
-  releaseAppointmentDateMutex,
 } from '@/lib/booking/appointmentSlotLocks'
 import {
   assertProtectedAppointmentFields,
@@ -29,7 +22,6 @@ import {
 } from '@/lib/booking/paymentIntegrity'
 import type { Appointment } from '@/payload-types'
 import { writeAppointmentAudit } from '@/lib/booking/writeAppointmentAudit'
-import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 
 const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   context,
@@ -38,8 +30,7 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   originalDoc,
   req,
 }) => {
-  const settings = await getBookingSettingsFromPayload(req.payload, req)
-  assertProtectedAppointmentFields({ context, data, operation, originalDoc, settings })
+  assertProtectedAppointmentFields({ context, data, operation, originalDoc })
 
   const nextStatus = data.status
   const options = getStatusTransitionOptions(context)
@@ -81,50 +72,39 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   const startAt = data.startAt ?? originalDoc?.startAt
   const endAt = data.endAt ?? originalDoc?.endAt
 
+  if (
+    scheduleChanged &&
+    effectiveStatus !== 'cancelled' &&
+    startAt &&
+    endAt &&
+    (await hasAppointmentSlotConflict(req.payload, {
+      endAt,
+      id: originalDoc?.id,
+      startAt,
+    }))
+  ) {
+    throw new APIError('This appointment overlaps another active appointment.', 400)
+  }
+
   const existingLockId = getAppointmentSlotLockId(originalDoc?.slotLock)
   if (operation === 'update' && effectiveStatus === 'cancelled' && existingLockId) {
     await releaseAppointmentSlotLock(req, existingLockId)
     data.slotLock = null
   } else if (scheduleChanged && effectiveStatus !== 'cancelled' && startAt && endAt) {
-    await acquireAppointmentDateMutex({ endAt, req, startAt })
-    try {
-      if (
-        await hasAppointmentSlotConflict(
-          req.payload,
-          { endAt, id: originalDoc?.id, startAt },
-          settings,
-          req,
-        )
-      ) {
-        throw new APIError('This appointment overlaps another active appointment.', 400)
-      }
+    const nextLockId = await acquireAppointmentSlotLock({
+      endAt,
+      expiresAt: data.holdExpiresAt ?? originalDoc?.holdExpiresAt,
+      req,
+      startAt,
+    })
 
-      const nextLockId = await acquireAppointmentSlotLock({
-        endAt,
-        expiresAt: data.holdExpiresAt ?? originalDoc?.holdExpiresAt,
-        req,
-        startAt,
-      })
-      if (existingLockId && existingLockId !== nextLockId) {
-        await releaseAppointmentSlotLock(req, existingLockId)
-      }
-      data.slotLock = nextLockId
-    } catch (error) {
-      await releaseAppointmentDateMutex(req)
-      throw error
+    if (existingLockId && existingLockId !== nextLockId) {
+      await releaseAppointmentSlotLock(req, existingLockId)
     }
+    data.slotLock = nextLockId
   }
 
   return data
-}
-
-const releaseDateMutexAfterChange: CollectionAfterChangeHook<Appointment> = async ({ doc, req }) => {
-  await releaseAppointmentDateMutex(req)
-  return doc
-}
-
-const releaseDateMutexAfterError: CollectionAfterErrorHook = async ({ req }) => {
-  await releaseAppointmentDateMutex(req)
 }
 
 export const Appointments: CollectionConfig = {
@@ -156,20 +136,18 @@ export const Appointments: CollectionConfig = {
     update: appointmentTeam,
   },
   hooks: {
-    afterChange: [releaseDateMutexAfterChange, writeAppointmentAudit],
-    afterError: [releaseDateMutexAfterError],
+    afterChange: [writeAppointmentAudit],
     beforeChange: [validateStatusChange],
     beforeValidate: [
-      async ({ data, operation, req }) => {
+      ({ data, operation }) => {
         if (operation !== 'create' || !data) {
           return data
         }
 
-        const settings = await getBookingSettingsFromPayload(req.payload, req)
         const startAt = data.startAt ? new Date(data.startAt) : null
         const endAt =
           startAt && !Number.isNaN(startAt.getTime())
-            ? new Date(startAt.getTime() + settings.durationMinutes * 60 * 1000).toISOString()
+            ? new Date(startAt.getTime() + bookingConfig.durationMinutes * 60 * 1000).toISOString()
             : data.endAt
 
         const source = data.source ?? 'website'
@@ -181,7 +159,7 @@ export const Appointments: CollectionConfig = {
           holdExpiresAt:
             data.holdExpiresAt ??
             (source === 'website'
-              ? new Date(Date.now() + settings.holdMinutes * 60 * 1000).toISOString()
+              ? new Date(Date.now() + bookingConfig.holdMinutes * 60 * 1000).toISOString()
               : undefined),
           paymentStatus: data.paymentStatus ?? 'unpaid',
           publicReference: data.publicReference ?? createPublicReference(),

@@ -16,7 +16,6 @@ import {
   getSlotDateTimes,
   isClosedDate,
 } from '@/lib/booking/date'
-import { getBookingSettings } from '@/lib/booking/settings'
 import { consumeRateLimits, ipRateLimitRule } from '@/lib/security/rateLimit'
 
 export type FullyBookedDatesResult =
@@ -31,21 +30,16 @@ export async function getFullyBookedDates(): Promise<FullyBookedDatesResult> {
   }
 
   const now = new Date()
-  const settings = await getBookingSettings()
-  const { minDate, maxDate } = getBookingDateBounds(settings, now)
+  const { minDate, maxDate } = getBookingDateBounds(now)
   const dateKeys: string[] = []
   for (let date = minDate; date <= maxDate; date = addCalendarDays(date, 1) ?? '') {
     if (!date) break
-    if (!isClosedDate(date, settings)) dateKeys.push(date)
+    if (!isClosedDate(date)) dateKeys.push(date)
   }
 
-  const firstSlot = getSlotDateTimes(
-    minDate,
-    getConfiguredSlotTimes(settings, minDate)[0] ?? settings.weekdayHours.start,
-    settings,
-  )
+  const firstSlot = getSlotDateTimes(minDate, getConfiguredSlotTimes()[0] ?? '10:00')
   const endDate = addCalendarDays(maxDate, 1)
-  const rangeEnd = endDate ? getSlotDateTimes(endDate, '00:00', settings) : null
+  const rangeEnd = endDate ? getSlotDateTimes(endDate, '00:00') : null
   if (!firstSlot || !rangeEnd) return { dates: [], success: true }
 
   const payload = await getPayload({ config: configPromise })
@@ -65,18 +59,13 @@ export async function getFullyBookedDates(): Promise<FullyBookedDatesResult> {
   })
 
   const dates = dateKeys.filter((dateKey) =>
-    getConfiguredSlotTimes(settings, dateKey).every((time) => {
-      const slot = getSlotDateTimes(dateKey, time, settings)
+    getConfiguredSlotTimes().every((time) => {
+      const slot = getSlotDateTimes(dateKey, time)
       if (!slot || slot.startAt <= now) return true
       return existing.docs.some(
         (appointment) =>
           isAppointmentBlockingSlot(appointment, now) &&
-          appointmentOverlapsSlot(
-            appointment,
-            slot.startAt,
-            slot.endAt,
-            settings.bufferBeforeMinutes + settings.bufferAfterMinutes,
-          ),
+          appointmentOverlapsSlot(appointment, slot.startAt, slot.endAt),
       )
     }),
   )
