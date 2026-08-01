@@ -39,6 +39,7 @@ function dress(overrides: Partial<Dress> = {}): Dress {
     category: 'category-1',
     condition: 'new',
     createdAt: '2026-01-01T00:00:00.000Z',
+    displayOrder: 0,
     mainImage: 'media-1',
     name: 'Grace',
     publicVisibility: 'public',

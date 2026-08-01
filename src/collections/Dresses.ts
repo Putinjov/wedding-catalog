@@ -32,6 +32,8 @@ export const Dresses: CollectionConfig = {
       'rentalStatus',
       'salePrice',
       'rentalPrice',
+      'featured',
+      'displayOrder',
       'updatedAt',
     ],
     group: 'Dresses',
@@ -271,6 +273,21 @@ export const Dresses: CollectionConfig = {
               name: 'featured',
               type: 'checkbox',
               defaultValue: false,
+              admin: {
+                description: 'Featured dresses appear first in the default catalogue order.',
+              },
+            },
+
+            {
+              name: 'displayOrder',
+              type: 'number',
+              required: true,
+              defaultValue: 0,
+              min: 0,
+              admin: {
+                description:
+                  'Lower numbers appear first in curated catalogue order. Equal values use newest first.',
+              },
             },
           ],
         },

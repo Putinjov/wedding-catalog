@@ -47,6 +47,7 @@ const timestamps = {
 function dress(overrides: Partial<Dress> = {}): Dress {
   return {
     id: 'dress-1',
+    displayOrder: 0,
     name: 'Test dress',
     slug: 'test-dress',
     sku: 'INTERNAL-TEST-SKU',

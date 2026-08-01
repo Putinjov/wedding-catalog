@@ -47,6 +47,7 @@ function dress(overrides: Partial<Dress> = {}): Dress {
     category: 'category-1',
     condition: 'new',
     createdAt: '2026-01-01T00:00:00.000Z',
+    displayOrder: 0,
     mainImage: 'media-1',
     name: 'Grace',
     publicVisibility: 'public',
@@ -268,6 +269,24 @@ describe('legacy dress availability migration', () => {
       },
       { session: undefined },
     )
+  })
+
+  it('does not query versions in parallel on the migration transaction', async () => {
+    const { dresses, dressVersions, upArgs } = migrationArgs({ documents: [] })
+    let resolveDocuments!: (documents: unknown[]) => void
+    dresses.find.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveDocuments = resolve
+      }),
+    )
+
+    const migration = up(upArgs)
+    await vi.waitFor(() => expect(dresses.find).toHaveBeenCalledOnce())
+    expect(dressVersions.find).not.toHaveBeenCalled()
+
+    resolveDocuments([])
+    await migration
+    expect(dressVersions.find).toHaveBeenCalledOnce()
   })
 
   it('refuses rollback before modifying anything when new state has changed', async () => {

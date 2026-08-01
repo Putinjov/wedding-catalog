@@ -33,7 +33,6 @@ import { Footer } from './Footer/config'
 import { defaultLexical } from './fields/defaultLexical'
 import { Header } from './Header/config'
 import { migrateLegacyUserRoles } from './lib/security/migrateLegacyUserRoles'
-import { migrations } from './migrations'
 import { plugins } from './plugins'
 import { getServerSideURL } from './utilities/getURL'
 
@@ -112,7 +111,9 @@ export default buildConfig({
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: mongooseAdapter({
-    prodMigrations: migrations,
+    connectOptions: {
+      autoIndex: process.env.PAYLOAD_MIGRATING !== 'true',
+    },
     url: environment.DATABASE_URL ?? '',
   }),
   collections: [

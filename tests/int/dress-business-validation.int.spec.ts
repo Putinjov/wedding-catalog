@@ -255,6 +255,24 @@ describe('dress business validation migration', () => {
     )
   })
 
+  it('does not query versions in parallel on the migration transaction', async () => {
+    const { dresses, dressVersions, upArgs } = migrationArgs({ documents: [] })
+    let resolveDocuments!: (documents: unknown[]) => void
+    dresses.find.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveDocuments = resolve
+      }),
+    )
+
+    const migration = up(upArgs)
+    await vi.waitFor(() => expect(dresses.find).toHaveBeenCalledOnce())
+    expect(dressVersions.find).not.toHaveBeenCalled()
+
+    resolveDocuments([])
+    await migration
+    expect(dressVersions.find).toHaveBeenCalledOnce()
+  })
+
   it('aborts before writing when an untracked new field could be reinterpreted', async () => {
     const { dresses, dressVersions, upArgs } = migrationArgs({
       documents: [
