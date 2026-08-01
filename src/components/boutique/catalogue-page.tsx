@@ -9,10 +9,14 @@ import {
   parseCatalogueSort,
   type CatalogueSearchParams,
 } from '@/lib/catalogue'
+import { parseCatalogueFilters } from '@/lib/catalogue-filters'
+import { getCatalogueFilterOptions } from '@/lib/getCatalogueFilterOptions'
 import { getDresses } from '@/lib/getDresses'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { PageRange } from '@/components/PageRange'
+import { CatalogueFilters } from './catalogue-filters'
 import { CataloguePagination } from './catalogue-pagination'
 import { CatalogueSortControl } from './catalogue-sort'
 import { DressGrid } from './dress-grid'
@@ -26,12 +30,18 @@ export async function CataloguePage({
 }) {
   const requestedPage = parseCataloguePage(searchParams.page)
   const requestedSort = parseCatalogueSort(searchParams.sort)
+  const filterOptions = await getCatalogueFilterOptions()
+  const requestedFilters = parseCatalogueFilters(searchParams, filterOptions)
   const normalizedSearchParams = normalizeCatalogueSortSearchParams(
-    searchParams,
+    requestedFilters.searchParams,
     requestedSort.sort,
   )
 
-  if (requestedPage.shouldRedirect || requestedSort.shouldRedirect) {
+  if (
+    requestedPage.shouldRedirect ||
+    requestedSort.shouldRedirect ||
+    requestedFilters.shouldRedirect
+  ) {
     redirect(
       getCataloguePageURL({
         mode,
@@ -42,6 +52,8 @@ export async function CataloguePage({
   }
 
   const dresses = await getDresses(mode, {
+    filterOptions,
+    filters: requestedFilters.filters,
     page: requestedPage.page,
     sort: requestedSort.sort,
   })
@@ -91,21 +103,43 @@ export async function CataloguePage({
         </div>
 
         <div className="mt-6 scroll-mt-8" id="catalogue-results">
-          {dresses.docs.length > 0 ? (
-            <>
-              <DressGrid dresses={dresses.docs} mode={mode} />
-              <CataloguePagination
-                mode={mode}
-                page={currentPage}
-                searchParams={normalizedSearchParams}
-                totalPages={dresses.totalPages}
-              />
-            </>
-          ) : (
-            <div className="border border-border bg-secondary/45 px-6 py-10 text-muted-foreground">
-              This collection will appear here once dresses have been published and made available.
-            </div>
-          )}
+          <CatalogueFilters
+            activeCount={requestedFilters.activeCount}
+            filters={requestedFilters.filters}
+            mode={mode}
+            options={filterOptions}
+            searchParams={normalizedSearchParams}
+          >
+            {dresses.docs.length > 0 ? (
+              <>
+                <DressGrid dresses={dresses.docs} mode={mode} />
+                <CataloguePagination
+                  mode={mode}
+                  page={currentPage}
+                  searchParams={normalizedSearchParams}
+                  totalPages={dresses.totalPages}
+                />
+              </>
+            ) : requestedFilters.activeCount > 0 ? (
+              <div className="border border-border bg-secondary/45 px-6 py-10 text-muted-foreground">
+                <p>No dresses match these filters. Try removing one or clear all filters.</p>
+                <Link
+                  className="mt-4 inline-flex min-h-11 items-center font-medium text-brand-deep-lavender underline underline-offset-4"
+                  href={getCataloguePageURL({
+                    mode,
+                    page: 1,
+                    searchParams: { sort: normalizedSearchParams.sort },
+                  })}
+                >
+                  Clear filters
+                </Link>
+              </div>
+            ) : (
+              <div className="border border-border bg-secondary/45 px-6 py-10 text-muted-foreground">
+                This collection will appear here once dresses have been published and made available.
+              </div>
+            )}
+          </CatalogueFilters>
         </div>
       </section>
     </main>

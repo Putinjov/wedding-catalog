@@ -4,11 +4,11 @@ import { metadata as bookingMetadata } from '@/app/(frontend)/book-a-fitting/pag
 import { generateMetadata as generatePendingMetadata } from '@/app/(frontend)/book-a-fitting/pending/[reference]/page'
 import { metadata as cancelledPaymentMetadata } from '@/app/(frontend)/book-a-fitting/payment/cancelled/page'
 import { generateMetadata as generateSuccessPaymentMetadata } from '@/app/(frontend)/book-a-fitting/payment/success/page'
-import { metadata as buyMetadata } from '@/app/(frontend)/buy/page'
+import { generateMetadata as generateBuyMetadata } from '@/app/(frontend)/buy/page'
 import { generateMetadata as generateDressMetadata } from '@/app/(frontend)/dresses/[slug]/page'
 import { metadata as dressesMetadata } from '@/app/(frontend)/dresses/page'
 import { metadata as homeMetadata } from '@/app/(frontend)/page'
-import { metadata as rentMetadata } from '@/app/(frontend)/rent/page'
+import { generateMetadata as generateRentMetadata } from '@/app/(frontend)/rent/page'
 import { getPrivateBookingHeaderRules } from '@/config/indexation'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import type { DressWithMedia } from '@/lib/dress-media'
@@ -110,12 +110,29 @@ describe('canonical metadata', () => {
     vi.mocked(getDressBySlug).mockReset()
   })
 
-  it('defines a self-canonical on every primary public route', () => {
+  it('defines a self-canonical on every primary public route', async () => {
+    const buyMetadata = await generateBuyMetadata({ searchParams: Promise.resolve({}) })
+    const rentMetadata = await generateRentMetadata({ searchParams: Promise.resolve({}) })
+
     expect(homeMetadata.alternates?.canonical).toBe('/')
     expect(dressesMetadata.alternates?.canonical).toBe('/dresses')
     expect(buyMetadata.alternates?.canonical).toBe('/buy')
     expect(rentMetadata.alternates?.canonical).toBe('/rent')
     expect(bookingMetadata.alternates?.canonical).toBe('/book-a-fitting')
+  })
+
+  it('keeps filtered catalogues crawlable but out of the search index', async () => {
+    const buyMetadata = await generateBuyMetadata({
+      searchParams: Promise.resolve({ designer: 'designer-one', priceMax: '2500' }),
+    })
+    const rentMetadata = await generateRentMetadata({
+      searchParams: Promise.resolve({ featured: '1' }),
+    })
+
+    expect(buyMetadata.alternates?.canonical).toBe('/buy')
+    expect(buyMetadata.robots).toEqual({ follow: true, index: false })
+    expect(rentMetadata.alternates?.canonical).toBe('/rent')
+    expect(rentMetadata.robots).toEqual({ follow: true, index: false })
   })
 
   it('uses the authoritative dress slug without catalogue mode parameters', async () => {
