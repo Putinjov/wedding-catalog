@@ -17,7 +17,7 @@ own origin and return a disallow-all `robots.txt`.
 
 ## Requirements
 
-- Node.js 22 (`.nvmrc` and `package.json` engines are authoritative)
+- Node.js 24 (`.nvmrc` and `package.json` engines are authoritative)
 - npm 10 or later
 - MongoDB replica set or Atlas cluster
 - Stripe CLI for local webhook testing
@@ -52,9 +52,15 @@ returns secrets.
 
 ## Production configuration
 
-All variables listed in `.env.example` are required in production. Server configuration is parsed
-by `src/config/env.ts` and deployment fails early when a required variable is missing or malformed.
-Set `NEXT_PUBLIC_SERVER_URL=https://caitbridal.ie` without a path.
+All production provider variables listed in `.env.example` are required. Server configuration is
+parsed by `src/config/env.ts` and deployment fails early when a required variable is missing or
+malformed. Set `NEXT_PUBLIC_SERVER_URL=https://caitbridal.ie` without a path. The non-secret
+`MIGRATION_GATE_REQUIRED` toggle is only needed outside Vercel.
+
+Payload migrations are never run by application or Next.js build workers. Vercel production builds
+perform a read-only migration check and fail closed while migrations are pending. Apply migrations
+through the protected **Production migration gate** GitHub Actions workflow, then redeploy the exact
+default-branch commit. Non-Vercel production builds must set `MIGRATION_GATE_REQUIRED=true`.
 
 ### Stripe
 
@@ -86,7 +92,7 @@ Validate upload, thumbnail display, replacement and deletion after every storage
 ## Deployment and rollback
 
 Follow [docs/deployment.md](docs/deployment.md) for the production checklist, DNS cutover, smoke
-tests and rollback procedure.
+tests, database migration gate and rollback procedure.
 
 ## Retained Payload template features
 

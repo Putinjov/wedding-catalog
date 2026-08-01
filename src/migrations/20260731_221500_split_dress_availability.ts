@@ -272,10 +272,9 @@ async function getAllTargets({
     throw new Error('Task 04 migration aborted: dress or dress version model is unavailable.')
   }
 
-  const [documents, versions] = await Promise.all([
-    loadTargets({ model: dresses, session, versioned: false }),
-    loadTargets({ model: dressVersions, session, versioned: true }),
-  ])
+  // MongoDB does not support parallel operations on the same transaction session.
+  const documents = await loadTargets({ model: dresses, session, versioned: false })
+  const versions = await loadTargets({ model: dressVersions, session, versioned: true })
   return [...documents, ...versions]
 }
 

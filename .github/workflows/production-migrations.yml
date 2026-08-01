@@ -1,0 +1,65 @@
+name: Production migration gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Confirm the production database migration
+        required: true
+        type: choice
+        options:
+          - MIGRATE_PRODUCTION
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-database-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: inputs.confirmation == 'MIGRATE_PRODUCTION'
+    environment:
+      name: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: true
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      NEXT_PUBLIC_SERVER_URL: ${{ secrets.NEXT_PUBLIC_SERVER_URL }}
+      PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+
+    steps:
+      - name: Checkout the default branch
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Clean install
+        run: npm ci
+
+      - name: Run database migrations
+        run: npm run migrations:run
+
+      - name: Verify migration state
+        env:
+          MIGRATION_GATE_REQUIRED: true
+        run: npm run migrations:check

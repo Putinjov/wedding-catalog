@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { getServerEnvironment } from '@/config/env'
+import { findPendingMigrationNames, isMigrationGateRequired } from '@/config/migration-gate'
 import {
   getCanonicalOrigin,
   getServerSideOrigin,
@@ -39,5 +43,54 @@ describe('deployment configuration', () => {
         } as NodeJS.ProcessEnv,
       }),
     ).toThrow(/R2_BUCKET.*STRIPE_SECRET_KEY/)
+  })
+
+  it('requires the migration gate for Vercel production and explicit non-Vercel builds', () => {
+    expect(isMigrationGateRequired({ VERCEL_ENV: 'production' })).toBe(true)
+    expect(isMigrationGateRequired({ MIGRATION_GATE_REQUIRED: 'true' })).toBe(true)
+    expect(
+      isMigrationGateRequired({ MIGRATION_GATE_REQUIRED: 'false', VERCEL_ENV: 'production' }),
+    ).toBe(true)
+    expect(isMigrationGateRequired({ VERCEL_ENV: 'preview' })).toBe(false)
+    expect(() => isMigrationGateRequired({ MIGRATION_GATE_REQUIRED: 'yes' })).toThrow(
+      'must be true or false',
+    )
+  })
+
+  it('finds pending migrations and rejects duplicate filenames', () => {
+    expect(findPendingMigrationNames(['one', 'two', 'three'], ['one', 'three'])).toEqual(['two'])
+    expect(() => findPendingMigrationNames(['one', 'one'], [])).toThrow(
+      'Duplicate migration filenames',
+    )
+  })
+
+  it('keeps migrations out of runtime startup and wires a serialized production gate', () => {
+    const packageConfig = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
+    ) as { scripts: Record<string, string> }
+    const payloadConfig = readFileSync(resolve(process.cwd(), 'src/payload.config.ts'), 'utf8')
+    const workflow = readFileSync(
+      resolve(process.cwd(), '.github/workflows/production-migrations.yml'),
+      'utf8',
+    )
+    const migrationRunner = readFileSync(
+      resolve(process.cwd(), 'src/scripts/run-migrations.ts'),
+      'utf8',
+    )
+
+    expect(packageConfig.scripts.build).toMatch(/^npm run migrations:check/)
+    expect(packageConfig.scripts['migrations:run']).toContain('src/scripts/run-migrations.ts')
+    expect(payloadConfig).not.toContain('prodMigrations')
+    expect(payloadConfig).toContain("autoIndex: process.env.PAYLOAD_MIGRATING !== 'true'")
+    expect(migrationRunner).toContain('disableOnInit: true')
+    expect(migrationRunner.indexOf('createCollection()')).toBeLessThan(
+      migrationRunner.indexOf('payload.db.migrate()'),
+    )
+    expect(workflow).toContain('group: production-database-migrations')
+    expect(workflow).toContain('cancel-in-progress: false')
+    expect(workflow).toContain('name: production')
+    expect(workflow).toContain('ref: ${{ github.event.repository.default_branch }}')
+    expect(workflow).toContain('npm run migrations:run')
+    expect(workflow).toContain('npm run migrations:check')
   })
 })
