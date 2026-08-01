@@ -5,6 +5,7 @@ import { formatCurrency } from '@/config/site'
 import type { DressDisplayMode } from '@/lib/catalogue'
 import type { DressWithMedia } from '@/lib/dress-media'
 import { supportsDressMode } from '@/lib/dress-utils'
+import { appendDressMode, getDressPath } from '@/utilities/dress-routing'
 
 export function DressCard({
   dress,
@@ -27,12 +28,13 @@ export function DressCard({
       ? dress.rentalPrice
       : null
   const ctaLabel = mode === 'rent' ? 'View rental' : 'View dress'
+  const href = appendDressMode(getDressPath(dress.slug), mode === 'all' ? null : mode)
 
   return (
     <article className="group">
       <Link
         className="block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
-        href={`/dresses/${dress.slug}`}
+        href={href}
       >
         <div className="aspect-[3/4] overflow-hidden bg-secondary">
           {image ? (
