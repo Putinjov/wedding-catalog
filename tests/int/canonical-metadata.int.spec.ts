@@ -86,6 +86,7 @@ function dress(overrides: Partial<DressWithMedia> = {}): DressWithMedia {
     category: 'category-1',
     condition: 'new',
     createdAt: '2026-01-01T00:00:00.000Z',
+    displayOrder: 0,
     mainImage: 'media-1',
     media: {
       gallery: [],

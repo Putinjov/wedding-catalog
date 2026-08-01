@@ -1112,7 +1112,14 @@ export interface Dress {
   waistline?: (string | null) | Waistline;
   embellishments?: (string | Embellishment)[] | null;
   condition: 'new' | 'like-new' | 'excellent' | 'good' | 'needs-cleaning' | 'needs-repair';
+  /**
+   * Featured dresses appear first in the default catalogue order.
+   */
   featured?: boolean | null;
+  /**
+   * Lower numbers appear first in curated catalogue order. Equal values use newest first.
+   */
+  displayOrder: number;
   /**
    * Optional fit guidance suitable for the public dress page.
    */
@@ -2164,6 +2171,7 @@ export interface DressesSelect<T extends boolean = true> {
   embellishments?: T;
   condition?: T;
   featured?: T;
+  displayOrder?: T;
   fitNotes?: T;
   alterationPossibilities?: T;
   alterationLimitations?: T;

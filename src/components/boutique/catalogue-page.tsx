@@ -4,7 +4,9 @@ import {
   catalogueContent,
   getCataloguePageURL,
   getOutOfRangeCataloguePage,
+  normalizeCatalogueSortSearchParams,
   parseCataloguePage,
+  parseCatalogueSort,
   type CatalogueSearchParams,
 } from '@/lib/catalogue'
 import { getDresses } from '@/lib/getDresses'
@@ -12,6 +14,7 @@ import { redirect } from 'next/navigation'
 
 import { PageRange } from '@/components/PageRange'
 import { CataloguePagination } from './catalogue-pagination'
+import { CatalogueSortControl } from './catalogue-sort'
 import { DressGrid } from './dress-grid'
 
 export async function CataloguePage({
@@ -22,16 +25,36 @@ export async function CataloguePage({
   searchParams: CatalogueSearchParams
 }) {
   const requestedPage = parseCataloguePage(searchParams.page)
+  const requestedSort = parseCatalogueSort(searchParams.sort)
+  const normalizedSearchParams = normalizeCatalogueSortSearchParams(
+    searchParams,
+    requestedSort.sort,
+  )
 
-  if (requestedPage.shouldRedirect) {
-    redirect(getCataloguePageURL({ mode, page: requestedPage.page, searchParams }))
+  if (requestedPage.shouldRedirect || requestedSort.shouldRedirect) {
+    redirect(
+      getCataloguePageURL({
+        mode,
+        page: requestedPage.page,
+        searchParams: normalizedSearchParams,
+      }),
+    )
   }
 
-  const dresses = await getDresses(mode, { page: requestedPage.page })
+  const dresses = await getDresses(mode, {
+    page: requestedPage.page,
+    sort: requestedSort.sort,
+  })
   const outOfRangePage = getOutOfRangeCataloguePage(requestedPage.page, dresses.totalPages)
 
   if (outOfRangePage !== null) {
-    redirect(getCataloguePageURL({ mode, page: outOfRangePage, searchParams }))
+    redirect(
+      getCataloguePageURL({
+        mode,
+        page: outOfRangePage,
+        searchParams: normalizedSearchParams,
+      }),
+    )
   }
 
   const content = catalogueContent[mode]
@@ -52,21 +75,29 @@ export async function CataloguePage({
           </p>
         </div>
 
-        <div className="mt-14 scroll-mt-8" id="catalogue-results">
+        <div className="mt-14 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <PageRange
+            className="text-sm text-muted-foreground"
+            collectionLabels={{ plural: 'dresses', singular: 'dress' }}
+            currentPage={currentPage}
+            limit={CATALOGUE_PAGE_SIZE}
+            totalDocs={dresses.totalDocs}
+          />
+          <CatalogueSortControl
+            mode={mode}
+            searchParams={normalizedSearchParams}
+            sort={requestedSort.sort}
+          />
+        </div>
+
+        <div className="mt-6 scroll-mt-8" id="catalogue-results">
           {dresses.docs.length > 0 ? (
             <>
-              <PageRange
-                className="mb-6 text-sm text-muted-foreground"
-                collectionLabels={{ plural: 'dresses', singular: 'dress' }}
-                currentPage={currentPage}
-                limit={CATALOGUE_PAGE_SIZE}
-                totalDocs={dresses.totalDocs}
-              />
               <DressGrid dresses={dresses.docs} mode={mode} />
               <CataloguePagination
                 mode={mode}
                 page={currentPage}
-                searchParams={searchParams}
+                searchParams={normalizedSearchParams}
                 totalPages={dresses.totalPages}
               />
             </>
