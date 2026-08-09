@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { emailDeliveryDefaults } from '@/config/email-addresses'
 import {
   normalizeHttpOrigin,
   normalizePublicAssetOrigin,
@@ -86,12 +87,16 @@ function validateProductionSecrets(environment: ServerEnvironment): void {
     throw new Error('[env] SMTP_PASSWORD must be at least 16 characters in production.')
   }
 
-  if (
-    environment.EMAIL_FROM &&
-    environment.SMTP_USER &&
-    environment.EMAIL_FROM !== environment.SMTP_USER
-  ) {
-    throw new Error('[env] EMAIL_FROM must match SMTP_USER for Google Workspace SMTP.')
+  if (environment.SMTP_USER !== emailDeliveryDefaults.smtpUser) {
+    throw new Error(
+      `[env] SMTP_USER must be ${emailDeliveryDefaults.smtpUser} for Google Workspace SMTP.`,
+    )
+  }
+
+  if (environment.EMAIL_FROM !== emailDeliveryDefaults.fromAddress) {
+    throw new Error(
+      `[env] EMAIL_FROM must be the verified Google Workspace alias ${emailDeliveryDefaults.fromAddress}.`,
+    )
   }
 
   if (

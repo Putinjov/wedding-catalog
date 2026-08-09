@@ -1,14 +1,10 @@
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import type { EmailAdapter } from 'payload'
 
+import { emailDeliveryDefaults } from '@/config/email-addresses'
 import type { ServerEnvironment } from '@/config/env'
 
-export const emailDeliveryDefaults = {
-  adminAddress: 'bookings@caitbridal.ie',
-  fromAddress: 'noreply@caitbridal.ie',
-  fromName: 'CAIT Bridal',
-  replyToAddress: 'bookings@caitbridal.ie',
-} as const
+export { emailDeliveryDefaults }
 
 const disabledEmailAdapter: EmailAdapter = () => ({
   defaultFromAddress: emailDeliveryDefaults.fromAddress,

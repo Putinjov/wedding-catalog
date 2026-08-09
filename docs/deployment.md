@@ -32,10 +32,12 @@ R2_ENDPOINT
 R2_PUBLIC_URL
 ```
 
-Google Workspace SMTP uses `smtp.gmail.com:465` with TLS. `SMTP_USER` and `EMAIL_FROM` must both be
-`noreply@caitbridal.ie`; replies and privacy-safe booking alerts go to `bookings@caitbridal.ie`.
-Use an administrator-approved app password or equivalent SMTP credential and never paste it into
-issues, PRs, logs or committed files.
+Google Workspace SMTP uses `smtp.gmail.com:465` with TLS. `SMTP_USER` authenticates as
+`sales@caitbridal.ie`, while `EMAIL_FROM` uses its verified send-as alias
+`noreply@caitbridal.ie`. Replies and privacy-safe booking alerts go to
+`bookings@caitbridal.ie`. Confirm the alias is enabled for the account before deployment. Use an
+administrator-approved app password or equivalent SMTP credential and never paste it into issues,
+PRs, logs or committed files.
 
 Vercel supplies `VERCEL_ENV=production`, which enables the migration check automatically. For any
 other production build environment, set the non-secret variable `MIGRATION_GATE_REQUIRED=true`.
@@ -121,7 +123,8 @@ These checks are manual because CI must never perform real R2 writes.
 
 ## 7a. Appointment email delivery
 
-- [ ] Confirm the Google Workspace SMTP credential is present in Production and Preview.
+- [ ] Confirm the `sales@caitbridal.ie` Google Workspace SMTP credential is present in Production
+      and Preview, and that `noreply@caitbridal.ie` is enabled as its send-as alias.
 - [ ] Create an unpaid fitting and confirm one pending email is accepted by SMTP.
 - [ ] Complete one Stripe test payment and confirm exactly one confirmation email is accepted.
 - [ ] Replay the webhook and confirm no second automatic delivery record is created.
