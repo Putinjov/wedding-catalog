@@ -19,6 +19,7 @@ const footerGroups = [
       { href: '/book-a-fitting', label: 'Book a fitting' },
       { href: '/about', label: 'About' },
       { href: '/contact', label: 'Contact' },
+      { href: '/privacy', label: 'Privacy Policy' },
     ],
   },
   {

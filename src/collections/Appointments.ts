@@ -29,6 +29,10 @@ import {
   getAppointmentPaymentContext,
   protectedAppointmentFieldWrite,
 } from '@/lib/booking/paymentIntegrity'
+import {
+  assertAppointmentPrivacyFields,
+  protectedAppointmentPrivacyFieldWrite,
+} from '@/lib/booking/privacyIntegrity'
 import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
 import type { Appointment } from '@/payload-types'
 import { writeAppointmentAudit } from '@/lib/booking/writeAppointmentAudit'
@@ -43,6 +47,7 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
 }) => {
   const settings = await getBookingSettingsFromPayload(req.payload, req)
   assertProtectedAppointmentFields({ context, data, operation, originalDoc, settings })
+  assertAppointmentPrivacyFields({ context, data, operation, originalDoc })
 
   const nextStatus = data.status
   const options = getStatusTransitionOptions(context)
@@ -255,6 +260,157 @@ export const Appointments: CollectionConfig = {
       name: 'notes',
       type: 'textarea',
       maxLength: 1000,
+    },
+    {
+      type: 'collapsible',
+      label: 'Privacy and marketing evidence',
+      admin: {
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'privacyPolicyVersion',
+          type: 'text',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: {
+            description: 'Policy snapshot shown or provided when the booking was created.',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'privacyNoticeProvidedAt',
+          type: 'date',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: { readOnly: true },
+        },
+        {
+          name: 'privacyNoticeMethod',
+          type: 'select',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: { readOnly: true },
+          options: [
+            { label: 'Website', value: 'website' },
+            { label: 'Phone', value: 'phone' },
+            { label: 'Email', value: 'email' },
+            { label: 'SMS', value: 'sms' },
+            { label: 'In person', value: 'in_person' },
+          ],
+        },
+        {
+          name: 'privacyNoticeTextHash',
+          type: 'text',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: {
+            description: 'SHA-256 hash of the exact privacy notice.',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'privacyAcknowledgedAt',
+          type: 'date',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: {
+            description: 'Null for manual bookings unless the customer personally acknowledged the policy.',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'privacyAcknowledgementTextHash',
+          type: 'text',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: {
+            description: 'SHA-256 hash of the exact acknowledgement copy.',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'privacyAcknowledgementSource',
+          type: 'select',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: { readOnly: true },
+          options: [{ label: 'Website', value: 'website' }],
+        },
+        {
+          name: 'marketingConsentStatus',
+          type: 'select',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: { readOnly: true },
+          options: [
+            { label: 'Not asked', value: 'not_asked' },
+            { label: 'Not granted', value: 'not_granted' },
+            { label: 'Granted', value: 'granted' },
+            { label: 'Withdrawn', value: 'withdrawn' },
+          ],
+        },
+        {
+          name: 'marketingConsentAt',
+          type: 'date',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: { readOnly: true },
+        },
+        {
+          name: 'marketingConsentTextHash',
+          type: 'text',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: {
+            description: 'SHA-256 hash of the exact marketing opt-in copy.',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'marketingConsentChannel',
+          type: 'select',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: { readOnly: true },
+          options: [{ label: 'Email', value: 'email' }],
+        },
+        {
+          name: 'marketingConsentCaptureMethod',
+          type: 'select',
+          access: {
+            create: protectedAppointmentPrivacyFieldWrite,
+            update: protectedAppointmentPrivacyFieldWrite,
+          },
+          admin: { readOnly: true },
+          options: [
+            { label: 'Written or electronic', value: 'written' },
+            { label: 'Oral', value: 'oral' },
+          ],
+        },
+      ],
     },
     {
       name: 'startAt',

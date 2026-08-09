@@ -3,6 +3,7 @@ import * as migration_20260731_224500_add_dress_business_validation from './2026
 import * as migration_20260801_154500_add_catalogue_display_order from './20260801_154500_add_catalogue_display_order'
 import * as migration_20260801_210000_create_booking_settings from './20260801_210000_create_booking_settings'
 import * as migration_20260809_101500_add_undecided_booking_intent from './20260809_101500_add_undecided_booking_intent'
+import * as migration_20260809_160000_add_privacy_records from './20260809_160000_add_privacy_records'
 
 export const migrations = [
   {
@@ -29,5 +30,10 @@ export const migrations = [
     up: migration_20260809_101500_add_undecided_booking_intent.up,
     down: migration_20260809_101500_add_undecided_booking_intent.down,
     name: '20260809_101500_add_undecided_booking_intent',
+  },
+  {
+    up: migration_20260809_160000_add_privacy_records.up,
+    down: migration_20260809_160000_add_privacy_records.down,
+    name: '20260809_160000_add_privacy_records',
   },
 ]

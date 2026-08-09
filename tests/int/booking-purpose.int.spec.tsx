@@ -19,6 +19,7 @@ const undecidedBooking = {
   date: '2099-01-02',
   email: 'test@example.com',
   phone: '+3530000000',
+  privacyAcknowledged: true,
   purpose: 'undecided',
   time: '10:00',
 } as const
@@ -59,6 +60,7 @@ describe('undecided booking purpose', () => {
       createAdminAppointmentSchema.safeParse({
         ...undecidedBooking,
         initialStatus: 'pending',
+        privacyNoticeMethod: 'phone',
       }).success,
     ).toBe(true)
   })

@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 
 import { BookingProgress } from '@/components/booking/booking-progress'
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { AvailableSlot, BookingPurpose, ResolvedBookingSettings } from '@/config/booking'
+import { currentPrivacyPolicy } from '@/config/privacy'
 import { formatFittingFee } from '@/config/site'
 import {
   getBookingScheduleLabel,
@@ -57,6 +59,23 @@ type SubmitState = {
   status: 'idle' | 'submitting' | 'error'
 }
 
+function PrivacyPolicyText({ text }: { text: string }) {
+  const [before, after = ''] = text.split('Privacy Policy')
+
+  return (
+    <>
+      {before}
+      <Link
+        className="font-medium text-foreground underline underline-offset-4"
+        href={currentPrivacyPolicy.policyPath}
+      >
+        Privacy Policy
+      </Link>
+      {after}
+    </>
+  )
+}
+
 export function BookingFlow({
   initialDate = '',
   initialPurpose,
@@ -98,6 +117,8 @@ export function BookingFlow({
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false)
+  const [marketingEmailOptIn, setMarketingEmailOptIn] = useState(false)
   const [stepError, setStepError] = useState('')
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
   const availablePurposes = getAvailableBookingPurposes(selectedDress)
@@ -222,6 +243,10 @@ export function BookingFlow({
         setStepError('Please enter a phone number so we can reach you.')
         return
       }
+      if (!privacyAcknowledged) {
+        setStepError('Please confirm that you have read the Privacy Policy.')
+        return
+      }
       setStep(4)
     }
   }
@@ -246,6 +271,8 @@ export function BookingFlow({
       email,
       notes: notes || undefined,
       phone,
+      privacyAcknowledged,
+      marketingEmailOptIn,
       purpose,
       time: formatTimeInputValue(selectedSlot.startAt),
     })
@@ -266,7 +293,9 @@ export function BookingFlow({
       result.fieldErrors?.customerName ||
       result.fieldErrors?.email ||
       result.fieldErrors?.phone ||
-      result.fieldErrors?.notes
+      result.fieldErrors?.notes ||
+      result.fieldErrors?.privacyAcknowledged ||
+      result.fieldErrors?.marketingEmailOptIn
     ) {
       setStep(3)
     }
@@ -488,7 +517,48 @@ export function BookingFlow({
                   {getFieldError('notes')}
                 </p>
               ) : null}
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                Please do not include medical or other sensitive personal information.
+              </p>
             </div>
+          </div>
+          <div className="mt-8 border-t border-brand-warm-border pt-6">
+            <p className="text-sm leading-6 text-muted-foreground" id="booking-privacy-notice">
+              <PrivacyPolicyText text={currentPrivacyPolicy.noticeText} />
+            </p>
+            <label className="mt-5 flex min-h-11 cursor-pointer items-start gap-3 text-sm leading-6 text-foreground">
+              <input
+                aria-describedby={`booking-privacy-notice${getFieldError('privacyAcknowledged') ? ' privacy-acknowledgement-error' : ''}`}
+                aria-invalid={Boolean(getFieldError('privacyAcknowledged'))}
+                checked={privacyAcknowledged}
+                className="mt-1 size-5 shrink-0 accent-foreground"
+                onChange={(event) => {
+                  setPrivacyAcknowledged(event.target.checked)
+                  setStepError('')
+                }}
+                type="checkbox"
+              />
+              <span>
+                <PrivacyPolicyText text={currentPrivacyPolicy.acknowledgementText} />
+              </span>
+            </label>
+            {getFieldError('privacyAcknowledged') ? (
+              <p className="mt-2 text-sm text-destructive" id="privacy-acknowledgement-error">
+                {getFieldError('privacyAcknowledged')}
+              </p>
+            ) : null}
+            <label className="mt-5 flex min-h-11 cursor-pointer items-start gap-3 text-sm leading-6 text-foreground">
+              <input
+                checked={marketingEmailOptIn}
+                className="mt-1 size-5 shrink-0 accent-foreground"
+                onChange={(event) => setMarketingEmailOptIn(event.target.checked)}
+                type="checkbox"
+              />
+              <span>
+                {currentPrivacyPolicy.marketingEmailOptInText}{' '}
+                <span className="text-muted-foreground">(optional)</span>
+              </span>
+            </label>
           </div>
         </section>
       ) : null}

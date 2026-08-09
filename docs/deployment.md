@@ -128,10 +128,11 @@ These checks are manual because CI must never perform real R2 writes.
 
 ## 10. GDPR and retention
 
-- [ ] Agree the retention period for unpaid/abandoned appointments.
-- [ ] Agree the retention period for completed appointment contact details.
-- [ ] Retain immutable payment/audit metadata only as long as operational/legal needs require.
-- [ ] Document the customer deletion/export process and which Stripe records remain legally required.
+- [x] Retention periods for appointment and payment categories are documented in
+      `docs/privacy-and-retention.md`.
+- [x] Contact-detail minimisation after the operational retention period is documented.
+- [ ] Implement bounded, authenticated and idempotent retention enforcement with legal holds.
+- [x] The customer deletion/export process and retained Stripe record categories are documented.
 - [ ] Never place phone, notes or full email addresses in Stripe metadata or server logs.
 
 ## 11. Rollback

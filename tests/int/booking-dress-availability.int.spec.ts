@@ -69,6 +69,7 @@ describe('public booking dress availability', () => {
       dressSlug: 'grace',
       email: 'test@example.com',
       phone: '+3530000000',
+      privacyAcknowledged: true,
       purpose: 'rent',
       time: '10:00',
     })
@@ -102,6 +103,7 @@ describe('public booking dress availability', () => {
       dressSlug: 'grace',
       email: 'test@example.com',
       phone: '+3530000000',
+      privacyAcknowledged: true,
       purpose: 'undecided',
       time: '10:00',
     })

@@ -23,6 +23,11 @@ import {
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { getBookingSettings } from '@/lib/booking/settings'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
+import {
+  appointmentPrivacyContext,
+  currentPrivacyHashes,
+} from '@/lib/booking/privacyIntegrity'
+import { currentPrivacyPolicy } from '@/config/privacy'
 import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
 import {
   getBookingNoticeMessage,
@@ -150,6 +155,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   }
 
   try {
+    const privacyRecordedAt = new Date().toISOString()
     const appointment = await payload.create({
       collection: 'appointments',
       draft: false,
@@ -165,6 +171,22 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         notes: data.notes || undefined,
         paymentStatus: 'unpaid',
         phone: data.phone,
+        privacyAcknowledgedAt: privacyRecordedAt,
+        privacyAcknowledgementSource: 'website',
+        privacyAcknowledgementTextHash: currentPrivacyHashes.acknowledgement,
+        privacyNoticeMethod: 'website',
+        privacyNoticeProvidedAt: privacyRecordedAt,
+        privacyNoticeTextHash: currentPrivacyHashes.notice,
+        privacyPolicyVersion: currentPrivacyPolicy.version,
+        marketingConsentStatus: data.marketingEmailOptIn ? 'granted' : 'not_granted',
+        ...(data.marketingEmailOptIn
+          ? {
+              marketingConsentAt: privacyRecordedAt,
+              marketingConsentCaptureMethod: 'written' as const,
+              marketingConsentChannel: 'email' as const,
+              marketingConsentTextHash: currentPrivacyHashes.marketingEmailOptIn,
+            }
+          : {}),
         publicReference: createPublicReference(),
         purpose: data.purpose,
         source: 'website',
@@ -172,7 +194,10 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         status: 'pending',
         currency: siteConfig.currency,
       },
-      context: appointmentPaymentContext('public-booking'),
+      context: {
+        ...appointmentPaymentContext('public-booking'),
+        ...appointmentPrivacyContext('public-booking'),
+      },
     })
 
     return {

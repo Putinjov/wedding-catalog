@@ -2,6 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
+import Link from 'next/link'
 import { type FormEvent, useMemo, useState } from 'react'
 
 import {
@@ -17,6 +18,7 @@ import {
   getNoticeEligibleSlotTimes,
 } from '@/lib/booking/noticeRules'
 import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
+import { currentPrivacyPolicy } from '@/config/privacy'
 
 type CreateResponse = { message?: string }
 
@@ -85,6 +87,7 @@ export function NewAppointmentDialog({
           email: String(data.get('email') ?? ''),
           phone: String(data.get('phone') ?? ''),
           notes: String(data.get('notes') ?? '') || undefined,
+          privacyNoticeMethod: String(data.get('privacyNoticeMethod') ?? ''),
           initialStatus,
           allowUnpaidManualConfirmation,
           overrideNoticeRules,
@@ -132,6 +135,26 @@ export function NewAppointmentDialog({
             <label><span>Email</span><input autoComplete="email" name="email" required type="email" /></label>
             <label><span>Phone</span><input autoComplete="tel" maxLength={40} minLength={5} name="phone" required type="tel" /></label>
             <label><span>Notes</span><textarea maxLength={1000} name="notes" rows={4} /></label>
+            <div className="new-appointment-form__privacy">
+              <p>
+                Provide the current privacy notice before creating this booking. Do not record an
+                acknowledgement or marketing opt-in on the customer&apos;s behalf.{' '}
+                <Link href={currentPrivacyPolicy.policyPath} target="_blank">
+                  Open Privacy Policy
+                </Link>
+              </p>
+              <p>{currentPrivacyPolicy.noticeText}</p>
+            </div>
+            <label>
+              <span>Privacy notice provided by</span>
+              <select defaultValue="" name="privacyNoticeMethod" required>
+                <option disabled value="">Choose method</option>
+                <option value="phone">Phone</option>
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+                <option value="in_person">In person</option>
+              </select>
+            </label>
             <label><span>Initial status</span><select onChange={(event) => setInitialStatus(event.target.value as 'pending' | 'confirmed')} value={initialStatus}><option value="pending">Pending</option><option value="confirmed">Confirmed — unpaid manual booking</option></select></label>
             {initialStatus === 'confirmed' ? <p className="calendar-warning">{UNPAID_MANUAL_CONFIRMATION_WARNING}</p> : null}
             <div className="new-appointment-form__actions"><Dialog.Close asChild><button className="calendar-button" type="button">Cancel</button></Dialog.Close><button className="calendar-button calendar-button--primary" disabled={busy} type="submit">{busy ? 'Creating…' : 'Create appointment'}</button></div>
