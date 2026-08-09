@@ -33,6 +33,7 @@ import { normalizePublicAssetOrigin } from './config/site-url'
 import { Footer } from './Footer/config'
 import { defaultLexical } from './fields/defaultLexical'
 import { Header } from './Header/config'
+import { cleanupExpiredAppointmentHoldsTask } from './jobs/cleanupExpiredAppointmentHolds'
 import { migrateLegacyUserRoles } from './lib/security/migrateLegacyUserRoles'
 import { plugins } from './plugins'
 import { getServerSideURL } from './utilities/getURL'
@@ -189,6 +190,7 @@ export default buildConfig({
         return authHeader === `Bearer ${secret}`
       },
     },
-    tasks: [],
+    enableConcurrencyControl: true,
+    tasks: [cleanupExpiredAppointmentHoldsTask],
   },
 })
