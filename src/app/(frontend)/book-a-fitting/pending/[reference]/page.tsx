@@ -40,7 +40,12 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
       ? appointment.dress.name
       : null
   const isPaid = appointment.paymentStatus === 'paid'
-  const isConfirmed = isPaid && appointment.status === 'confirmed'
+  const isConfirmed = appointment.status === 'confirmed'
+  const isProcessing = appointment.status === 'payment_processing'
+  const isConflict = appointment.status === 'payment_received_conflict'
+  const canPay =
+    (appointment.status === 'pending_payment' || appointment.status === 'payment_failed') &&
+    !isPaid
   const durationMinutes = Math.round(
     (new Date(appointment.endAt).getTime() - new Date(appointment.startAt).getTime()) / 60_000,
   )
@@ -52,14 +57,28 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
           Private fitting
         </p>
         <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-foreground sm:text-6xl">
-          {isConfirmed ? 'Your fitting is confirmed' : isPaid ? 'Payment received' : 'Appointment held pending payment'}
+          {isConfirmed
+            ? 'Your fitting is confirmed'
+            : isConflict
+              ? 'Payment received; review required'
+              : isProcessing
+                ? 'Your payment is being processed'
+                : canPay
+                  ? 'Appointment held pending payment'
+                  : 'This appointment is no longer payable'}
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
           {isConfirmed
-            ? 'Your fitting fee has been verified. We look forward to welcoming you.'
-            : isPaid
+            ? isPaid
+              ? 'Your fitting fee has been verified. We look forward to welcoming you.'
+              : 'Our team has confirmed this manual appointment. Its payment state is tracked separately.'
+            : isConflict || isPaid
               ? 'Your fitting fee has been verified. Our team will review the appointment details before confirming the slot.'
-              : 'We have recorded your requested appointment. It is not confirmed until the fitting fee has been paid.'}
+              : isProcessing
+                ? 'Stripe is processing your fitting fee. Please do not pay again while verification is pending.'
+                : canPay
+                  ? 'We have recorded your requested appointment. It is not confirmed until the fitting fee has been paid.'
+                  : 'This private booking cannot accept another online payment. Please contact our team if you need help.'}
         </p>
 
         <div className="mt-10 border border-brand-warm-border bg-brand-blush/30 p-6 sm:p-8">
@@ -95,11 +114,14 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
           </dl>
         </div>
 
-        {isPaid ? (
+        {!canPay ? (
           <div className="mt-8">
             <p className="text-sm leading-6 text-muted-foreground">
-              Online payment covers the private fitting fee only. Any dress purchase or rental is
-              arranged in store.
+              {isProcessing
+                ? 'Payment verification is in progress. Refresh this private page later to see the latest status.'
+                : isConfirmed || isConflict || isPaid
+                  ? 'Online payment covers the private fitting fee only. Any dress purchase or rental is arranged in store.'
+                  : 'No further online payment is available for this appointment.'}
             </p>
           </div>
         ) : (

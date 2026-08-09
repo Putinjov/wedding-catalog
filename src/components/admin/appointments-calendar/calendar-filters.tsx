@@ -1,4 +1,5 @@
 import type { AppointmentStatus, PaymentStatus } from '@/lib/admin/appointments/calendarTypes'
+import { appointmentPaymentStatusValues, appointmentStatusValues } from '@/lib/booking/appointmentLifecycle'
 import type { Appointment } from '@/payload-types'
 
 export type CalendarFilterState = {
@@ -44,17 +45,14 @@ export function CalendarFilters({
         <span>Status</span>
         <select onChange={(event) => update('status', event.target.value as CalendarFilterState['status'])} value={filters.status}>
           <option value="all">All statuses</option>
-          <option value="pending">Pending</option><option value="confirmed">Confirmed</option>
-          <option value="cancelled">Cancelled</option><option value="completed">Completed</option>
-          <option value="no-show">No-show</option>
+          {appointmentStatusValues.map((status) => <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>)}
         </select>
       </label>
       <label>
         <span>Payment</span>
         <select onChange={(event) => update('paymentStatus', event.target.value as CalendarFilterState['paymentStatus'])} value={filters.paymentStatus}>
-          <option value="all">All payments</option><option value="unpaid">Unpaid</option>
-          <option value="pending">Pending</option><option value="paid">Paid</option>
-          <option value="refunded">Refunded</option><option value="failed">Failed</option>
+          <option value="all">All payments</option>
+          {appointmentPaymentStatusValues.map((status) => <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>)}
         </select>
       </label>
       <label>

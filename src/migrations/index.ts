@@ -4,6 +4,7 @@ import * as migration_20260801_154500_add_catalogue_display_order from './202608
 import * as migration_20260801_210000_create_booking_settings from './20260801_210000_create_booking_settings'
 import * as migration_20260809_101500_add_undecided_booking_intent from './20260809_101500_add_undecided_booking_intent'
 import * as migration_20260809_160000_add_privacy_records from './20260809_160000_add_privacy_records'
+import * as migration_20260809_210000_formalize_appointment_lifecycle from './20260809_210000_formalize_appointment_lifecycle'
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260809_160000_add_privacy_records.up,
     down: migration_20260809_160000_add_privacy_records.down,
     name: '20260809_160000_add_privacy_records',
+  },
+  {
+    up: migration_20260809_210000_formalize_appointment_lifecycle.up,
+    down: migration_20260809_210000_formalize_appointment_lifecycle.down,
+    name: '20260809_210000_formalize_appointment_lifecycle',
   },
 ]

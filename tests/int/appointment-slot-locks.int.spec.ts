@@ -50,7 +50,7 @@ function createRequestFixture(options: { activeAppointment?: boolean }) {
           holdExpiresAt: new Date(Date.now() + 60_000).toISOString(),
           paymentStatus: 'unpaid',
           source: 'website',
-          status: 'pending',
+          status: 'pending_payment',
         },
       ],
     }

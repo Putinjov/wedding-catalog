@@ -154,14 +154,31 @@ export function assertProtectedAppointmentFields({
 
   if (originalDoc.paymentStatus === 'paid' && data.paymentStatus && data.paymentStatus !== 'paid') {
     const isAuthorisedRefund =
-      data.paymentStatus === 'refunded' && paymentContext.origin === 'internal-maintenance'
+      (data.paymentStatus === 'refunded' || data.paymentStatus === 'partially_refunded') &&
+      paymentContext.origin === 'internal-maintenance'
     if (!isAuthorisedRefund) {
       throw new APIError('A paid appointment cannot be downgraded.', 400)
     }
   }
 
+  if (
+    originalDoc.paymentStatus === 'partially_refunded' &&
+    data.paymentStatus &&
+    data.paymentStatus !== 'partially_refunded'
+  ) {
+    const isAuthorisedCompletedRefund =
+      data.paymentStatus === 'refunded' && paymentContext.origin === 'internal-maintenance'
+    if (!isAuthorisedCompletedRefund) {
+      throw new APIError('A partially refunded appointment can only be fully refunded.', 400)
+    }
+  }
+
   if (paymentContext.origin === 'checkout-session') {
-    if (data.paymentStatus === 'paid' || data.paymentStatus === 'refunded') {
+    if (
+      data.paymentStatus === 'paid' ||
+      data.paymentStatus === 'refunded' ||
+      data.paymentStatus === 'partially_refunded'
+    ) {
       throw new APIError('Checkout setup cannot mark an appointment paid or refunded.', 403)
     }
     const checkoutFields = new Set<keyof Appointment>([

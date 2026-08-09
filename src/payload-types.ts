@@ -1247,13 +1247,24 @@ export interface Appointment {
   startAt: string;
   endAt: string;
   /**
-   * Confirmed means the fitting payment has been verified by Stripe.
+   * Operational appointment lifecycle. Payment state is tracked separately.
    */
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no-show';
+  status:
+    | 'pending_payment'
+    | 'payment_processing'
+    | 'confirmed'
+    | 'expired'
+    | 'cancelled'
+    | 'completed'
+    | 'no_show'
+    | 'payment_failed'
+    | 'payment_received_conflict'
+    | 'refunded'
+    | 'partially_refunded';
   /**
    * Online payment covers the private fitting fee only; any dress purchase or rental is arranged in store.
    */
-  paymentStatus: 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed';
+  paymentStatus: 'unpaid' | 'processing' | 'paid' | 'failed' | 'refunded' | 'partially_refunded';
   /**
    * Read-only Stripe Checkout Session used for the fitting fee.
    */

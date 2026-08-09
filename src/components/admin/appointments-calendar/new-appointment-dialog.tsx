@@ -36,7 +36,7 @@ export function NewAppointmentDialog({
   settings: ResolvedBookingSettings
 }) {
   const [purpose, setPurpose] = useState<BookingPurpose>('buy')
-  const [initialStatus, setInitialStatus] = useState<'pending' | 'confirmed'>('pending')
+  const [initialStatus, setInitialStatus] = useState<'pending_payment' | 'confirmed'>('pending_payment')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [date, setDate] = useState('')
@@ -100,7 +100,7 @@ export function NewAppointmentDialog({
       if (!response.ok) throw new Error(body.message ?? 'Unable to create the appointment.')
       form.reset()
       setPurpose('buy')
-      setInitialStatus('pending')
+      setInitialStatus('pending_payment')
       setDate('')
       setTime('')
       setOverrideNoticeRules(false)
@@ -155,7 +155,7 @@ export function NewAppointmentDialog({
                 <option value="in_person">In person</option>
               </select>
             </label>
-            <label><span>Initial status</span><select onChange={(event) => setInitialStatus(event.target.value as 'pending' | 'confirmed')} value={initialStatus}><option value="pending">Pending</option><option value="confirmed">Confirmed — unpaid manual booking</option></select></label>
+            <label><span>Initial status</span><select onChange={(event) => setInitialStatus(event.target.value as 'pending_payment' | 'confirmed')} value={initialStatus}><option value="pending_payment">Pending payment</option><option value="confirmed">Confirmed — unpaid manual booking</option></select></label>
             {initialStatus === 'confirmed' ? <p className="calendar-warning">{UNPAID_MANUAL_CONFIRMATION_WARNING}</p> : null}
             <div className="new-appointment-form__actions"><Dialog.Close asChild><button className="calendar-button" type="button">Cancel</button></Dialog.Close><button className="calendar-button calendar-button--primary" disabled={busy} type="submit">{busy ? 'Creating…' : 'Create appointment'}</button></div>
           </form>

@@ -36,6 +36,9 @@ export default async function FittingPaymentCancelledPage({ searchParams }: Args
   }
 
   const isConfirmed = appointment.paymentStatus === 'paid' && appointment.status === 'confirmed'
+  const isConflict =
+    appointment.paymentStatus === 'paid' && appointment.status === 'payment_received_conflict'
+  const isProcessing = appointment.status === 'payment_processing'
   const dressName =
     typeof appointment.dress === 'object' && appointment.dress !== null
       ? appointment.dress.name
@@ -52,12 +55,22 @@ export default async function FittingPaymentCancelledPage({ searchParams }: Args
           Private fitting
         </p>
         <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-foreground sm:text-6xl">
-          {isConfirmed ? 'Your fitting is confirmed' : 'Payment was not completed'}
+          {isConfirmed
+            ? 'Your fitting is confirmed'
+            : isConflict
+              ? 'Your payment needs review'
+              : isProcessing
+                ? 'Your payment is being processed'
+                : 'Payment was not completed'}
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
           {isConfirmed
             ? 'This cancellation link is out of date because the fitting fee has since been verified.'
-            : 'Your appointment is still held pending payment and is not confirmed. You can return to the pending booking to try again.'}
+            : isConflict
+              ? 'The fitting fee was received, but the appointment could not be confirmed automatically. Please do not pay again.'
+              : isProcessing
+                ? 'Stripe is still processing the fitting fee. Please do not pay again while verification is pending.'
+                : 'Your appointment is still held pending payment and is not confirmed. You can return to the pending booking to try again.'}
         </p>
 
         <div className="mt-10 border border-brand-warm-border bg-brand-blush/30 p-6 sm:p-8">

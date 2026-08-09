@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import {
+  assertAppointmentLifecycleTransition,
+  type AppointmentPaymentStatus,
+  type AppointmentStatus,
+} from '@/lib/booking/appointmentLifecycle'
 import { getBookingPayload } from '@/lib/booking/getBookingPayload'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
@@ -17,7 +22,7 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 const conflictNotice =
-  'Stripe fitting payment received; appointment slot conflict detected. Admin review required.'
+  'Stripe fitting payment received; appointment could not be safely confirmed. Admin review required.'
 
 class InvalidWebhookEvent extends Error {}
 class StripeEventInProgress extends Error {}
@@ -42,6 +47,17 @@ export function isSupportedEvent(type: string): type is SupportedEvent {
 function getMetadataValue(session: Stripe.Checkout.Session, key: string): string | null {
   const value = session.metadata?.[key]
   return typeof value === 'string' && value.length > 0 ? value : null
+}
+
+function assertWebhookLifecycleTransition(
+  appointment: Awaited<ReturnType<typeof getAppointmentForSession>>,
+  status: AppointmentStatus,
+  paymentStatus: AppointmentPaymentStatus,
+): void {
+  assertAppointmentLifecycleTransition(
+    { paymentStatus: appointment.paymentStatus, status: appointment.status },
+    { paymentStatus, status },
+  )
 }
 
 async function getAppointmentForSession(session: Stripe.Checkout.Session) {
@@ -71,11 +87,14 @@ async function markAppointmentPaid(
   const payload = await getBookingPayload()
   const settings = await getBookingSettingsFromPayload(payload)
   const hasConflict = await hasAppointmentSlotConflict(payload, appointment, settings)
+  const requiresAdminReview = hasConflict || appointment.status !== 'payment_processing'
   const existingNotes = appointment.internalNotes?.trim() ?? ''
   const internalNotes =
-    hasConflict && !existingNotes.includes(conflictNotice)
+    requiresAdminReview && !existingNotes.includes(conflictNotice)
       ? [existingNotes, conflictNotice].filter(Boolean).join('\n')
       : undefined
+  const status = requiresAdminReview ? 'payment_received_conflict' : 'confirmed'
+  assertWebhookLifecycleTransition(appointment, status, 'paid')
 
   await payload.update({
     collection: 'appointments',
@@ -85,9 +104,9 @@ async function markAppointmentPaid(
       paidAt: new Date(event.created * 1000).toISOString(),
       paymentFailureReason: null,
       paymentStatus: 'paid',
-      needsAdminReview: hasConflict,
-      reviewReason: hasConflict ? conflictNotice : null,
-      status: hasConflict ? appointment.status : 'confirmed',
+      needsAdminReview: requiresAdminReview,
+      reviewReason: requiresAdminReview ? conflictNotice : null,
+      status,
       stripeCheckoutSessionId: session.id,
       stripeCustomerEmail: getSessionCustomerEmail(session),
       stripePaymentIntentId: getSessionPaymentIntentId(session),
@@ -179,7 +198,11 @@ export async function processSessionEvent(
     return appointment.stripeCheckoutSessionId ? 'ignored' : 'retry'
   }
 
-  if (appointment.paymentStatus === 'paid') {
+  if (
+    appointment.paymentStatus === 'paid' ||
+    appointment.paymentStatus === 'refunded' ||
+    appointment.paymentStatus === 'partially_refunded'
+  ) {
     return 'processed'
   }
 
@@ -192,12 +215,15 @@ export async function processSessionEvent(
       if (session.payment_status === 'paid') {
         await markAppointmentPaid(event, session, appointment)
       } else {
+        const status = appointment.status === 'cancelled' ? 'cancelled' : 'payment_processing'
+        assertWebhookLifecycleTransition(appointment, status, 'processing')
         await payload.update({
           collection: 'appointments',
           id: appointment.id,
           data: {
             paymentFailureReason: null,
-            paymentStatus: 'pending',
+            paymentStatus: 'processing',
+            status,
           },
           context: appointmentPaymentContext('stripe-webhook', event.type),
         })
@@ -209,23 +235,29 @@ export async function processSessionEvent(
       }
       await markAppointmentPaid(event, session, appointment)
       return 'processed'
-    case 'checkout.session.async_payment_failed':
+    case 'checkout.session.async_payment_failed': {
+      const status = appointment.status === 'cancelled' ? 'cancelled' : 'payment_failed'
+      assertWebhookLifecycleTransition(appointment, status, 'failed')
       await payload.update({
         collection: 'appointments',
         id: appointment.id,
         data: {
           paymentFailureReason: 'Stripe reported an asynchronous fitting payment failure.',
           paymentStatus: 'failed',
+          status,
           stripeCustomerEmail: getSessionCustomerEmail(session),
           stripePaymentIntentId: getSessionPaymentIntentId(session),
         },
         context: appointmentPaymentContext('stripe-webhook', event.type),
       })
       return 'processed'
-    case 'checkout.session.expired':
+    }
+    case 'checkout.session.expired': {
       if (session.status !== 'expired') {
         throw new InvalidWebhookEvent('Checkout Session is not expired.')
       }
+      const status = appointment.status === 'cancelled' ? 'cancelled' : 'pending_payment'
+      assertWebhookLifecycleTransition(appointment, status, 'unpaid')
       await payload.update({
         collection: 'appointments',
         id: appointment.id,
@@ -233,11 +265,13 @@ export async function processSessionEvent(
           checkoutExpiresAt: null,
           paymentFailureReason: null,
           paymentStatus: 'unpaid',
+          status,
           stripeCheckoutSessionId: null,
         },
         context: appointmentPaymentContext('stripe-webhook', event.type),
       })
       return 'processed'
+    }
   }
 
   throw new InvalidWebhookEvent('Unsupported fitting payment event.')

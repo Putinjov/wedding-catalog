@@ -59,7 +59,7 @@ describe('undecided booking purpose', () => {
     expect(
       createAdminAppointmentSchema.safeParse({
         ...undecidedBooking,
-        initialStatus: 'pending',
+        initialStatus: 'pending_payment',
         privacyNoticeMethod: 'phone',
       }).success,
     ).toBe(true)

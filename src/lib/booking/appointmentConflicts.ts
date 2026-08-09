@@ -5,10 +5,19 @@ import type { Appointment } from '@/payload-types'
 export function getBlockingAppointmentWhere(now: Date = new Date()): Where {
   return {
     or: [
-      { source: { equals: 'admin' } },
-      { paymentStatus: { equals: 'paid' } },
-      { status: { not_equals: 'pending' } },
-      { holdExpiresAt: { greater_than: now.toISOString() } },
+      { status: { equals: 'confirmed' } },
+      { status: { equals: 'payment_processing' } },
+      {
+        and: [
+          { status: { in: ['pending_payment', 'payment_failed'] } },
+          {
+            or: [
+              { source: { equals: 'admin' } },
+              { holdExpiresAt: { greater_than: now.toISOString() } },
+            ],
+          },
+        ],
+      },
     ],
   }
 }
@@ -17,9 +26,11 @@ export function isAppointmentBlockingSlot(
   appointment: Pick<Appointment, 'holdExpiresAt' | 'paymentStatus' | 'source' | 'status'>,
   now: Date = new Date(),
 ): boolean {
-  if (appointment.status === 'cancelled') return false
-  if (appointment.source === 'admin' || appointment.paymentStatus === 'paid') return true
-  if (appointment.status !== 'pending') return true
+  if (appointment.status === 'confirmed' || appointment.status === 'payment_processing') return true
+  if (appointment.status !== 'pending_payment' && appointment.status !== 'payment_failed') {
+    return false
+  }
+  if (appointment.source === 'admin') return true
   if (!appointment.holdExpiresAt) return false
 
   const holdExpiresAt = new Date(appointment.holdExpiresAt)

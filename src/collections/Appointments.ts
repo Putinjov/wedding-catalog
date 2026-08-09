@@ -14,6 +14,14 @@ import {
   assertAppointmentStatusTransition,
   getStatusTransitionOptions,
 } from '@/lib/admin/appointments/updateAppointmentStatus'
+import {
+  appointmentPaymentStatusValues,
+  appointmentStatusValues,
+  assertAppointmentLifecycleState,
+  assertAppointmentLifecycleTransition,
+  AppointmentLifecycleError,
+  isAppointmentStatusNonBlocking,
+} from '@/lib/booking/appointmentLifecycle'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { assertAppointmentScheduleRules } from '@/lib/booking/appointmentBookingRules'
@@ -49,21 +57,46 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   assertProtectedAppointmentFields({ context, data, operation, originalDoc, settings })
   assertAppointmentPrivacyFields({ context, data, operation, originalDoc })
 
-  const nextStatus = data.status
+  const nextStatus = data.status ?? originalDoc?.status ?? 'pending_payment'
+  const nextPaymentStatus = data.paymentStatus ?? originalDoc?.paymentStatus ?? 'unpaid'
   const options = getStatusTransitionOptions(context)
-  if (operation === 'create' && nextStatus && nextStatus !== 'pending') {
+  try {
+    if (operation === 'create') {
+      assertAppointmentLifecycleState({ paymentStatus: nextPaymentStatus, status: nextStatus })
+    } else if (originalDoc) {
+      assertAppointmentLifecycleTransition(
+        { paymentStatus: originalDoc.paymentStatus, status: originalDoc.status },
+        { paymentStatus: nextPaymentStatus, status: nextStatus },
+      )
+    }
+  } catch (error) {
+    if (error instanceof AppointmentLifecycleError) {
+      throw new APIError(error.message, 400)
+    }
+    throw error
+  }
+
+  const paymentContext = getAppointmentPaymentContext(context)
+  if (operation === 'create' && nextStatus !== 'pending_payment') {
+    if (paymentContext?.origin !== 'admin-create') {
+      throw new APIError('Appointments must begin pending payment.', 400)
+    }
     assertAppointmentStatusTransition({
       appointment: {
         endAt: data.endAt ?? new Date().toISOString(),
         paymentStatus: data.paymentStatus ?? 'unpaid',
         source: data.source ?? 'website',
-        status: 'pending',
+        status: 'pending_payment',
       },
       nextStatus,
       options,
     })
-  } else if (operation === 'update' && originalDoc && nextStatus && nextStatus !== originalDoc.status) {
-    const paymentContext = getAppointmentPaymentContext(context)
+  } else if (
+    operation === 'update' &&
+    originalDoc &&
+    nextStatus !== originalDoc.status &&
+    !paymentContext
+  ) {
     assertAppointmentStatusTransition({
       appointment: {
         endAt: data.endAt ?? originalDoc.endAt,
@@ -88,10 +121,10 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
     })
 
   const existingLockId = getAppointmentSlotLockId(originalDoc?.slotLock)
-  if (operation === 'update' && effectiveStatus === 'cancelled' && existingLockId) {
+  if (operation === 'update' && isAppointmentStatusNonBlocking(effectiveStatus) && existingLockId) {
     await releaseAppointmentSlotLock(req, existingLockId)
     data.slotLock = null
-  } else if (scheduleChanged && effectiveStatus !== 'cancelled' && startAt && endAt) {
+  } else if (scheduleChanged && !isAppointmentStatusNonBlocking(effectiveStatus) && startAt && endAt) {
     await acquireAppointmentDateMutex({ endAt, req, startAt })
     try {
       if (
@@ -192,7 +225,7 @@ export const Appointments: CollectionConfig = {
           paymentStatus: data.paymentStatus ?? 'unpaid',
           publicReference: data.publicReference ?? createPublicReference(),
           source,
-          status: data.status ?? 'pending',
+          status: data.status ?? 'pending_payment',
         }
       },
     ],
@@ -425,18 +458,15 @@ export const Appointments: CollectionConfig = {
     {
       name: 'status',
       type: 'select',
-      defaultValue: 'pending',
+      defaultValue: 'pending_payment',
       required: true,
       admin: {
-        description: 'Confirmed means the fitting payment has been verified by Stripe.',
+        description: 'Operational appointment lifecycle. Payment state is tracked separately.',
       },
-      options: [
-        { label: 'Pending', value: 'pending' },
-        { label: 'Confirmed', value: 'confirmed' },
-        { label: 'Cancelled', value: 'cancelled' },
-        { label: 'Completed', value: 'completed' },
-        { label: 'No-show', value: 'no-show' },
-      ],
+      options: appointmentStatusValues.map((value) => ({
+        label: value.replaceAll('_', ' '),
+        value,
+      })),
     },
     {
       name: 'paymentStatus',
@@ -452,13 +482,10 @@ export const Appointments: CollectionConfig = {
         position: 'sidebar',
         readOnly: true,
       },
-      options: [
-        { label: 'Unpaid', value: 'unpaid' },
-        { label: 'Pending', value: 'pending' },
-        { label: 'Paid', value: 'paid' },
-        { label: 'Refunded', value: 'refunded' },
-        { label: 'Failed', value: 'failed' },
-      ],
+      options: appointmentPaymentStatusValues.map((value) => ({
+        label: value.replaceAll('_', ' '),
+        value,
+      })),
     },
     {
       name: 'stripeCheckoutSessionId',
