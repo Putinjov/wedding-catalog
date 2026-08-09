@@ -4,6 +4,7 @@ import type { AdminViewServerProps } from 'payload'
 import { hasRole } from '@/access/roles'
 import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
 import { isDressAvailableForMode } from '@/lib/dress-utils'
+import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 
 import { AppointmentsCalendar } from './appointments-calendar'
 
@@ -34,6 +35,10 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
 
   let dresses: ManualAppointmentDress[] = []
   let initialError = ''
+  const settings = await getBookingSettingsFromPayload(
+    props.payload,
+    props.initPageResult.req,
+  )
 
   try {
     const result = await props.payload.find({
@@ -59,7 +64,7 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
 
   return (
     <DefaultTemplate {...props} visibleEntities={props.initPageResult.visibleEntities}>
-      <AppointmentsCalendar dresses={dresses} initialError={initialError} />
+      <AppointmentsCalendar dresses={dresses} initialError={initialError} settings={settings} />
     </DefaultTemplate>
   )
 }

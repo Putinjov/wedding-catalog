@@ -5,7 +5,6 @@ import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
 import { createPublicReference } from '@/lib/booking/createPublicReference'
-import { bookingConfig } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import { getAvailableDressBySlug } from '@/lib/getDress'
 import {
@@ -22,6 +21,7 @@ import {
   type BookingFieldErrors,
 } from '@/lib/booking/validation'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { getBookingSettings } from '@/lib/booking/settings'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import {
   consumeRateLimits,
@@ -55,6 +55,13 @@ function isUniqueConflict(error: unknown): boolean {
   return error instanceof Error && /duplicate|unique/i.test(error.message)
 }
 
+function isBookingConflict(error: unknown): boolean {
+  return (
+    isUniqueConflict(error) ||
+    (error instanceof Error && /already reserved|being processed for this date|overlaps another/i.test(error.message))
+  )
+}
+
 export async function createPendingAppointment(input: unknown): Promise<BookingActionResult> {
   const parsed = bookingSchema.safeParse(input)
   if (!parsed.success) {
@@ -71,25 +78,26 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   if (!rateLimitAllowed) {
     return invalidBooking('Too many booking attempts. Please wait and try again.')
   }
-  if (!isDateWithinBookingWindow(data.date)) {
-    return invalidBooking(getBookingWindowLabel(), {
-      date: getBookingWindowLabel(),
+  const settings = await getBookingSettings()
+  if (!isDateWithinBookingWindow(data.date, settings)) {
+    return invalidBooking(getBookingWindowLabel(settings), {
+      date: getBookingWindowLabel(settings),
     })
   }
 
-  if (isClosedDate(data.date)) {
-    return invalidBooking(getBookingScheduleLabel(), {
-      date: getBookingScheduleLabel(),
+  if (isClosedDate(data.date, settings)) {
+    return invalidBooking(getBookingScheduleLabel(settings), {
+      date: getBookingScheduleLabel(settings),
     })
   }
 
-  if (!isValidSlotTime(data.date, data.time)) {
+  if (!isValidSlotTime(data.date, data.time, settings)) {
     return invalidBooking('Choose one of the available fitting times.', {
       time: 'Choose one of the available fitting times.',
     })
   }
 
-  const dateTimes = getSlotDateTimes(data.date, data.time)
+  const dateTimes = getSlotDateTimes(data.date, data.time, settings)
   if (!dateTimes || dateTimes.startAt <= new Date()) {
     return invalidBooking('That fitting time is no longer available. Please choose another.', {
       time: 'That fitting time is no longer available. Please choose another.',
@@ -108,7 +116,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   const payload = await getPayload({ config: configPromise })
   const startAt = dateTimes.startAt.toISOString()
   const endAt = dateTimes.endAt.toISOString()
-  if (await hasAppointmentSlotConflict(payload, { startAt, endAt })) {
+  if (await hasAppointmentSlotConflict(payload, { startAt, endAt }, settings)) {
     return invalidBooking('That fitting time has just been taken. Please choose another.', {
       time: 'That fitting time has just been taken. Please choose another.',
     })
@@ -125,7 +133,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         endAt,
         fittingFee: siteConfig.fittingFee,
         holdExpiresAt: new Date(
-          Date.now() + bookingConfig.holdMinutes * 60 * 1000,
+          Date.now() + settings.holdMinutes * 60 * 1000,
         ).toISOString(),
         notes: data.notes || undefined,
         paymentStatus: 'unpaid',
@@ -145,7 +153,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
       success: true,
     }
   } catch (error: unknown) {
-    if (isUniqueConflict(error)) {
+    if (isBookingConflict(error)) {
       return invalidBooking('That fitting time has just been taken. Please choose another.', {
         time: 'That fitting time has just been taken. Please choose another.',
       })

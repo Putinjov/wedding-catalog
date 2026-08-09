@@ -15,6 +15,7 @@ import {
   isDateWithinBookingWindow,
   isValidSlotTime,
 } from '@/lib/booking/date'
+import { getBookingSettings } from '@/lib/booking/settings'
 import {
   appointmentOverlapsSlot,
   getBlockingAppointmentWhere,
@@ -39,25 +40,27 @@ export async function getAvailableSlots(date: string): Promise<AvailableSlotsRes
     return { message: 'Too many availability requests. Please wait and try again.', success: false }
   }
 
-  if (!isDateWithinBookingWindow(date)) {
+  const settings = await getBookingSettings()
+
+  if (!isDateWithinBookingWindow(date, settings)) {
     return {
-      message: getBookingWindowLabel(),
+      message: getBookingWindowLabel(settings),
       success: false,
     }
   }
 
-  if (isClosedDate(date)) {
+  if (isClosedDate(date, settings)) {
     return {
-      message: getBookingScheduleLabel(),
+      message: getBookingScheduleLabel(settings),
       success: false,
     }
   }
 
   const now = new Date()
-  const candidates = getConfiguredSlotTimes()
-    .filter((time) => isValidSlotTime(date, time))
+  const candidates = getConfiguredSlotTimes(settings, date)
+    .filter((time) => isValidSlotTime(date, time, settings))
     .flatMap((time) => {
-      const dateTimes = getSlotDateTimes(date, time)
+      const dateTimes = getSlotDateTimes(date, time, settings)
       if (!dateTimes || dateTimes.startAt <= now) {
         return []
       }
@@ -112,7 +115,12 @@ export async function getAvailableSlots(date: string): Promise<AvailableSlotsRes
           !existingAppointments.docs.some(
             (appointment) =>
               isAppointmentBlockingSlot(appointment, now) &&
-              appointmentOverlapsSlot(appointment, candidate.startAt, candidate.endAt),
+              appointmentOverlapsSlot(
+                appointment,
+                candidate.startAt,
+                candidate.endAt,
+                settings.bufferBeforeMinutes + settings.bufferAfterMinutes,
+              ),
           ),
       )
       .map((candidate) => ({

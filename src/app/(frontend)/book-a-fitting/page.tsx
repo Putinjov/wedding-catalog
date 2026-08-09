@@ -4,6 +4,7 @@ import { BookingFlow } from '@/components/booking/booking-flow'
 import { formatFittingFee } from '@/config/site'
 import type { BookingPurpose } from '@/config/booking'
 import { getBookingDateBounds } from '@/lib/booking/date'
+import { getBookingSettings } from '@/lib/booking/settings'
 import { isDressAvailableForMode } from '@/lib/dress-utils'
 import { getDressBySlug } from '@/lib/getDress'
 
@@ -64,7 +65,8 @@ export default async function BookAFittingPage({ searchParams }: Args) {
           supportsRent,
         }
       : null
-  const { maxDate, minDate } = getBookingDateBounds()
+  const settings = await getBookingSettings()
+  const { maxDate, minDate } = getBookingDateBounds(settings)
   const requestedDate = getQueryValue(query.date)
   const initialDate = requestedDate && requestedDate >= minDate && requestedDate <= maxDate
     ? requestedDate
@@ -101,6 +103,7 @@ export default async function BookAFittingPage({ searchParams }: Args) {
           maxDate={maxDate}
           minDate={minDate}
           selectedDress={selectedDress}
+          settings={settings}
           syncURLState
         />
       </section>

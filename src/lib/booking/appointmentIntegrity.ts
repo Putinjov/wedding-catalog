@@ -6,6 +6,7 @@ import {
   isDateWithinBookingWindow,
   isValidSlotTime,
 } from '@/lib/booking/date'
+import type { ResolvedBookingSettings } from '@/config/booking'
 import type { Appointment } from '@/payload-types'
 
 export type AppointmentSlotDetails = {
@@ -17,6 +18,7 @@ export type AppointmentSlotDetails = {
 
 export function getAppointmentSlotDetails(
   appointment: Pick<Appointment, 'startAt' | 'endAt'>,
+  settings: ResolvedBookingSettings,
 ): AppointmentSlotDetails | null {
   const storedStartAt = new Date(appointment.startAt)
   const storedEndAt = new Date(appointment.endAt)
@@ -27,15 +29,15 @@ export function getAppointmentSlotDetails(
   const dateKey = getDateKey(storedStartAt)
   const time = formatTimeInputValue(appointment.startAt)
   if (
-    !isDateWithinBookingWindow(dateKey) ||
-    isClosedDate(dateKey) ||
-    !isValidSlotTime(dateKey, time) ||
+    !isDateWithinBookingWindow(dateKey, settings) ||
+    isClosedDate(dateKey, settings) ||
+    !isValidSlotTime(dateKey, time, settings) ||
     storedStartAt <= new Date()
   ) {
     return null
   }
 
-  const configuredSlot = getSlotDateTimes(dateKey, time)
+  const configuredSlot = getSlotDateTimes(dateKey, time, settings)
   if (!configuredSlot) {
     return null
   }
@@ -57,6 +59,7 @@ export function getAppointmentSlotDetails(
 
 export function isAppointmentSlotValid(
   appointment: Pick<Appointment, 'startAt' | 'endAt'>,
+  settings: ResolvedBookingSettings,
 ): boolean {
-  return getAppointmentSlotDetails(appointment) !== null
+  return getAppointmentSlotDetails(appointment, settings) !== null
 }
