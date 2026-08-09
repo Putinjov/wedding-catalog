@@ -6,6 +6,7 @@ import * as migration_20260809_101500_add_undecided_booking_intent from './20260
 import * as migration_20260809_160000_add_privacy_records from './20260809_160000_add_privacy_records'
 import * as migration_20260809_210000_formalize_appointment_lifecycle from './20260809_210000_formalize_appointment_lifecycle'
 import * as migration_20260809_220000_enforce_stripe_hold_minimum from './20260809_220000_enforce_stripe_hold_minimum'
+import * as migration_20260809_230000_add_expired_hold_job_concurrency from './20260809_230000_add_expired_hold_job_concurrency'
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20260809_220000_enforce_stripe_hold_minimum.up,
     down: migration_20260809_220000_enforce_stripe_hold_minimum.down,
     name: '20260809_220000_enforce_stripe_hold_minimum',
+  },
+  {
+    up: migration_20260809_230000_add_expired_hold_job_concurrency.up,
+    down: migration_20260809_230000_add_expired_hold_job_concurrency.down,
+    name: '20260809_230000_add_expired_hold_job_concurrency',
   },
 ]

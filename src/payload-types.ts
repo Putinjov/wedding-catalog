@@ -158,6 +158,7 @@ export interface Config {
   user: User;
   jobs: {
     tasks: {
+      cleanupExpiredAppointmentHolds: TaskCleanupExpiredAppointmentHolds;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -1522,7 +1523,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'schedulePublish';
+        taskSlug: 'inline' | 'cleanupExpiredAppointmentHolds' | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -1555,10 +1556,14 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'schedulePublish') | null;
+  taskSlug?: ('inline' | 'cleanupExpiredAppointmentHolds' | 'schedulePublish') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2571,6 +2576,7 @@ export interface PayloadJobsSelect<T extends boolean = true> {
   queue?: T;
   waitUntil?: T;
   processing?: T;
+  concurrencyKey?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2859,6 +2865,19 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCleanupExpiredAppointmentHolds".
+ */
+export interface TaskCleanupExpiredAppointmentHolds {
+  input?: unknown;
+  output: {
+    expired: number;
+    hasMore: boolean;
+    scanned: number;
+    skipped: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
