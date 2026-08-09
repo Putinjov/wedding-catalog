@@ -6,7 +6,7 @@ import { getPayload } from 'payload'
 
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { siteConfig } from '@/config/site'
-import { getAvailableDressBySlug } from '@/lib/getDress'
+import { getAvailableDressBySlug, getDressBySlug } from '@/lib/getDress'
 import {
   getBookingScheduleLabel,
   getBookingWindowLabel,
@@ -23,6 +23,7 @@ import {
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { getBookingSettings } from '@/lib/booking/settings'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
+import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
 import {
   consumeRateLimits,
   identifierRateLimitRule,
@@ -105,12 +106,22 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   }
 
   const dressSlug = data.dressSlug || undefined
-  const dress = dressSlug ? await getAvailableDressBySlug(dressSlug, data.purpose) : null
+  const dressMode = getBookingPurposeDressMode(data.purpose)
+  const dress = dressSlug
+    ? dressMode
+      ? await getAvailableDressBySlug(dressSlug, dressMode)
+      : await getDressBySlug(dressSlug)
+    : null
   if (dressSlug && !dress) {
-    return invalidBooking('That dress is no longer available for the selected purpose.', {
-      dressSlug: 'Please remove this dress or choose another option.',
-      purpose: 'This dress is not available for that purpose.',
-    })
+    return invalidBooking(
+      dressMode
+        ? 'That dress is no longer available for the selected purpose.'
+        : 'That dress can no longer be included with this fitting request.',
+      {
+        dressSlug: 'Please remove this dress or choose another option.',
+        ...(dressMode ? { purpose: 'This dress is not available for that purpose.' } : {}),
+      },
+    )
   }
 
   const payload = await getPayload({ config: configPromise })

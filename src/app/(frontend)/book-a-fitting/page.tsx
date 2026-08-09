@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 
 import { BookingFlow } from '@/components/booking/booking-flow'
 import { formatFittingFee } from '@/config/site'
-import type { BookingPurpose } from '@/config/booking'
 import { getBookingDateBounds } from '@/lib/booking/date'
+import { getInitialBookingPurpose } from '@/lib/booking/purpose'
 import { getBookingSettings } from '@/lib/booking/settings'
 import { isDressAvailableForMode } from '@/lib/dress-utils'
 import { getDressBySlug } from '@/lib/getDress'
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/book-a-fitting',
   },
-  description: 'Choose whether your private fitting is for buying or renting a wedding dress.',
+  description: 'Book a private wedding dress fitting whether you plan to buy, rent, or decide during your appointment.',
   title: 'Book a fitting',
 }
 
@@ -29,25 +29,6 @@ function getQueryValue(value: string | string[] | undefined): string | undefined
   return Array.isArray(value) ? value[0] : value
 }
 
-function getInitialPurpose(
-  requestedPurpose: string | undefined,
-  selectedDress: { supportsBuy: boolean; supportsRent: boolean } | null,
-): BookingPurpose {
-  if (!selectedDress) {
-    return requestedPurpose === 'rent' ? 'rent' : 'buy'
-  }
-
-  if (requestedPurpose === 'buy' && selectedDress.supportsBuy) {
-    return 'buy'
-  }
-
-  if (requestedPurpose === 'rent' && selectedDress.supportsRent) {
-    return 'rent'
-  }
-
-  return selectedDress.supportsBuy ? 'buy' : 'rent'
-}
-
 export default async function BookAFittingPage({ searchParams }: Args) {
   const query = await searchParams
   const dressSlug = getQueryValue(query.dress)
@@ -55,16 +36,15 @@ export default async function BookAFittingPage({ searchParams }: Args) {
   const dress = dressSlug ? await getDressBySlug(decodeURIComponent(dressSlug)) : null
   const supportsBuy = dress ? isDressAvailableForMode(dress, 'buy') : false
   const supportsRent = dress ? isDressAvailableForMode(dress, 'rent') : false
-  const selectedDress =
-    dress && (supportsBuy || supportsRent)
-      ? {
-          id: dress.id,
-          name: dress.name,
-          slug: dress.slug,
-          supportsBuy,
-          supportsRent,
-        }
-      : null
+  const selectedDress = dress
+    ? {
+        id: dress.id,
+        name: dress.name,
+        slug: dress.slug,
+        supportsBuy,
+        supportsRent,
+      }
+    : null
   const settings = await getBookingSettings()
   const { maxDate, minDate } = getBookingDateBounds(settings)
   const requestedDate = getQueryValue(query.date)
@@ -85,8 +65,8 @@ export default async function BookAFittingPage({ searchParams }: Args) {
             Find time for the dress.
           </h1>
           <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            Tell us whether you are looking to buy or rent, and we will prepare the right edit for
-            your private appointment.
+            Tell us whether you are looking to buy, rent, or would prefer to decide during your
+            private appointment.
           </p>
           <div className="mt-8 border-l-2 border-brand-antique-gold pl-5">
             <p className="text-sm uppercase tracking-[0.22em] text-muted-foreground">
@@ -98,7 +78,7 @@ export default async function BookAFittingPage({ searchParams }: Args) {
 
         <BookingFlow
           initialDate={initialDate}
-          initialPurpose={getInitialPurpose(requestedPurpose, selectedDress)}
+          initialPurpose={getInitialBookingPurpose(requestedPurpose, selectedDress)}
           initialTime={initialTime}
           maxDate={maxDate}
           minDate={minDate}

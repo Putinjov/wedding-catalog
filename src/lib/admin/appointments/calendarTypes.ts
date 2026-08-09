@@ -1,4 +1,5 @@
 import type { Appointment, Dress } from '@/payload-types'
+import { isBookingPurpose } from '@/lib/booking/purpose'
 
 export type AppointmentStatus = Appointment['status']
 export type PaymentStatus = Appointment['paymentStatus']
@@ -106,7 +107,7 @@ function isCalendarAppointment(value: unknown): value is CalendarAppointment {
     !Number.isNaN(new Date(item.startAt).getTime()) &&
     typeof item.endAt === 'string' &&
     !Number.isNaN(new Date(item.endAt).getTime()) &&
-    (item.purpose === 'buy' || item.purpose === 'rent') &&
+    isBookingPurpose(item.purpose) &&
     appointmentStatuses.includes(item.status as AppointmentStatus) &&
     paymentStatuses.includes(item.paymentStatus as PaymentStatus)
   )

@@ -1,6 +1,6 @@
-import type { DressMode } from '@/lib/catalogue'
-
 export const BOOKING_TIMEZONE = 'Europe/Dublin' as const
+
+export const bookingPurposeValues = ['buy', 'rent', 'undecided'] as const
 
 export type BookingHours = {
   end: string
@@ -63,7 +63,7 @@ export const defaultBookingSettings: ResolvedBookingSettings = {
   },
 }
 
-export type BookingPurpose = DressMode
+export type BookingPurpose = (typeof bookingPurposeValues)[number]
 
 export type AvailableSlot = {
   startAt: string

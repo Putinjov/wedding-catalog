@@ -5,6 +5,7 @@ import { defaultBookingSettings } from '@/config/booking'
 
 const mocks = vi.hoisted(() => ({
   getAvailableDressBySlug: vi.fn(),
+  getDressBySlug: vi.fn(),
   getPayload: vi.fn(),
 }))
 
@@ -27,6 +28,7 @@ vi.mock('payload', async (importOriginal) => {
 
 vi.mock('@/lib/getDress', () => ({
   getAvailableDressBySlug: mocks.getAvailableDressBySlug,
+  getDressBySlug: mocks.getDressBySlug,
 }))
 
 vi.mock('@/lib/booking/settings', () => ({
@@ -54,6 +56,7 @@ vi.mock('@/lib/security/rateLimit', () => ({
 describe('public booking dress availability', () => {
   beforeEach(() => {
     mocks.getAvailableDressBySlug.mockReset()
+    mocks.getDressBySlug.mockReset()
     mocks.getPayload.mockReset()
   })
 
@@ -80,5 +83,36 @@ describe('public booking dress availability', () => {
       message: 'That dress is no longer available for the selected purpose.',
       success: false,
     })
+  })
+
+  it('records a public selected dress for an undecided fitting without treating it as a sale or rental', async () => {
+    mocks.getDressBySlug.mockResolvedValue({ id: 'dress-1' })
+    const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+      ...data,
+      id: 'appointment-1',
+    }))
+    mocks.getPayload.mockResolvedValue({
+      create,
+      find: vi.fn(async () => ({ docs: [] })),
+    })
+
+    const result = await createPendingAppointment({
+      customerName: 'Test Customer',
+      date: '2099-01-02',
+      dressSlug: 'grace',
+      email: 'test@example.com',
+      phone: '+3530000000',
+      purpose: 'undecided',
+      time: '10:00',
+    })
+
+    expect(mocks.getDressBySlug).toHaveBeenCalledWith('grace')
+    expect(mocks.getAvailableDressBySlug).not.toHaveBeenCalled()
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ dress: 'dress-1', purpose: 'undecided' }),
+      }),
+    )
+    expect(result).toEqual(expect.objectContaining({ success: true }))
   })
 })

@@ -1211,7 +1211,7 @@ export interface Appointment {
    */
   publicReference: string;
   slotLock?: (string | null) | AppointmentSlotLock;
-  purpose: 'buy' | 'rent';
+  purpose: 'buy' | 'rent' | 'undecided';
   dress?: (string | null) | Dress;
   customerName: string;
   email: string;
@@ -1224,7 +1224,7 @@ export interface Appointment {
    */
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no-show';
   /**
-   * Online payment covers the private fitting fee only; dress buy/rent is in store.
+   * Online payment covers the private fitting fee only; any dress purchase or rental is arranged in store.
    */
   paymentStatus: 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed';
   /**

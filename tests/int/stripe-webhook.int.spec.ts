@@ -35,7 +35,7 @@ import {
   processSessionEvent,
 } from '@/app/(frontend)/api/stripe/webhook/route'
 
-function createAppointment(): Appointment {
+function createAppointment(overrides: Partial<Appointment> = {}): Appointment {
   return {
     id: 'appointment-1',
     amountPaid: null,
@@ -55,6 +55,7 @@ function createAppointment(): Appointment {
     status: 'pending',
     stripeCheckoutSessionId: 'cs_test_1',
     updatedAt: '2030-01-01T00:00:00.000Z',
+    ...overrides,
   }
 }
 
@@ -107,7 +108,7 @@ function createPayloadFixture() {
   return {
     create: vi.fn(),
     find: vi.fn(),
-    update: vi.fn(async () => createAppointment()),
+    update: vi.fn(async (_args: { data: Record<string, unknown> }) => createAppointment()),
   }
 }
 
@@ -165,6 +166,27 @@ describe('Stripe webhook reliability', () => {
         }),
       }),
     )
+  })
+
+  it('confirms a paid undecided fitting without changing its intent', async () => {
+    const payload = createPayloadFixture()
+    mocks.getBookingPayload.mockResolvedValue(payload)
+    mocks.getAppointmentByReference.mockResolvedValue(
+      createAppointment({ purpose: 'undecided' }),
+    )
+    const session = createSession({ payment_status: 'paid', status: 'complete' })
+
+    await processSessionEvent(createEvent('checkout.session.completed', session), session)
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          paymentStatus: 'paid',
+          status: 'confirmed',
+        }),
+      }),
+    )
+    expect(payload.update.mock.calls[0]?.[0]?.data).not.toHaveProperty('purpose')
   })
 
   it('records asynchronous payment failure without confirming the appointment', async () => {
