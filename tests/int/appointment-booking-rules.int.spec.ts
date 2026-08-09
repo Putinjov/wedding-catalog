@@ -4,6 +4,7 @@ import { defaultBookingSettings, type ResolvedBookingSettings } from '@/config/b
 import {
   adminBookingRulesContext,
   assertAppointmentScheduleRules,
+  paidConflictBookingRulesContext,
 } from '@/lib/booking/appointmentBookingRules'
 import type { Appointment } from '@/payload-types'
 
@@ -116,5 +117,22 @@ describe('final appointment booking-rule validation', () => {
         settings: settings({ minimumNoticeHours: 24 }),
       }),
     ).not.toThrow()
+  })
+
+  it('revalidates and reacquires the schedule when a paid conflict is confirmed', () => {
+    const result = assertAppointmentScheduleRules({
+      context: paidConflictBookingRulesContext(false),
+      data: { status: 'confirmed' },
+      now: new Date('2026-07-20T09:00:00.000Z'),
+      operation: 'update',
+      originalDoc: appointment({
+        paymentStatus: 'paid',
+        status: 'payment_received_conflict',
+      }),
+      settings: settings({ minimumNoticeHours: 24 }),
+    })
+
+    expect(result.scheduleChanged).toBe(true)
+    expect(result.effectiveStatus).toBe('confirmed')
   })
 })

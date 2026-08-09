@@ -41,6 +41,18 @@ export type AppointmentDetail = CalendarAppointment & {
   stripeCheckoutSessionId?: string | null
   stripePaymentIntentId?: string | null
   reviewReason?: string | null
+  conflictContactedAt?: string | null
+  conflictContactMethod?: 'email' | 'phone' | null
+  conflictResolution?: 'cancelled' | 'confirmed' | 'refunded' | null
+  conflictResolvedAt?: string | null
+  refundAmount?: number | null
+  refundFailureReason?: string | null
+  refundStatus?: 'canceled' | 'failed' | 'pending' | 'requires_action' | 'succeeded' | null
+  refundedAt?: string | null
+  stripeRefundId?: string | null
+  capabilities: {
+    canRefundPaidConflict: boolean
+  }
 }
 
 export type ManualAppointmentDress = CalendarDress & {
@@ -114,7 +126,10 @@ export function parseCalendarAppointments(value: unknown): CalendarAppointment[]
   return value
 }
 
-export function toAppointmentDetail(appointment: Appointment): AppointmentDetail {
+export function toAppointmentDetail(
+  appointment: Appointment,
+  capabilities: AppointmentDetail['capabilities'] = { canRefundPaidConflict: false },
+): AppointmentDetail {
   return {
     ...toCalendarAppointment(appointment),
     email: appointment.email,
@@ -128,5 +143,15 @@ export function toAppointmentDetail(appointment: Appointment): AppointmentDetail
     stripeCheckoutSessionId: appointment.stripeCheckoutSessionId,
     stripePaymentIntentId: appointment.stripePaymentIntentId,
     reviewReason: appointment.reviewReason,
+    conflictContactedAt: appointment.conflictContactedAt,
+    conflictContactMethod: appointment.conflictContactMethod,
+    conflictResolution: appointment.conflictResolution,
+    conflictResolvedAt: appointment.conflictResolvedAt,
+    refundAmount: appointment.refundAmount,
+    refundFailureReason: appointment.refundFailureReason,
+    refundStatus: appointment.refundStatus,
+    refundedAt: appointment.refundedAt,
+    stripeRefundId: appointment.stripeRefundId,
+    capabilities,
   }
 }

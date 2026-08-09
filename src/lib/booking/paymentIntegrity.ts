@@ -8,6 +8,7 @@ export type AppointmentPaymentOrigin =
   | 'admin-create'
   | 'checkout-session'
   | 'internal-maintenance'
+  | 'paid-conflict-resolution'
   | 'public-booking'
   | 'stripe-webhook'
 
@@ -37,6 +38,16 @@ export const protectedAppointmentFields = [
   'slotLock',
   'needsAdminReview',
   'reviewReason',
+  'conflictContactedAt',
+  'conflictContactMethod',
+  'conflictResolution',
+  'conflictResolvedAt',
+  'conflictResolvedBy',
+  'stripeRefundId',
+  'refundStatus',
+  'refundAmount',
+  'refundedAt',
+  'refundFailureReason',
 ] as const satisfies readonly (keyof Appointment)[]
 
 export function getAppointmentPaymentContext(
@@ -155,7 +166,9 @@ export function assertProtectedAppointmentFields({
   if (originalDoc.paymentStatus === 'paid' && data.paymentStatus && data.paymentStatus !== 'paid') {
     const isAuthorisedRefund =
       (data.paymentStatus === 'refunded' || data.paymentStatus === 'partially_refunded') &&
-      paymentContext.origin === 'internal-maintenance'
+      ['internal-maintenance', 'paid-conflict-resolution', 'stripe-webhook'].includes(
+        paymentContext.origin,
+      )
     if (!isAuthorisedRefund) {
       throw new APIError('A paid appointment cannot be downgraded.', 400)
     }
@@ -167,7 +180,10 @@ export function assertProtectedAppointmentFields({
     data.paymentStatus !== 'partially_refunded'
   ) {
     const isAuthorisedCompletedRefund =
-      data.paymentStatus === 'refunded' && paymentContext.origin === 'internal-maintenance'
+      data.paymentStatus === 'refunded' &&
+      ['internal-maintenance', 'paid-conflict-resolution', 'stripe-webhook'].includes(
+        paymentContext.origin,
+      )
     if (!isAuthorisedCompletedRefund) {
       throw new APIError('A partially refunded appointment can only be fully refunded.', 400)
     }
@@ -195,6 +211,7 @@ export function assertProtectedAppointmentFields({
 
   if (paymentContext.origin === 'stripe-webhook') return
   if (paymentContext.origin === 'internal-maintenance') return
+  if (paymentContext.origin === 'paid-conflict-resolution') return
 
   throw new APIError('That internal flow cannot update payment fields.', 403)
 }

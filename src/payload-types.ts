@@ -1306,6 +1306,28 @@ export interface Appointment {
    */
   needsAdminReview?: boolean | null;
   reviewReason?: string | null;
+  /**
+   * Most recent recorded customer contact for a paid conflict.
+   */
+  conflictContactedAt?: string | null;
+  conflictContactMethod?: ('email' | 'phone') | null;
+  conflictResolution?: ('confirmed' | 'cancelled' | 'refunded') | null;
+  conflictResolvedAt?: string | null;
+  conflictResolvedBy?: (string | null) | User;
+  /**
+   * Stripe refund used to resolve the paid fitting conflict.
+   */
+  stripeRefundId?: string | null;
+  refundStatus?: ('pending' | 'requires_action' | 'succeeded' | 'failed' | 'canceled') | null;
+  /**
+   * Refund amount in integer cents.
+   */
+  refundAmount?: number | null;
+  refundedAt?: string | null;
+  /**
+   * Privacy-safe operational reason for a failed refund.
+   */
+  refundFailureReason?: string | null;
   internalNotes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1336,6 +1358,10 @@ export interface AppointmentAudit {
   actorType: 'user' | 'stripe' | 'public' | 'system';
   timestamp: string;
   action: string;
+  /**
+   * Server-generated operation key used to prevent duplicate audit mutations.
+   */
+  idempotencyKey?: string | null;
   previousStatus?: string | null;
   newStatus?: string | null;
   metadata?:
@@ -2303,6 +2329,16 @@ export interface AppointmentsSelect<T extends boolean = true> {
   source?: T;
   needsAdminReview?: T;
   reviewReason?: T;
+  conflictContactedAt?: T;
+  conflictContactMethod?: T;
+  conflictResolution?: T;
+  conflictResolvedAt?: T;
+  conflictResolvedBy?: T;
+  stripeRefundId?: T;
+  refundStatus?: T;
+  refundAmount?: T;
+  refundedAt?: T;
+  refundFailureReason?: T;
   internalNotes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2317,6 +2353,7 @@ export interface AppointmentAuditsSelect<T extends boolean = true> {
   actorType?: T;
   timestamp?: T;
   action?: T;
+  idempotencyKey?: T;
   previousStatus?: T;
   newStatus?: T;
   metadata?: T;

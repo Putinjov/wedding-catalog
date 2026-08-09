@@ -1,6 +1,7 @@
 import type { CollectionAfterChangeHook } from 'payload'
 
 import { getAdminBookingRulesContext } from '@/lib/booking/appointmentBookingRules'
+import { getAppointmentAuditContext } from '@/lib/booking/appointmentAuditContext'
 import { getAppointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import type { Appointment } from '@/payload-types'
 
@@ -11,11 +12,12 @@ export const writeAppointmentAudit: CollectionAfterChangeHook<Appointment> = asy
   previousDoc,
   req,
 }) => {
+  const auditContext = getAppointmentAuditContext(context)
   const paymentContext = getAppointmentPaymentContext(context)
   const bookingRulesContext = getAdminBookingRulesContext(context)
   const statusChanged = previousDoc?.status !== doc.status
   const paymentChanged = previousDoc?.paymentStatus !== doc.paymentStatus
-  const action =
+  const defaultAction =
     operation === 'create'
       ? 'appointment.created'
       : statusChanged
@@ -23,6 +25,7 @@ export const writeAppointmentAudit: CollectionAfterChangeHook<Appointment> = asy
         : paymentChanged
           ? 'appointment.payment_changed'
           : 'appointment.updated'
+  const action = auditContext?.action ?? defaultAction
 
   const actorType = req.user
     ? 'user'
@@ -44,7 +47,9 @@ export const writeAppointmentAudit: CollectionAfterChangeHook<Appointment> = asy
         needsAdminReview: doc.needsAdminReview ?? false,
         paymentStatus: doc.paymentStatus,
         source: doc.source,
+        ...(auditContext?.metadata ?? {}),
       },
+      idempotencyKey: auditContext?.idempotencyKey,
       newStatus: doc.status,
       previousStatus: previousDoc?.status,
       timestamp: new Date().toISOString(),

@@ -1,4 +1,4 @@
-import type { Endpoint, PayloadRequest, TypedUser } from 'payload'
+import { APIError, type Endpoint, type PayloadRequest, type TypedUser } from 'payload'
 import { z } from 'zod'
 
 import { hasRole } from '@/access/roles'
@@ -18,6 +18,7 @@ import {
   parseCalendarRange,
 } from './getCalendarAppointments'
 import { updateAppointmentStatus } from './updateAppointmentStatus'
+import { applyPaidConflictAction, paidConflictActionSchema } from './paidConflict'
 
 const statusUpdateSchema = z.object({
   status: z.enum(appointmentStatuses as [AppointmentStatus, ...AppointmentStatus[]]),
@@ -71,7 +72,15 @@ function errorResponse(error: unknown) {
     )
   }
 
+  if (error instanceof APIError) {
+    return Response.json({ message: error.message }, { status: error.status })
+  }
+
   return Response.json({ message: 'The appointment request could not be completed.' }, { status: 500 })
+}
+
+function getCapabilities(user: TypedUser) {
+  return { canRefundPaidConflict: hasRole(user, ['owner', 'manager']) }
 }
 
 const getCalendarEndpoint: Endpoint = {
@@ -116,7 +125,7 @@ const updateCalendarStatusEndpoint: Endpoint = {
         },
       })
       return Response.json({
-        appointment: toAppointmentDetail(result.appointment),
+        appointment: toAppointmentDetail(result.appointment, getCapabilities(user)),
         warning: result.warning,
       })
     } catch (error) {
@@ -135,7 +144,10 @@ const createCalendarAppointmentEndpoint: Endpoint = {
     try {
       const input = createAdminAppointmentSchema.parse(await getJSONBody(req))
       const appointment = await createAdminAppointment({ payload: req.payload, user, input })
-      return Response.json({ appointment: toAppointmentDetail(appointment) }, { status: 201 })
+      return Response.json(
+        { appointment: toAppointmentDetail(appointment, getCapabilities(user)) },
+        { status: 201 },
+      )
     } catch (error) {
       return errorResponse(error)
     }
@@ -160,9 +172,28 @@ const getCalendarAppointmentDetailEndpoint: Endpoint = {
         overrideAccess: false,
         user,
       })
-      return Response.json({ appointment: toAppointmentDetail(appointment) })
+      return Response.json({ appointment: toAppointmentDetail(appointment, getCapabilities(user)) })
     } catch {
       return Response.json({ message: 'Appointment not found.' }, { status: 404 })
+    }
+  },
+}
+
+const paidConflictActionEndpoint: Endpoint = {
+  path: '/calendar/:id/paid-conflict',
+  method: 'post',
+  handler: async (req) => {
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
+    const id = getRouteID(req)
+    if (!id) return Response.json({ message: 'Appointment not found.' }, { status: 404 })
+
+    try {
+      const input = paidConflictActionSchema.parse(await getJSONBody(req))
+      const appointment = await applyPaidConflictAction({ id, input, req, user })
+      return Response.json({ appointment: toAppointmentDetail(appointment, getCapabilities(user)) })
+    } catch (error) {
+      return errorResponse(error)
     }
   },
 }
@@ -172,4 +203,5 @@ export const appointmentCalendarEndpoints: Endpoint[] = [
   updateCalendarStatusEndpoint,
   createCalendarAppointmentEndpoint,
   getCalendarAppointmentDetailEndpoint,
+  paidConflictActionEndpoint,
 ]

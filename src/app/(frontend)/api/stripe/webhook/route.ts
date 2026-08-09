@@ -13,6 +13,7 @@ import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 import { getStripeClient } from '@/lib/stripe/client'
+import { reconcilePaidConflictRefund } from '@/lib/admin/appointments/paidConflict'
 import {
   getSessionCustomerEmail,
   getSessionPaymentIntentId,
@@ -36,13 +37,19 @@ type SupportedEvent =
   | 'checkout.session.async_payment_succeeded'
   | 'checkout.session.completed'
   | 'checkout.session.expired'
+  | 'refund.created'
+  | 'refund.failed'
+  | 'refund.updated'
 
 export function isSupportedEvent(type: string): type is SupportedEvent {
   return (
     type === 'checkout.session.async_payment_failed' ||
     type === 'checkout.session.async_payment_succeeded' ||
     type === 'checkout.session.completed' ||
-    type === 'checkout.session.expired'
+    type === 'checkout.session.expired' ||
+    type === 'refund.created' ||
+    type === 'refund.failed' ||
+    type === 'refund.updated'
   )
 }
 
@@ -122,6 +129,15 @@ async function markAppointmentPaid(
     },
     context: appointmentPaymentContext('stripe-webhook', event.type),
   })
+
+  if (requiresAdminReview) {
+    payload.logger.warn({
+      appointmentId: appointment.id,
+      eventId: event.id,
+      eventType: event.type,
+      msg: 'Paid fitting conflict requires admin review.',
+    })
+  }
 }
 
 export async function claimStripeEvent(event: Stripe.Event): Promise<ClaimedEvent | null> {
@@ -170,14 +186,14 @@ export async function claimStripeEvent(event: Stripe.Event): Promise<ClaimedEven
 async function finishStripeEvent(
   claim: ClaimedEvent,
   status: 'failed' | 'processed',
-  appointment?: Awaited<ReturnType<typeof getAppointmentForSession>>,
+  appointment?: { id: number | string },
 ): Promise<void> {
   const payload = await getBookingPayload()
   await payload.update({
     collection: 'processed-stripe-events',
     id: claim.id,
     data: {
-      appointment: appointment?.id,
+      appointment: appointment ? String(appointment.id) : undefined,
       failureReason: status === 'failed' ? 'Webhook processing failed; safe to retry.' : null,
       processedAt: status === 'processed' ? new Date().toISOString() : null,
       status,
@@ -313,6 +329,20 @@ export async function POST(request: Request) {
   try {
     claim = await claimStripeEvent(event)
     if (!claim) return NextResponse.json({ received: true })
+
+    if (
+      event.type === 'refund.created' ||
+      event.type === 'refund.updated' ||
+      event.type === 'refund.failed'
+    ) {
+      const appointment = await reconcilePaidConflictRefund({
+        eventType: event.type,
+        payload: await getBookingPayload(),
+        refund: event.data.object as Stripe.Refund,
+      })
+      await finishStripeEvent(claim, 'processed', appointment ?? undefined)
+      return NextResponse.json({ received: true })
+    }
 
     const appointment = await getAppointmentForSession(
       event.data.object as Stripe.Checkout.Session,

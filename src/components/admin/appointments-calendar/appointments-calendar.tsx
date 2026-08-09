@@ -202,6 +202,7 @@ export function AppointmentsCalendar({
           appointmentId={selectedID}
           onChanged={() => loadAppointments()}
           onClose={() => setSelectedID(null)}
+          settings={settings}
         />
       ) : null}
       <NewAppointmentDialog
