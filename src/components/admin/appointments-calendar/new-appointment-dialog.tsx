@@ -11,7 +11,11 @@ import {
 } from '@/config/booking'
 import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
 import { UNPAID_MANUAL_CONFIRMATION_WARNING } from '@/lib/admin/appointments/statusWarnings'
-import { getBookingDateBounds, getConfiguredSlotTimes } from '@/lib/booking/date'
+import { getBookingDateBounds } from '@/lib/booking/date'
+import {
+  ADMIN_NOTICE_OVERRIDE_WARNING,
+  getNoticeEligibleSlotTimes,
+} from '@/lib/booking/noticeRules'
 import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
 
 type CreateResponse = { message?: string }
@@ -34,6 +38,8 @@ export function NewAppointmentDialog({
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [overrideNoticeRules, setOverrideNoticeRules] = useState(false)
   const bounds = getBookingDateBounds(settings)
   const dressOptions = useMemo(
     () =>
@@ -43,11 +49,23 @@ export function NewAppointmentDialog({
       ),
     [dresses, purpose],
   )
+  const slotTimes = useMemo(
+    () =>
+      date
+        ? getNoticeEligibleSlotTimes({
+            allowNoticeOverride: overrideNoticeRules,
+            dateKey: date,
+            settings,
+          })
+        : [],
+    [date, overrideNoticeRules, settings],
+  )
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
     const data = new FormData(form)
+    if (overrideNoticeRules && !window.confirm(ADMIN_NOTICE_OVERRIDE_WARNING)) return
     let allowUnpaidManualConfirmation = false
     if (initialStatus === 'confirmed') {
       if (!window.confirm(UNPAID_MANUAL_CONFIRMATION_WARNING)) return
@@ -62,13 +80,14 @@ export function NewAppointmentDialog({
           purpose,
           dressId: String(data.get('dressId') ?? '') || undefined,
           date: String(data.get('date') ?? ''),
-          time: String(data.get('time') ?? ''),
+          time,
           customerName: String(data.get('customerName') ?? ''),
           email: String(data.get('email') ?? ''),
           phone: String(data.get('phone') ?? ''),
           notes: String(data.get('notes') ?? '') || undefined,
           initialStatus,
           allowUnpaidManualConfirmation,
+          overrideNoticeRules,
         }),
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -80,6 +99,8 @@ export function NewAppointmentDialog({
       setPurpose('buy')
       setInitialStatus('pending')
       setDate('')
+      setTime('')
+      setOverrideNoticeRules(false)
       onOpenChange(false)
       await onCreated()
     } catch (createError) {
@@ -102,9 +123,11 @@ export function NewAppointmentDialog({
             <label><span>Purpose</span><select onChange={(event) => setPurpose(event.target.value as BookingPurpose)} value={purpose}>{bookingPurposeValues.map((value) => <option key={value} value={value}>{getBookingPurposeAdminLabel(value)}</option>)}</select></label>
             <label><span>Dress (optional)</span><select name="dressId" defaultValue=""><option value="">No dress selected</option>{dressOptions.map((dress) => <option key={dress.id} value={dress.id}>{dress.name}</option>)}</select></label>
             <div className="new-appointment-form__row">
-              <label><span>Date</span><input max={bounds.maxDate} min={bounds.minDate} name="date" onChange={(event) => setDate(event.target.value)} required type="date" value={date} /></label>
-              <label><span>Time</span><select name="time" required defaultValue=""><option disabled value="">Choose time</option>{getConfiguredSlotTimes(settings, date || undefined).map((time) => <option key={time} value={time}>{time}</option>)}</select></label>
+              <label><span>Date</span><input max={bounds.maxDate} min={bounds.minDate} name="date" onChange={(event) => { setDate(event.target.value); setTime('') }} required type="date" value={date} /></label>
+              <label><span>Time</span><select name="time" onChange={(event) => setTime(event.target.value)} required value={time}><option disabled value="">Choose time</option>{slotTimes.map((slotTime) => <option key={slotTime} value={slotTime}>{slotTime}</option>)}</select></label>
             </div>
+            <label className="new-appointment-form__override"><input checked={overrideNoticeRules} onChange={(event) => { setOverrideNoticeRules(event.target.checked); setTime('') }} type="checkbox" /><span>Override minimum notice and next-day cutoff</span></label>
+            {overrideNoticeRules ? <p className="calendar-warning">{ADMIN_NOTICE_OVERRIDE_WARNING}</p> : null}
             <label><span>Customer name</span><input autoComplete="name" maxLength={120} minLength={2} name="customerName" required /></label>
             <label><span>Email</span><input autoComplete="email" name="email" required type="email" /></label>
             <label><span>Phone</span><input autoComplete="tel" maxLength={40} minLength={5} name="phone" required type="tel" /></label>

@@ -16,6 +16,7 @@ import {
 } from '@/lib/admin/appointments/updateAppointmentStatus'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
+import { assertAppointmentScheduleRules } from '@/lib/booking/appointmentBookingRules'
 import {
   acquireAppointmentSlotLock,
   acquireAppointmentDateMutex,
@@ -72,16 +73,14 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
     })
   }
 
-  const effectiveStatus = nextStatus ?? originalDoc?.status ?? 'pending'
-  const scheduleChanged =
-    operation === 'create' ||
-    (operation === 'update' &&
-      originalDoc &&
-      ((data.startAt && data.startAt !== originalDoc.startAt) ||
-        (data.endAt && data.endAt !== originalDoc.endAt) ||
-        (originalDoc.status === 'cancelled' && effectiveStatus === 'pending')))
-  const startAt = data.startAt ?? originalDoc?.startAt
-  const endAt = data.endAt ?? originalDoc?.endAt
+  const { effectiveStatus, endAt, scheduleChanged, startAt } =
+    assertAppointmentScheduleRules({
+      context,
+      data,
+      operation,
+      originalDoc,
+      settings,
+    })
 
   const existingLockId = getAppointmentSlotLockId(originalDoc?.slotLock)
   if (operation === 'update' && effectiveStatus === 'cancelled' && existingLockId) {

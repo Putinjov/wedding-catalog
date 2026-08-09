@@ -175,6 +175,11 @@
     label > span { color: var(--theme-elevation-650); font-size: 12px; font-weight: 600; }
     input, select, textarea { background: #fff; border: 1px solid var(--calendar-border); color: var(--calendar-charcoal); padding: 9px; width: 100%; }
   }
+  .new-appointment-form label.new-appointment-form__override {
+    align-items: center; flex-direction: row; min-height: 44px;
+    input { min-height: 20px; width: 20px; }
+    span { font-size: 13px; }
+  }
   .new-appointment-form__row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
   .new-appointment-form__actions { justify-content: flex-end; }
 

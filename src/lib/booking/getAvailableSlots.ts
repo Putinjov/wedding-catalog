@@ -16,6 +16,7 @@ import {
   isValidSlotTime,
 } from '@/lib/booking/date'
 import { getBookingSettings } from '@/lib/booking/settings'
+import { getBookingNoticeViolation } from '@/lib/booking/noticeRules'
 import {
   appointmentOverlapsSlot,
   getBlockingAppointmentWhere,
@@ -41,8 +42,9 @@ export async function getAvailableSlots(date: string): Promise<AvailableSlotsRes
   }
 
   const settings = await getBookingSettings()
+  const now = new Date()
 
-  if (!isDateWithinBookingWindow(date, settings)) {
+  if (!isDateWithinBookingWindow(date, settings, now)) {
     return {
       message: getBookingWindowLabel(settings),
       success: false,
@@ -56,12 +58,15 @@ export async function getAvailableSlots(date: string): Promise<AvailableSlotsRes
     }
   }
 
-  const now = new Date()
   const candidates = getConfiguredSlotTimes(settings, date)
     .filter((time) => isValidSlotTime(date, time, settings))
     .flatMap((time) => {
       const dateTimes = getSlotDateTimes(date, time, settings)
-      if (!dateTimes || dateTimes.startAt <= now) {
+      if (
+        !dateTimes ||
+        dateTimes.startAt <= now ||
+        getBookingNoticeViolation({ dateKey: date, now, settings, startAt: dateTimes.startAt })
+      ) {
         return []
       }
 
