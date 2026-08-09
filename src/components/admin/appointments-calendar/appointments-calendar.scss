@@ -180,6 +180,12 @@
     input { min-height: 20px; width: 20px; }
     span { font-size: 13px; }
   }
+  .new-appointment-form__privacy {
+    background: var(--calendar-ivory); border-left: 4px solid var(--calendar-lavender); padding: 12px;
+    p { font-size: 12px; line-height: 1.55; margin: 0; }
+    p + p { margin-top: 8px; }
+    a { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  }
   .new-appointment-form__row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
   .new-appointment-form__actions { justify-content: flex-end; }
 

@@ -9,6 +9,10 @@ export const bookingSchema = z.object({
   email: z.string().trim().email('Please enter a valid email address.'),
   notes: z.string().trim().max(1000, 'Please keep notes under 1,000 characters.').optional(),
   phone: z.string().trim().min(7, 'Please enter a valid phone number.').max(30),
+  privacyAcknowledged: z.literal(true, {
+    error: 'Please confirm that you have read the Privacy Policy.',
+  }),
+  marketingEmailOptIn: z.boolean().optional().default(false),
   purpose: z.enum(bookingPurposeValues),
   time: z.string().regex(/^\d{2}:\d{2}$/, 'Please choose an available time.'),
 })

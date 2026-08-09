@@ -15,6 +15,14 @@ import {
 } from '@/lib/booking/date'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
+import {
+  appointmentPrivacyContext,
+  currentPrivacyHashes,
+} from '@/lib/booking/privacyIntegrity'
+import {
+  adminPrivacyNoticeMethodValues,
+  currentPrivacyPolicy,
+} from '@/config/privacy'
 import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
 import {
   getBookingNoticeMessage,
@@ -35,6 +43,7 @@ export const createAdminAppointmentSchema = z.object({
   email: z.email().max(254),
   phone: z.string().trim().min(5).max(40),
   notes: z.string().trim().max(1000).optional(),
+  privacyNoticeMethod: z.enum(adminPrivacyNoticeMethodValues),
   initialStatus: z.enum(['pending', 'confirmed']),
   allowUnpaidManualConfirmation: z.boolean().optional(),
   overrideNoticeRules: z.boolean().optional(),
@@ -138,6 +147,11 @@ export async function createAdminAppointment({
         notes: input.notes || undefined,
         paymentStatus: 'unpaid',
         phone: input.phone,
+        privacyNoticeMethod: input.privacyNoticeMethod,
+        privacyNoticeProvidedAt: now.toISOString(),
+        privacyNoticeTextHash: currentPrivacyHashes.notice,
+        privacyPolicyVersion: currentPrivacyPolicy.version,
+        marketingConsentStatus: 'not_asked',
         publicReference: createPublicReference(),
         purpose: input.purpose,
         source: 'admin',
@@ -148,6 +162,7 @@ export async function createAdminAppointment({
       context: {
         ...adminBookingRulesContext(input.overrideNoticeRules === true),
         ...appointmentPaymentContext('admin-create'),
+        ...appointmentPrivacyContext('admin-create'),
         appointmentStatusTransition: transitionOptions,
       },
       depth: 1,

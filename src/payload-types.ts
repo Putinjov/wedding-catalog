@@ -1217,6 +1217,33 @@ export interface Appointment {
   email: string;
   phone: string;
   notes?: string | null;
+  /**
+   * Policy snapshot shown or provided when the booking was created.
+   */
+  privacyPolicyVersion?: string | null;
+  privacyNoticeProvidedAt?: string | null;
+  privacyNoticeMethod?: ('website' | 'phone' | 'email' | 'sms' | 'in_person') | null;
+  /**
+   * SHA-256 hash of the exact privacy notice.
+   */
+  privacyNoticeTextHash?: string | null;
+  /**
+   * Null for manual bookings unless the customer personally acknowledged the policy.
+   */
+  privacyAcknowledgedAt?: string | null;
+  /**
+   * SHA-256 hash of the exact acknowledgement copy.
+   */
+  privacyAcknowledgementTextHash?: string | null;
+  privacyAcknowledgementSource?: 'website' | null;
+  marketingConsentStatus?: ('not_asked' | 'not_granted' | 'granted' | 'withdrawn') | null;
+  marketingConsentAt?: string | null;
+  /**
+   * SHA-256 hash of the exact marketing opt-in copy.
+   */
+  marketingConsentTextHash?: string | null;
+  marketingConsentChannel?: 'email' | null;
+  marketingConsentCaptureMethod?: ('written' | 'oral') | null;
   startAt: string;
   endAt: string;
   /**
@@ -2231,6 +2258,18 @@ export interface AppointmentsSelect<T extends boolean = true> {
   email?: T;
   phone?: T;
   notes?: T;
+  privacyPolicyVersion?: T;
+  privacyNoticeProvidedAt?: T;
+  privacyNoticeMethod?: T;
+  privacyNoticeTextHash?: T;
+  privacyAcknowledgedAt?: T;
+  privacyAcknowledgementTextHash?: T;
+  privacyAcknowledgementSource?: T;
+  marketingConsentStatus?: T;
+  marketingConsentAt?: T;
+  marketingConsentTextHash?: T;
+  marketingConsentChannel?: T;
+  marketingConsentCaptureMethod?: T;
   startAt?: T;
   endAt?: T;
   status?: T;

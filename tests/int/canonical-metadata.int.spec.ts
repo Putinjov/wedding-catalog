@@ -5,9 +5,11 @@ import { generateMetadata as generatePendingMetadata } from '@/app/(frontend)/bo
 import { metadata as cancelledPaymentMetadata } from '@/app/(frontend)/book-a-fitting/payment/cancelled/page'
 import { generateMetadata as generateSuccessPaymentMetadata } from '@/app/(frontend)/book-a-fitting/payment/success/page'
 import { generateMetadata as generateBuyMetadata } from '@/app/(frontend)/buy/page'
+import { metadata as contactMetadata } from '@/app/(frontend)/contact/page'
 import { generateMetadata as generateDressMetadata } from '@/app/(frontend)/dresses/[slug]/page'
 import { metadata as dressesMetadata } from '@/app/(frontend)/dresses/page'
 import { metadata as homeMetadata } from '@/app/(frontend)/page'
+import { metadata as privacyMetadata } from '@/app/(frontend)/privacy/page'
 import { generateMetadata as generateRentMetadata } from '@/app/(frontend)/rent/page'
 import { getPrivateBookingHeaderRules } from '@/config/indexation'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
@@ -119,6 +121,8 @@ describe('canonical metadata', () => {
     expect(buyMetadata.alternates?.canonical).toBe('/buy')
     expect(rentMetadata.alternates?.canonical).toBe('/rent')
     expect(bookingMetadata.alternates?.canonical).toBe('/book-a-fitting')
+    expect(contactMetadata.alternates?.canonical).toBe('/contact')
+    expect(privacyMetadata.alternates?.canonical).toBe('/privacy')
   })
 
   it('keeps filtered catalogues crawlable but out of the search index', async () => {
