@@ -11,6 +11,7 @@ import { AppointmentSlotLocks } from './collections/AppointmentSlotLocks'
 import { Appointments } from './collections/Appointments'
 import { Categories } from './collections/Categories'
 import { Dresses } from './collections/Dresses'
+import { EmailDeliveries } from './collections/EmailDeliveries'
 import { Backs } from './collections/Lookups/Backs'
 import { BookingSettings } from './BookingSettings/config'
 import { Colors } from './collections/Lookups/Colors'
@@ -29,11 +30,13 @@ import { Posts } from './collections/Posts'
 import { ProcessedStripeEvents } from './collections/ProcessedStripeEvents'
 import { Users } from './collections/Users'
 import { getServerEnvironment, isR2Configured } from './config/env'
+import { getEmailAdapter } from './config/email'
 import { normalizePublicAssetOrigin } from './config/site-url'
 import { Footer } from './Footer/config'
 import { defaultLexical } from './fields/defaultLexical'
 import { Header } from './Header/config'
 import { cleanupExpiredAppointmentHoldsTask } from './jobs/cleanupExpiredAppointmentHolds'
+import { sendAppointmentEmailTask } from './jobs/sendAppointmentEmail'
 import { migrateLegacyUserRoles } from './lib/security/migrateLegacyUserRoles'
 import { plugins } from './plugins'
 import { getServerSideURL } from './utilities/getURL'
@@ -137,11 +140,13 @@ export default buildConfig({
     Embellishments,
     Dresses,
     Appointments,
+    EmailDeliveries,
     AppointmentAudits,
     AppointmentSlotLocks,
     ProcessedStripeEvents,
   ],
   cors: [getServerSideURL()].filter(Boolean),
+  email: getEmailAdapter(environment),
   globals: [Header, Footer, BookingSettings],
   plugins: [
     ...plugins,
@@ -191,6 +196,6 @@ export default buildConfig({
       },
     },
     enableConcurrencyControl: true,
-    tasks: [cleanupExpiredAppointmentHoldsTask],
+    tasks: [cleanupExpiredAppointmentHoldsTask, sendAppointmentEmailTask],
   },
 })

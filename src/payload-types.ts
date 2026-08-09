@@ -85,6 +85,7 @@ export interface Config {
     embellishments: Embellishment;
     dresses: Dress;
     appointments: Appointment;
+    'email-deliveries': EmailDelivery;
     'appointment-audits': AppointmentAudit;
     'appointment-slot-locks': AppointmentSlotLock;
     'processed-stripe-events': ProcessedStripeEvent;
@@ -123,6 +124,7 @@ export interface Config {
     embellishments: EmbellishmentsSelect<false> | EmbellishmentsSelect<true>;
     dresses: DressesSelect<false> | DressesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
+    'email-deliveries': EmailDeliveriesSelect<false> | EmailDeliveriesSelect<true>;
     'appointment-audits': AppointmentAuditsSelect<false> | AppointmentAuditsSelect<true>;
     'appointment-slot-locks': AppointmentSlotLocksSelect<false> | AppointmentSlotLocksSelect<true>;
     'processed-stripe-events': ProcessedStripeEventsSelect<false> | ProcessedStripeEventsSelect<true>;
@@ -159,6 +161,7 @@ export interface Config {
   jobs: {
     tasks: {
       cleanupExpiredAppointmentHolds: TaskCleanupExpiredAppointmentHolds;
+      sendAppointmentEmail: TaskSendAppointmentEmail;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -1346,6 +1349,30 @@ export interface AppointmentSlotLock {
   createdAt: string;
 }
 /**
+ * Privacy-minimised appointment email delivery state. Message bodies are never stored.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-deliveries".
+ */
+export interface EmailDelivery {
+  id: string;
+  appointment: string | Appointment;
+  event: 'pending' | 'confirmed' | 'failed' | 'expired' | 'rescheduled' | 'cancelled' | 'refund' | 'admin_alert';
+  status: 'queued' | 'sending' | 'sent' | 'failed' | 'skipped';
+  idempotencyKey: string;
+  trigger: 'automatic' | 'manual';
+  attempts: number;
+  jobId?: string | null;
+  /**
+   * Sanitised operational category only; provider responses and addresses are excluded.
+   */
+  lastFailureReason?: string | null;
+  sentAt?: string | null;
+  requestedBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Owner-only immutable appointment history for operational and payment review.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1549,7 +1576,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'cleanupExpiredAppointmentHolds' | 'schedulePublish';
+        taskSlug: 'inline' | 'cleanupExpiredAppointmentHolds' | 'sendAppointmentEmail' | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -1582,7 +1609,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'cleanupExpiredAppointmentHolds' | 'schedulePublish') | null;
+  taskSlug?: ('inline' | 'cleanupExpiredAppointmentHolds' | 'sendAppointmentEmail' | 'schedulePublish') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1671,6 +1698,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'appointments';
         value: string | Appointment;
+      } | null)
+    | ({
+        relationTo: 'email-deliveries';
+        value: string | EmailDelivery;
       } | null)
     | ({
         relationTo: 'appointment-audits';
@@ -2345,6 +2376,24 @@ export interface AppointmentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-deliveries_select".
+ */
+export interface EmailDeliveriesSelect<T extends boolean = true> {
+  appointment?: T;
+  event?: T;
+  status?: T;
+  idempotencyKey?: T;
+  trigger?: T;
+  attempts?: T;
+  jobId?: T;
+  lastFailureReason?: T;
+  sentAt?: T;
+  requestedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointment-audits_select".
  */
 export interface AppointmentAuditsSelect<T extends boolean = true> {
@@ -2914,6 +2963,19 @@ export interface TaskCleanupExpiredAppointmentHolds {
     hasMore: boolean;
     scanned: number;
     skipped: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSendAppointmentEmail".
+ */
+export interface TaskSendAppointmentEmail {
+  input: {
+    deliveryId: string;
+  };
+  output: {
+    deliveryId: string;
+    status: 'sent' | 'skipped';
   };
 }
 /**

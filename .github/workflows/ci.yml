@@ -33,6 +33,11 @@ jobs:
       PREVIEW_SECRET: ci-preview-secret-at-least-24-characters
       STRIPE_SECRET_KEY: sk_test_ci_placeholder
       STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      SMTP_USER: noreply@caitbridal.ie
+      SMTP_PASSWORD: ci-smtp-password-placeholder
+      EMAIL_FROM: noreply@caitbridal.ie
+      EMAIL_REPLY_TO: bookings@caitbridal.ie
+      BOOKING_ADMIN_EMAIL: bookings@caitbridal.ie
       CRON_SECRET: ci-cron-secret-at-least-24-characters
       R2_BUCKET: ci-wedding-catalog
       R2_ACCESS_KEY_ID: ci-r2-access-key

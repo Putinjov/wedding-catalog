@@ -1,10 +1,7 @@
 import { getPayload } from 'payload'
 
 import { getServerEnvironment } from '@/config/env'
-import {
-  expiredHoldCleanupQueue,
-  expiredHoldCleanupTaskSlug,
-} from '@/jobs/cleanupExpiredAppointmentHolds'
+import { appointmentEmailQueue, sendAppointmentEmailTaskSlug } from '@/jobs/sendAppointmentEmail'
 import {
   isCronRequestAuthorized,
   privateCronResponseHeaders,
@@ -13,6 +10,8 @@ import {
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 export const runtime = 'nodejs'
+
+export const emailCronBatchSize = 5
 
 export async function GET(request: Request): Promise<Response> {
   const secret = getServerEnvironment({ strict: false }).CRON_SECRET
@@ -32,40 +31,50 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const { default: config } = await import('@payload-config')
     const payload = await getPayload({ config })
-    const job = await payload.jobs.queue({
-      input: {},
+    const result = await payload.jobs.run({
+      limit: emailCronBatchSize,
       overrideAccess: true,
-      queue: expiredHoldCleanupQueue,
-      task: expiredHoldCleanupTaskSlug,
+      queue: appointmentEmailQueue,
+      sequential: true,
+      silent: true,
     })
-    const result = await payload.jobs.runByID({
-      id: job.id,
-      overrideAccess: true,
-    })
-    const jobId = String(job.id)
-    const runStatus = result.jobStatus?.[jobId]?.status
+    const statuses = Object.values(result.jobStatus ?? {}).map((job) => job.status)
+    const failed = statuses.filter((status) => status !== 'success').length
+    const processed = statuses.length
 
-    if (runStatus !== 'success') {
+    const details = {
+      failed,
+      processed,
+      remaining: result.remainingJobsFromQueried,
+    }
+    if (failed > 0) {
       payload.logger.error({
-        msg: 'ALERT: Expired hold cron invocation did not complete successfully.',
-        job: expiredHoldCleanupTaskSlug,
-        jobId,
-        runStatus: runStatus ?? 'not-run',
+        ...details,
+        job: sendAppointmentEmailTaskSlug,
+        msg: 'ALERT: Appointment email fallback worker completed with failures.',
       })
       return Response.json(
-        { jobId, status: 'failed' },
+        { ...details, status: 'failed' },
         { headers: privateCronResponseHeaders, status: 500 },
       )
     }
 
-    return Response.json({ jobId, status: 'ok' }, { headers: privateCronResponseHeaders })
+    payload.logger.info({
+      ...details,
+      job: sendAppointmentEmailTaskSlug,
+      msg: 'Appointment email fallback worker completed.',
+    })
+    return Response.json(
+      { ...details, status: 'ok' },
+      { headers: privateCronResponseHeaders },
+    )
   } catch (error) {
     console.error(
       JSON.stringify({
         alert: true,
         errorName: error instanceof Error ? error.name : 'Error',
-        job: expiredHoldCleanupTaskSlug,
-        message: 'Expired hold cron invocation failed before completion.',
+        job: sendAppointmentEmailTaskSlug,
+        message: 'Appointment email fallback worker failed before completion.',
       }),
     )
     return Response.json(

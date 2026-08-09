@@ -20,6 +20,10 @@ import {
 } from '@/lib/admin/appointments/statusWarnings'
 
 type DetailResponse = { appointment: AppointmentDetail; warning?: string | null; message?: string }
+type DeliveryResponse = {
+  delivery?: { event: string; id: number | string; status: string }
+  message?: string
+}
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat('en-IE', { currency, style: 'currency' }).format(amount)
@@ -38,6 +42,7 @@ export function AppointmentDrawer({
 }) {
   const [detail, setDetail] = useState<AppointmentDetail | null>(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
@@ -93,6 +98,7 @@ export function AppointmentDrawer({
 
     setBusy(true)
     setError('')
+    setNotice('')
     try {
       const response = await fetch(`/api/appointments/calendar/${appointmentId}/status`, {
         body: JSON.stringify({ status, ...options }),
@@ -137,6 +143,7 @@ export function AppointmentDrawer({
 
     setBusy(true)
     setError('')
+    setNotice('')
     try {
       const response = await fetch(`/api/appointments/calendar/${appointmentId}/paid-conflict`, {
         body: JSON.stringify({ ...action, operationKey: crypto.randomUUID() }),
@@ -168,6 +175,35 @@ export function AppointmentDrawer({
       date: rescheduleDate,
       time: rescheduleTime,
     })
+  }
+
+  async function resendConfirmation() {
+    if (!detail?.capabilities.canResendConfirmation) return
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const response = await fetch(
+        `/api/appointments/calendar/${appointmentId}/email/resend-confirmation`,
+        {
+          body: JSON.stringify({ operationKey: crypto.randomUUID() }),
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+        },
+      )
+      const body = (await response.json()) as DeliveryResponse
+      if (!response.ok) throw new Error(body.message ?? 'Unable to queue the confirmation email.')
+      setNotice('Confirmation email queued for delivery.')
+    } catch (resendError) {
+      setError(
+        resendError instanceof Error
+          ? resendError.message
+          : 'Unable to queue the confirmation email.',
+      )
+    } finally {
+      setBusy(false)
+    }
   }
 
   const isPast = detail ? new Date(detail.endAt) <= new Date() : false
@@ -202,6 +238,7 @@ export function AppointmentDrawer({
           <Dialog.Description>Review booking and payment state, then choose a valid status action.</Dialog.Description>
           <Dialog.Close className="calendar-dialog__close" aria-label="Close appointment details"><X /></Dialog.Close>
           {error ? <p className="calendar-message" role="status">{error}</p> : null}
+          {notice ? <p className="calendar-message" role="status">{notice}</p> : null}
           {!detail && !error ? <p>Loading appointment…</p> : null}
           {detail ? (
             <>
@@ -278,6 +315,16 @@ export function AppointmentDrawer({
                 <div><dt>Refund</dt><dd><code>{detail.stripeRefundId || '—'}</code></dd></div></dl>
               </details>
               <div className="appointment-drawer__actions">
+                {detail.capabilities.canResendConfirmation ? (
+                  <button
+                    className="calendar-button"
+                    disabled={busy}
+                    onClick={resendConfirmation}
+                    type="button"
+                  >
+                    Resend confirmation email
+                  </button>
+                ) : null}
                 {actions.map((action) => (
                   <button className={action.destructive ? 'calendar-button calendar-button--danger' : 'calendar-button'} disabled={busy} key={action.status} onClick={() => changeStatus(action.status)} type="button">{action.label}</button>
                 ))}

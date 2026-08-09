@@ -8,6 +8,7 @@ import * as migration_20260809_210000_formalize_appointment_lifecycle from './20
 import * as migration_20260809_220000_enforce_stripe_hold_minimum from './20260809_220000_enforce_stripe_hold_minimum'
 import * as migration_20260809_230000_add_expired_hold_job_concurrency from './20260809_230000_add_expired_hold_job_concurrency'
 import * as migration_20260809_234500_add_paid_conflict_workflow from './20260809_234500_add_paid_conflict_workflow'
+import * as migration_20260810_003000_add_email_delivery_queue from './20260810_003000_add_email_delivery_queue'
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20260809_234500_add_paid_conflict_workflow.up,
     down: migration_20260809_234500_add_paid_conflict_workflow.down,
     name: '20260809_234500_add_paid_conflict_workflow',
+  },
+  {
+    up: migration_20260810_003000_add_email_delivery_queue.up,
+    down: migration_20260810_003000_add_email_delivery_queue.down,
+    name: '20260810_003000_add_email_delivery_queue',
   },
 ]
