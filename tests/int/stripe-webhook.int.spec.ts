@@ -46,13 +46,13 @@ function createAppointment(overrides: Partial<Appointment> = {}): Appointment {
     endAt: '2030-06-01T11:00:00.000Z',
     fittingFee: 20,
     needsAdminReview: false,
-    paymentStatus: 'pending',
+    paymentStatus: 'processing',
     phone: '+353000000000',
     publicReference: `fit_${'a'.repeat(32)}`,
     purpose: 'buy',
     source: 'website',
     startAt: '2030-06-01T10:00:00.000Z',
-    status: 'pending',
+    status: 'payment_processing',
     stripeCheckoutSessionId: 'cs_test_1',
     updatedAt: '2030-01-01T00:00:00.000Z',
     ...overrides,
@@ -168,6 +168,46 @@ describe('Stripe webhook reliability', () => {
     )
   })
 
+  it('records a paid slot conflict without claiming or confirming the slot', async () => {
+    const payload = createPayloadFixture()
+    mocks.getBookingPayload.mockResolvedValue(payload)
+    mocks.hasAppointmentSlotConflict.mockResolvedValue(true)
+    const session = createSession({ payment_status: 'paid', status: 'complete' })
+
+    await processSessionEvent(createEvent('checkout.session.completed', session), session)
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          needsAdminReview: true,
+          paymentStatus: 'paid',
+          status: 'payment_received_conflict',
+        }),
+      }),
+    )
+  })
+
+  it('routes a late paid event for a cancelled appointment to conflict review', async () => {
+    const payload = createPayloadFixture()
+    mocks.getBookingPayload.mockResolvedValue(payload)
+    mocks.getAppointmentByReference.mockResolvedValue(
+      createAppointment({ paymentStatus: 'processing', status: 'cancelled' }),
+    )
+    const session = createSession({ payment_status: 'paid', status: 'complete' })
+
+    await processSessionEvent(createEvent('checkout.session.completed', session), session)
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          needsAdminReview: true,
+          paymentStatus: 'paid',
+          status: 'payment_received_conflict',
+        }),
+      }),
+    )
+  })
+
   it('confirms a paid undecided fitting without changing its intent', async () => {
     const payload = createPayloadFixture()
     mocks.getBookingPayload.mockResolvedValue(payload)
@@ -201,7 +241,7 @@ describe('Stripe webhook reliability', () => {
 
     expect(payload.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ paymentStatus: 'failed' }),
+        data: expect.objectContaining({ paymentStatus: 'failed', status: 'payment_failed' }),
       }),
     )
   })
@@ -235,6 +275,7 @@ describe('Stripe webhook reliability', () => {
         data: expect.objectContaining({
           checkoutExpiresAt: null,
           paymentStatus: 'unpaid',
+          status: 'pending_payment',
           stripeCheckoutSessionId: null,
         }),
       }),

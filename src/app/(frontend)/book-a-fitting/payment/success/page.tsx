@@ -54,11 +54,16 @@ export default async function FittingPaymentSuccessPage({ searchParams }: Args) 
     sessionBelongsToAppointment &&
     appointment.paymentStatus === 'paid' &&
     appointment.status === 'confirmed'
+  const isConflict =
+    sessionBelongsToAppointment &&
+    appointment.paymentStatus === 'paid' &&
+    appointment.status === 'payment_received_conflict'
   const isProcessing =
     sessionBelongsToAppointment &&
     !isConfirmed &&
+    !isConflict &&
     (session?.payment_status === 'paid' ||
-      (session?.status === 'complete' && appointment.paymentStatus === 'pending'))
+      (session?.status === 'complete' && appointment.paymentStatus === 'processing'))
   const dressName = getDressName(appointment)
   const dateKey = getDateKey(new Date(appointment.startAt))
   const amountPaid = appointment.amountPaid ?? (session?.amount_total ?? 0)
@@ -75,6 +80,8 @@ export default async function FittingPaymentSuccessPage({ searchParams }: Args) 
         <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-foreground sm:text-6xl">
           {isConfirmed
             ? 'Your fitting is confirmed'
+            : isConflict
+              ? 'Your payment needs review'
             : isProcessing
               ? 'Your payment is being processed'
               : 'We could not verify this payment'}
@@ -82,6 +89,8 @@ export default async function FittingPaymentSuccessPage({ searchParams }: Args) 
         <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
           {isConfirmed
             ? 'Your fitting fee has been verified and your appointment is confirmed.'
+            : isConflict
+              ? 'Your fitting fee has been verified, but the appointment could not be confirmed automatically. Our team will review it before confirming a slot.'
             : isProcessing
               ? 'Stripe has received your payment. We are waiting for the verified webhook before confirming the appointment. Please do not pay again.'
               : 'This page does not confirm an appointment by itself. Return to your pending booking to check the payment or retry securely.'}

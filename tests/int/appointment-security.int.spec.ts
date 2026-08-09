@@ -18,7 +18,7 @@ function appointment(overrides: Partial<Appointment> = {}): Appointment {
     phone: '+353100000000',
     startAt: '2030-01-01T10:00:00.000Z',
     endAt: '2030-01-01T11:00:00.000Z',
-    status: 'pending',
+    status: 'pending_payment',
     paymentStatus: 'unpaid',
     fittingFee: 50,
     currency: 'EUR',
@@ -70,9 +70,23 @@ describe('appointment payment integrity', () => {
     expect(isAppointmentBlockingSlot(expired, new Date('2030-01-01T09:00:00.000Z'))).toBe(false)
     expect(
       isAppointmentBlockingSlot(
-        { ...expired, paymentStatus: 'paid' },
+        { ...expired, paymentStatus: 'paid', status: 'confirmed' },
         new Date('2030-01-01T09:00:00.000Z'),
       ),
     ).toBe(true)
+  })
+
+  it('keeps payment processing blocking but releases a paid conflict for explicit resolution', () => {
+    const processing = appointment({
+      paymentStatus: 'processing',
+      status: 'payment_processing',
+    })
+    const conflict = appointment({
+      paymentStatus: 'paid',
+      status: 'payment_received_conflict',
+    })
+
+    expect(isAppointmentBlockingSlot(processing)).toBe(true)
+    expect(isAppointmentBlockingSlot(conflict)).toBe(false)
   })
 })

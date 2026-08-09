@@ -7,6 +7,7 @@ import {
   getBookingNoticeViolation,
 } from '@/lib/booking/noticeRules'
 import type { Appointment } from '@/payload-types'
+import { isAppointmentStatusNonBlocking } from '@/lib/booking/appointmentLifecycle'
 
 type AdminBookingRulesContext = {
   allowNoticeOverride: boolean
@@ -65,7 +66,7 @@ export function assertAppointmentScheduleRules({
   scheduleChanged: boolean
   startAt: string | undefined
 } {
-  const effectiveStatus = data.status ?? originalDoc?.status ?? 'pending'
+  const effectiveStatus = data.status ?? originalDoc?.status ?? 'pending_payment'
   const bookingTimeChanged =
     operation === 'create' ||
     Boolean(
@@ -76,12 +77,12 @@ export function assertAppointmentScheduleRules({
   const reopening =
     operation === 'update' &&
     originalDoc?.status === 'cancelled' &&
-    effectiveStatus === 'pending'
+    !isAppointmentStatusNonBlocking(effectiveStatus)
   const scheduleChanged = bookingTimeChanged || reopening
   const startAt = data.startAt ?? originalDoc?.startAt
   const endAt = data.endAt ?? originalDoc?.endAt
 
-  if (!scheduleChanged || effectiveStatus === 'cancelled') {
+  if (!scheduleChanged || isAppointmentStatusNonBlocking(effectiveStatus)) {
     return { effectiveStatus, endAt, scheduleChanged, startAt }
   }
 

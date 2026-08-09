@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import type { AppointmentDetail, AppointmentStatus } from '@/lib/admin/appointments/calendarTypes'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
 import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
+import { getReopenedAppointmentStatus } from '@/lib/booking/appointmentLifecycle'
 import {
   PAID_CANCELLATION_WARNING,
   PAID_REOPEN_WARNING,
@@ -54,11 +55,16 @@ export function AppointmentDrawer({
       if (!window.confirm(PAID_CANCELLATION_WARNING)) return
       options.acknowledgePaidCancellation = true
     }
-    if (status === 'confirmed' && detail.paymentStatus !== 'paid' && detail.source === 'admin') {
+    if (
+      status === 'confirmed' &&
+      detail.status === 'pending_payment' &&
+      detail.paymentStatus === 'unpaid' &&
+      detail.source === 'admin'
+    ) {
       if (!window.confirm(UNPAID_MANUAL_CONFIRMATION_WARNING)) return
       options.allowUnpaidManualConfirmation = true
     }
-    if (status === 'pending' && detail.status === 'cancelled' && detail.paymentStatus === 'paid') {
+    if (status === 'confirmed' && detail.status === 'cancelled' && detail.paymentStatus === 'paid') {
       if (!window.confirm(PAID_REOPEN_WARNING)) return
       options.acknowledgePaidReopen = true
     }
@@ -85,17 +91,25 @@ export function AppointmentDrawer({
   }
 
   const isPast = detail ? new Date(detail.endAt) <= new Date() : false
+  const reopenedStatus = detail ? getReopenedAppointmentStatus(detail.paymentStatus) : null
   const actions: { label: string; status: AppointmentStatus; destructive?: boolean }[] = detail
-    ? detail.status === 'pending'
-      ? [{ label: 'Mark confirmed', status: 'confirmed' }, { label: 'Cancel appointment', status: 'cancelled', destructive: true }]
+    ? detail.status === 'pending_payment'
+      ? [
+          ...(detail.source === 'admin' ? [{ label: 'Mark confirmed', status: 'confirmed' as const }] : []),
+          { label: 'Cancel appointment', status: 'cancelled', destructive: true },
+        ]
+      : detail.status === 'payment_processing' || detail.status === 'payment_failed'
+        ? [{ label: 'Cancel appointment', status: 'cancelled', destructive: true }]
       : detail.status === 'confirmed'
         ? [
-            ...(isPast ? [{ label: 'Mark completed', status: 'completed' as const }, { label: 'Mark no-show', status: 'no-show' as const }] : []),
-            { label: 'Revert to pending', status: 'pending' },
+            ...(isPast ? [{ label: 'Mark completed', status: 'completed' as const }, { label: 'Mark no-show', status: 'no_show' as const }] : []),
+            ...(detail.paymentStatus === 'unpaid' ? [{ label: 'Revert to pending payment', status: 'pending_payment' as const }] : []),
             { label: 'Cancel appointment', status: 'cancelled', destructive: true },
           ]
         : detail.status === 'cancelled'
-          ? [{ label: 'Revert to pending', status: 'pending' }]
+          ? reopenedStatus
+            ? [{ label: 'Reopen appointment', status: reopenedStatus }]
+            : []
           : []
     : []
 

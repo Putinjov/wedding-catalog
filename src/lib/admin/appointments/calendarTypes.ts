@@ -1,8 +1,14 @@
 import type { Appointment, Dress } from '@/payload-types'
 import { isBookingPurpose } from '@/lib/booking/purpose'
+import {
+  appointmentPaymentStatusValues,
+  appointmentStatusValues,
+  type AppointmentPaymentStatus,
+  type AppointmentStatus,
+} from '@/lib/booking/appointmentLifecycle'
 
-export type AppointmentStatus = Appointment['status']
-export type PaymentStatus = Appointment['paymentStatus']
+export type { AppointmentStatus }
+export type PaymentStatus = AppointmentPaymentStatus
 
 export type CalendarDress = {
   id: Dress['id']
@@ -42,21 +48,9 @@ export type ManualAppointmentDress = CalendarDress & {
   availableForRent: boolean
 }
 
-export const appointmentStatuses: AppointmentStatus[] = [
-  'pending',
-  'confirmed',
-  'cancelled',
-  'completed',
-  'no-show',
-]
+export const appointmentStatuses: AppointmentStatus[] = [...appointmentStatusValues]
 
-export const paymentStatuses: PaymentStatus[] = [
-  'unpaid',
-  'pending',
-  'paid',
-  'refunded',
-  'failed',
-]
+export const paymentStatuses: PaymentStatus[] = [...appointmentPaymentStatusValues]
 
 export function getRelatedDress(
   dress: Appointment['dress'],

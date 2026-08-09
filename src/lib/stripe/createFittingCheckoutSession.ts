@@ -44,7 +44,11 @@ export async function createFittingCheckoutSession(
     return { status: 'paid' }
   }
 
-  if (appointment.status !== 'pending') {
+  if (
+    appointment.status !== 'pending_payment' &&
+    appointment.status !== 'payment_processing' &&
+    appointment.status !== 'payment_failed'
+  ) {
     return {
       message: 'This appointment is no longer available for payment.',
       status: 'unavailable',
@@ -125,8 +129,10 @@ export async function createFittingCheckoutSession(
       id: appointment.id,
       data: {
         checkoutExpiresAt: null,
-        paymentStatus: 'unpaid',
         stripeCheckoutSessionId: null,
+        ...(appointment.status === 'payment_failed'
+          ? {}
+          : { paymentStatus: 'unpaid' as const, status: 'pending_payment' as const }),
       },
       context: appointmentPaymentContext('checkout-session'),
     })
@@ -180,7 +186,8 @@ export async function createFittingCheckoutSession(
     data: {
       checkoutExpiresAt: new Date(checkoutExpiresAt * 1000).toISOString(),
       holdExpiresAt: new Date(checkoutExpiresAt * 1000).toISOString(),
-      paymentStatus: 'pending',
+      paymentStatus: 'processing',
+      status: 'payment_processing',
       stripeCheckoutSessionId: session.id,
     },
     context: appointmentPaymentContext('checkout-session'),

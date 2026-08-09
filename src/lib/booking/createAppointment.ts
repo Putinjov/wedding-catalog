@@ -191,7 +191,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         purpose: data.purpose,
         source: 'website',
         startAt,
-        status: 'pending',
+        status: 'pending_payment',
         currency: siteConfig.currency,
       },
       context: {

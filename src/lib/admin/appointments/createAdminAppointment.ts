@@ -44,7 +44,7 @@ export const createAdminAppointmentSchema = z.object({
   phone: z.string().trim().min(5).max(40),
   notes: z.string().trim().max(1000).optional(),
   privacyNoticeMethod: z.enum(adminPrivacyNoticeMethodValues),
-  initialStatus: z.enum(['pending', 'confirmed']),
+  initialStatus: z.enum(['pending_payment', 'confirmed']),
   allowUnpaidManualConfirmation: z.boolean().optional(),
   overrideNoticeRules: z.boolean().optional(),
 })
@@ -128,7 +128,7 @@ export async function createAdminAppointment({
         endAt: slot.endAt,
         paymentStatus: 'unpaid',
         source: 'admin',
-        status: 'pending',
+        status: 'pending_payment',
       },
       nextStatus: 'confirmed',
       options: transitionOptions,

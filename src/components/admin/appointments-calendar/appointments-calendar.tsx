@@ -118,7 +118,7 @@ export function AppointmentsCalendar({
       if (
         filters.upcoming &&
         (new Date(appointment.startAt).getTime() <= filterNow ||
-          ['cancelled', 'completed', 'no-show'].includes(appointment.status))
+          ['cancelled', 'completed', 'no_show', 'expired', 'refunded', 'partially_refunded'].includes(appointment.status))
       ) return false
       return true
     })

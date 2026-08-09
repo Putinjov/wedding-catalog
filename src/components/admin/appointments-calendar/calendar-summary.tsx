@@ -4,10 +4,11 @@ export function CalendarSummary({ appointments }: { appointments: CalendarAppoin
   const counters = [
     ['Total', appointments.length],
     ['Confirmed', appointments.filter((item) => item.status === 'confirmed').length],
-    ['Pending payment', appointments.filter((item) => item.paymentStatus === 'pending').length],
+    ['Pending payment', appointments.filter((item) => item.status === 'pending_payment').length],
+    ['Processing', appointments.filter((item) => item.paymentStatus === 'processing').length],
     ['Cancelled', appointments.filter((item) => item.status === 'cancelled').length],
     ['Completed', appointments.filter((item) => item.status === 'completed').length],
-    ['No-show', appointments.filter((item) => item.status === 'no-show').length],
+    ['No-show', appointments.filter((item) => item.status === 'no_show').length],
   ] as const
 
   return (

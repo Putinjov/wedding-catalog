@@ -1,6 +1,11 @@
 import { APIError, type Payload, type RequestContext, type TypedUser } from 'payload'
 
 import type { Appointment } from '@/payload-types'
+import {
+  assertAppointmentLifecycleTransition,
+  AppointmentLifecycleError,
+  getReopenedAppointmentStatus,
+} from '@/lib/booking/appointmentLifecycle'
 
 import { AdminAppointmentError } from './getCalendarAppointments'
 import type { AppointmentStatus } from './calendarTypes'
@@ -41,26 +46,37 @@ export function validateAppointmentStatusTransition({
     return null
   }
 
-  if (currentStatus === 'completed' || currentStatus === 'no-show') {
-    throw new AdminAppointmentError('Completed and no-show appointments cannot be reopened.')
+  if (
+    currentStatus === 'completed' ||
+    currentStatus === 'no_show' ||
+    currentStatus === 'expired' ||
+    currentStatus === 'refunded' ||
+    currentStatus === 'partially_refunded'
+  ) {
+    throw new AdminAppointmentError('That terminal appointment cannot be reopened.')
   }
 
   if (nextStatus === 'confirmed') {
-    if (currentStatus !== 'pending') {
-      throw new AdminAppointmentError('Only pending appointments can be confirmed.')
+    if (currentStatus === 'cancelled' && appointment.paymentStatus === 'paid') {
+      if (!options.acknowledgePaidReopen) {
+        throw new AdminAppointmentError(PAID_REOPEN_WARNING)
+      }
+      return PAID_REOPEN_WARNING
     }
-    if (appointment.paymentStatus === 'paid') {
-      return null
-    }
-    if (appointment.source === 'admin' && options.allowUnpaidManualConfirmation) {
+    if (
+      currentStatus === 'pending_payment' &&
+      appointment.paymentStatus === 'unpaid' &&
+      appointment.source === 'admin' &&
+      options.allowUnpaidManualConfirmation
+    ) {
       return UNPAID_MANUAL_CONFIRMATION_WARNING
     }
     throw new AdminAppointmentError(
-      'Unpaid website appointments cannot be confirmed. Manual appointments require explicit unpaid confirmation.',
+      'Only an explicitly acknowledged unpaid admin booking or a paid cancelled booking can be confirmed manually.',
     )
   }
 
-  if (nextStatus === 'completed' || nextStatus === 'no-show') {
+  if (nextStatus === 'completed' || nextStatus === 'no_show') {
     if (currentStatus !== 'confirmed') {
       throw new AdminAppointmentError(`Only confirmed appointments can be marked ${nextStatus}.`)
     }
@@ -72,8 +88,13 @@ export function validateAppointmentStatusTransition({
   }
 
   if (nextStatus === 'cancelled') {
-    if (currentStatus !== 'pending' && currentStatus !== 'confirmed') {
-      throw new AdminAppointmentError('Only pending or confirmed appointments can be cancelled.')
+    if (
+      currentStatus !== 'pending_payment' &&
+      currentStatus !== 'payment_processing' &&
+      currentStatus !== 'payment_failed' &&
+      currentStatus !== 'confirmed'
+    ) {
+      throw new AdminAppointmentError('That appointment cannot be cancelled from its current state.')
     }
     if (appointment.paymentStatus === 'paid' && !options.acknowledgePaidCancellation) {
       throw new AdminAppointmentError(PAID_CANCELLATION_WARNING)
@@ -81,31 +102,47 @@ export function validateAppointmentStatusTransition({
     return appointment.paymentStatus === 'paid' ? PAID_CANCELLATION_WARNING : null
   }
 
-  if (nextStatus === 'pending') {
-    if (currentStatus !== 'confirmed' && currentStatus !== 'cancelled') {
-      throw new AdminAppointmentError('Only confirmed or cancelled appointments can return to pending.')
+  if (
+    nextStatus === 'pending_payment' ||
+    nextStatus === 'payment_processing' ||
+    nextStatus === 'payment_failed'
+  ) {
+    const expectedReopenedStatus = getReopenedAppointmentStatus(appointment.paymentStatus)
+    const canReopenCancelled =
+      currentStatus === 'cancelled' && nextStatus === expectedReopenedStatus
+    const canRevertUnpaidConfirmation =
+      currentStatus === 'confirmed' &&
+      appointment.paymentStatus === 'unpaid' &&
+      nextStatus === 'pending_payment'
+    if (!canReopenCancelled && !canRevertUnpaidConfirmation) {
+      throw new AdminAppointmentError('That appointment cannot return to an active payment state.')
     }
-    if (
-      currentStatus === 'cancelled' &&
-      appointment.paymentStatus === 'paid' &&
-      !options.acknowledgePaidReopen
-    ) {
-      throw new AdminAppointmentError(PAID_REOPEN_WARNING)
-    }
-    return currentStatus === 'cancelled' && appointment.paymentStatus === 'paid'
-      ? PAID_REOPEN_WARNING
-      : null
+    return null
   }
 
-  throw new AdminAppointmentError('That appointment status transition is not allowed.')
+  throw new AdminAppointmentError('Payment, expiry, conflict, and refund states are server-controlled.')
 }
 
 export function assertAppointmentStatusTransition(args: Parameters<typeof validateAppointmentStatusTransition>[0]) {
   try {
-    return validateAppointmentStatusTransition(args)
+    const result = validateAppointmentStatusTransition(args)
+    assertAppointmentLifecycleTransition(
+      {
+        paymentStatus: args.appointment.paymentStatus,
+        status: args.appointment.status,
+      },
+      {
+        paymentStatus: args.appointment.paymentStatus,
+        status: args.nextStatus,
+      },
+    )
+    return result
   } catch (error) {
     if (error instanceof AdminAppointmentError) {
       throw new APIError(error.message, error.status)
+    }
+    if (error instanceof AppointmentLifecycleError) {
+      throw new APIError(error.message, 400)
     }
     throw error
   }
@@ -133,6 +170,17 @@ export async function updateAppointmentStatus({
   })
 
   const warning = validateAppointmentStatusTransition({ appointment, nextStatus, options })
+  try {
+    assertAppointmentLifecycleTransition(
+      { paymentStatus: appointment.paymentStatus, status: appointment.status },
+      { paymentStatus: appointment.paymentStatus, status: nextStatus },
+    )
+  } catch (error) {
+    if (error instanceof AppointmentLifecycleError) {
+      throw new AdminAppointmentError(error.message)
+    }
+    throw error
+  }
 
   const updated = await payload.update({
     collection: 'appointments',

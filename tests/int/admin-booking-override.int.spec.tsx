@@ -35,7 +35,7 @@ describe('admin booking notice override', () => {
       customerName: 'Customer',
       date: '2026-07-21',
       email: 'customer@example.com',
-      initialStatus: 'pending',
+      initialStatus: 'pending_payment',
       phone: '+353100000000',
       privacyNoticeMethod: 'phone',
       purpose: 'buy',

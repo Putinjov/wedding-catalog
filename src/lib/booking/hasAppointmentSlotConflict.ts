@@ -28,11 +28,6 @@ export async function hasAppointmentSlotConflict(
         less_than: conflictEnd,
       },
     },
-    {
-      status: {
-        not_equals: 'cancelled',
-      },
-    },
     getBlockingAppointmentWhere(),
   ]
 

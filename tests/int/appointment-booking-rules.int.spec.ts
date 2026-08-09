@@ -17,7 +17,7 @@ function appointment(overrides: Partial<Appointment> = {}): Appointment {
     phone: '+353100000000',
     startAt: '2026-07-21T09:00:00.000Z',
     endAt: '2026-07-21T10:00:00.000Z',
-    status: 'pending',
+    status: 'pending_payment',
     paymentStatus: 'unpaid',
     fittingFee: 20,
     currency: 'EUR',
