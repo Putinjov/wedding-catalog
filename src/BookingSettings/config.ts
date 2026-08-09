@@ -1,7 +1,12 @@
 import { APIError, type GlobalConfig } from 'payload'
 
 import { ownerOrManager } from '@/access/roles'
-import { BOOKING_TIMEZONE, defaultBookingSettings } from '@/config/booking'
+import {
+  BOOKING_TIMEZONE,
+  defaultBookingSettings,
+  MAXIMUM_BOOKING_HOLD_MINUTES,
+  STRIPE_CHECKOUT_MINIMUM_HOLD_MINUTES,
+} from '@/config/booking'
 import { validateBookingSettings } from '@/lib/booking/settings'
 
 import { revalidateBookingSettings } from './hooks/revalidateBookingSettings'
@@ -78,8 +83,8 @@ export const BookingSettings: GlobalConfig = {
       name: 'holdMinutes',
       type: 'number',
       defaultValue: defaultBookingSettings.holdMinutes,
-      min: 5,
-      max: 120,
+      min: STRIPE_CHECKOUT_MINIMUM_HOLD_MINUTES,
+      max: MAXIMUM_BOOKING_HOLD_MINUTES,
       required: true,
     },
     {

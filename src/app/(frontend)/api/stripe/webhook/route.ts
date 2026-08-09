@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { isAppointmentHoldActive } from '@/lib/booking/appointmentHold'
 import {
   assertAppointmentLifecycleTransition,
   type AppointmentPaymentStatus,
@@ -15,6 +16,7 @@ import { getStripeClient } from '@/lib/stripe/client'
 import {
   getSessionCustomerEmail,
   getSessionPaymentIntentId,
+  isMatchingFittingCheckoutExpiry,
   isMatchingFittingCheckoutSession,
 } from '@/lib/stripe/fitting'
 
@@ -87,7 +89,13 @@ async function markAppointmentPaid(
   const payload = await getBookingPayload()
   const settings = await getBookingSettingsFromPayload(payload)
   const hasConflict = await hasAppointmentSlotConflict(payload, appointment, settings)
-  const requiresAdminReview = hasConflict || appointment.status !== 'payment_processing'
+  const paymentCreatedAt = new Date(event.created * 1000)
+  const requiresAdminReview =
+    hasConflict ||
+    appointment.stripeCheckoutSessionId !== session.id ||
+    appointment.status !== 'payment_processing' ||
+    !isAppointmentHoldActive(appointment, paymentCreatedAt) ||
+    !isMatchingFittingCheckoutExpiry(session, appointment)
   const existingNotes = appointment.internalNotes?.trim() ?? ''
   const internalNotes =
     requiresAdminReview && !existingNotes.includes(conflictNotice)
@@ -187,7 +195,12 @@ export async function processSessionEvent(
     throw new InvalidWebhookEvent('Checkout Session does not match the fitting appointment.')
   }
 
-  if (appointment.stripeCheckoutSessionId !== session.id) {
+  const isVerifiedPaidEvent =
+    (event.type === 'checkout.session.completed' ||
+      event.type === 'checkout.session.async_payment_succeeded') &&
+    session.payment_status === 'paid'
+
+  if (appointment.stripeCheckoutSessionId !== session.id && !isVerifiedPaidEvent) {
     if (
       !appointment.stripeCheckoutSessionId &&
       event.type === 'checkout.session.expired' &&

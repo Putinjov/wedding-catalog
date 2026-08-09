@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+import { HoldCountdown } from '@/components/booking/hold-countdown'
 import { PaymentButton } from '@/components/booking/payment-button'
 import { privatePageRobots } from '@/config/indexation'
 import { formatCurrency } from '@/config/site'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
+import { isAppointmentHoldActive } from '@/lib/booking/appointmentHold'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { getBookingPurposeCustomerLabel } from '@/lib/booking/purpose'
 
@@ -41,11 +43,21 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
       : null
   const isPaid = appointment.paymentStatus === 'paid'
   const isConfirmed = appointment.status === 'confirmed'
-  const isProcessing = appointment.status === 'payment_processing'
+  const now = new Date()
+  const serverNow = now.toISOString()
+  const holdExpiresAt = appointment.holdExpiresAt
+  const holdActive = isAppointmentHoldActive(appointment, now)
+  const hasPayableLifecycle =
+    appointment.status === 'pending_payment' ||
+    appointment.status === 'payment_processing' ||
+    appointment.status === 'payment_failed'
+  const isExpired = appointment.source === 'website' && hasPayableLifecycle && !holdActive
+  const isProcessing = appointment.status === 'payment_processing' && !isExpired
   const isConflict = appointment.status === 'payment_received_conflict'
   const canPay =
     (appointment.status === 'pending_payment' || appointment.status === 'payment_failed') &&
-    !isPaid
+    !isPaid &&
+    holdActive
   const durationMinutes = Math.round(
     (new Date(appointment.endAt).getTime() - new Date(appointment.startAt).getTime()) / 60_000,
   )
@@ -61,6 +73,8 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
             ? 'Your fitting is confirmed'
             : isConflict
               ? 'Payment received; review required'
+              : isExpired
+                ? 'Your payment hold has expired'
               : isProcessing
                 ? 'Your payment is being processed'
                 : canPay
@@ -74,6 +88,8 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
               : 'Our team has confirmed this manual appointment. Its payment state is tracked separately.'
             : isConflict || isPaid
               ? 'Your fitting fee has been verified. Our team will review the appointment details before confirming the slot.'
+              : isExpired
+                ? 'This fitting time is no longer reserved and cannot be paid through this link. Please choose an available time again.'
               : isProcessing
                 ? 'Stripe is processing your fitting fee. Please do not pay again while verification is pending.'
                 : canPay
@@ -116,15 +132,22 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
 
         {!canPay ? (
           <div className="mt-8">
+            {isProcessing && holdExpiresAt ? (
+              <div className="mb-4">
+                <HoldCountdown expiresAt={holdExpiresAt} serverNow={serverNow} />
+              </div>
+            ) : null}
             <p className="text-sm leading-6 text-muted-foreground">
-              {isProcessing
+              {isExpired
+                ? 'The backend has released this slot at the displayed expiry boundary. Start a new booking to see current availability.'
+                : isProcessing
                 ? 'Payment verification is in progress. Refresh this private page later to see the latest status.'
                 : isConfirmed || isConflict || isPaid
                   ? 'Online payment covers the private fitting fee only. Any dress purchase or rental is arranged in store.'
                   : 'No further online payment is available for this appointment.'}
             </p>
           </div>
-        ) : (
+        ) : holdExpiresAt ? (
           <div className="mt-8 flex flex-col items-start gap-4">
             <p className="text-sm leading-6 text-muted-foreground">
               Pay the fitting fee securely through Stripe-hosted Checkout to confirm this
@@ -132,10 +155,12 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
             </p>
             <PaymentButton
               amount={formatCurrency(appointment.fittingFee, { maximumFractionDigits: 0 })}
+              expiresAt={holdExpiresAt}
               reference={appointment.publicReference}
+              serverNow={serverNow}
             />
           </div>
-        )}
+        ) : null}
       </section>
     </main>
   )

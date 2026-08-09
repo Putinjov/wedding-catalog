@@ -21,6 +21,7 @@ import {
   type BookingFieldErrors,
 } from '@/lib/booking/validation'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { createAppointmentHoldExpiry } from '@/lib/booking/appointmentHold'
 import { getBookingSettings } from '@/lib/booking/settings'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import {
@@ -156,6 +157,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
 
   try {
     const privacyRecordedAt = new Date().toISOString()
+    const holdExpiresAt = createAppointmentHoldExpiry(settings.holdMinutes, now).iso
     const appointment = await payload.create({
       collection: 'appointments',
       draft: false,
@@ -165,9 +167,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         email: data.email,
         endAt,
         fittingFee: siteConfig.fittingFee,
-        holdExpiresAt: new Date(
-          Date.now() + settings.holdMinutes * 60 * 1000,
-        ).toISOString(),
+        holdExpiresAt,
         notes: data.notes || undefined,
         paymentStatus: 'unpaid',
         phone: data.phone,

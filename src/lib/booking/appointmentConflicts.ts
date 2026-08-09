@@ -1,15 +1,15 @@
 import type { Where } from 'payload'
 
 import type { Appointment } from '@/payload-types'
+import { isAppointmentHoldActive } from '@/lib/booking/appointmentHold'
 
 export function getBlockingAppointmentWhere(now: Date = new Date()): Where {
   return {
     or: [
       { status: { equals: 'confirmed' } },
-      { status: { equals: 'payment_processing' } },
       {
         and: [
-          { status: { in: ['pending_payment', 'payment_failed'] } },
+          { status: { in: ['pending_payment', 'payment_processing', 'payment_failed'] } },
           {
             or: [
               { source: { equals: 'admin' } },
@@ -26,15 +26,16 @@ export function isAppointmentBlockingSlot(
   appointment: Pick<Appointment, 'holdExpiresAt' | 'paymentStatus' | 'source' | 'status'>,
   now: Date = new Date(),
 ): boolean {
-  if (appointment.status === 'confirmed' || appointment.status === 'payment_processing') return true
-  if (appointment.status !== 'pending_payment' && appointment.status !== 'payment_failed') {
+  if (appointment.status === 'confirmed') return true
+  if (
+    appointment.status !== 'pending_payment' &&
+    appointment.status !== 'payment_processing' &&
+    appointment.status !== 'payment_failed'
+  ) {
     return false
   }
   if (appointment.source === 'admin') return true
-  if (!appointment.holdExpiresAt) return false
-
-  const holdExpiresAt = new Date(appointment.holdExpiresAt)
-  return !Number.isNaN(holdExpiresAt.getTime()) && holdExpiresAt > now
+  return isAppointmentHoldActive(appointment, now)
 }
 
 export function appointmentOverlapsSlot(

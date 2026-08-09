@@ -69,8 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: result.message }, { status: 409 })
   } catch (error) {
     console.error('[stripe-checkout] Session creation failed.', {
-      error: error instanceof Error ? error.message : 'Unknown checkout error',
-      referenceHash: parsed.data.reference.slice(-8),
+      errorType: error instanceof Error ? error.name : 'UnknownError',
     })
 
     return NextResponse.json(

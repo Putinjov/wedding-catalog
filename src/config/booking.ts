@@ -1,4 +1,6 @@
 export const BOOKING_TIMEZONE = 'Europe/Dublin' as const
+export const STRIPE_CHECKOUT_MINIMUM_HOLD_MINUTES = 30
+export const MAXIMUM_BOOKING_HOLD_MINUTES = 120
 
 export const bookingPurposeValues = ['buy', 'rent', 'undecided'] as const
 
