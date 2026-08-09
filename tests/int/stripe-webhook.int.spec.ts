@@ -112,6 +112,7 @@ function createPayloadFixture() {
   return {
     create: vi.fn(),
     find: vi.fn(),
+    logger: { error: vi.fn(), warn: vi.fn() },
     update: vi.fn(async (_args: { data: Record<string, unknown> }) => createAppointment()),
   }
 }
@@ -187,6 +188,12 @@ describe('Stripe webhook reliability', () => {
           paymentStatus: 'paid',
           status: 'payment_received_conflict',
         }),
+      }),
+    )
+    expect(payload.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appointmentId: 'appointment-1',
+        msg: 'Paid fitting conflict requires admin review.',
       }),
     )
   })

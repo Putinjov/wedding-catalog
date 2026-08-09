@@ -7,6 +7,7 @@ import * as migration_20260809_160000_add_privacy_records from './20260809_16000
 import * as migration_20260809_210000_formalize_appointment_lifecycle from './20260809_210000_formalize_appointment_lifecycle'
 import * as migration_20260809_220000_enforce_stripe_hold_minimum from './20260809_220000_enforce_stripe_hold_minimum'
 import * as migration_20260809_230000_add_expired_hold_job_concurrency from './20260809_230000_add_expired_hold_job_concurrency'
+import * as migration_20260809_234500_add_paid_conflict_workflow from './20260809_234500_add_paid_conflict_workflow'
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20260809_230000_add_expired_hold_job_concurrency.up,
     down: migration_20260809_230000_add_expired_hold_job_concurrency.down,
     name: '20260809_230000_add_expired_hold_job_concurrency',
+  },
+  {
+    up: migration_20260809_234500_add_paid_conflict_workflow.up,
+    down: migration_20260809_234500_add_paid_conflict_workflow.down,
+    name: '20260809_234500_add_paid_conflict_workflow',
   },
 ]

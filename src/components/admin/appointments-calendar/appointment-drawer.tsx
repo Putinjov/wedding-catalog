@@ -2,12 +2,17 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { ExternalLink, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import type { ResolvedBookingSettings } from '@/config/booking'
 import type { AppointmentDetail, AppointmentStatus } from '@/lib/admin/appointments/calendarTypes'
-import { formatDateTimeForCustomer } from '@/lib/booking/date'
+import { formatDateTimeForCustomer, getBookingDateBounds } from '@/lib/booking/date'
 import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
 import { getReopenedAppointmentStatus } from '@/lib/booking/appointmentLifecycle'
+import {
+  ADMIN_NOTICE_OVERRIDE_WARNING,
+  getNoticeEligibleSlotTimes,
+} from '@/lib/booking/noticeRules'
 import {
   PAID_CANCELLATION_WARNING,
   PAID_REOPEN_WARNING,
@@ -24,14 +29,31 @@ export function AppointmentDrawer({
   appointmentId,
   onChanged,
   onClose,
+  settings,
 }: {
   appointmentId: string
   onChanged: () => Promise<void>
   onClose: () => void
+  settings: ResolvedBookingSettings
 }) {
   const [detail, setDetail] = useState<AppointmentDetail | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleTime, setRescheduleTime] = useState('')
+  const [overrideNoticeRules, setOverrideNoticeRules] = useState(false)
+  const bounds = getBookingDateBounds(settings)
+  const rescheduleTimes = useMemo(
+    () =>
+      rescheduleDate
+        ? getNoticeEligibleSlotTimes({
+            allowNoticeOverride: overrideNoticeRules,
+            dateKey: rescheduleDate,
+            settings,
+          })
+        : [],
+    [overrideNoticeRules, rescheduleDate, settings],
+  )
 
   useEffect(() => {
     const controller = new AbortController()
@@ -90,6 +112,64 @@ export function AppointmentDrawer({
     }
   }
 
+  async function runConflictAction(
+    action:
+      | { action: 'cancel' | 'confirm' | 'refund' }
+      | { action: 'contact'; channel: 'email' | 'phone' }
+      | {
+          action: 'reschedule'
+          allowNoticeOverride: boolean
+          date: string
+          time: string
+        },
+  ) {
+    if (!detail) return
+    if (action.action === 'refund') {
+      const amount = formatMoney((detail.amountPaid ?? 0) / 100, detail.currency)
+      if (!window.confirm(`Refund the full fitting fee of ${amount} through Stripe?`)) return
+    }
+    if (action.action === 'cancel' && !window.confirm('Cancel this paid appointment without a refund?')) {
+      return
+    }
+    if (action.action === 'reschedule' && action.allowNoticeOverride) {
+      if (!window.confirm(ADMIN_NOTICE_OVERRIDE_WARNING)) return
+    }
+
+    setBusy(true)
+    setError('')
+    try {
+      const response = await fetch(`/api/appointments/calendar/${appointmentId}/paid-conflict`, {
+        body: JSON.stringify({ ...action, operationKey: crypto.randomUUID() }),
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      const body = (await response.json()) as DetailResponse
+      if (!response.ok) throw new Error(body.message ?? 'Unable to resolve the paid conflict.')
+      setDetail(body.appointment)
+      await onChanged()
+    } catch (actionError) {
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : 'Unable to resolve the paid conflict.',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function submitReschedule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!rescheduleDate || !rescheduleTime) return
+    void runConflictAction({
+      action: 'reschedule',
+      allowNoticeOverride: overrideNoticeRules,
+      date: rescheduleDate,
+      time: rescheduleTime,
+    })
+  }
+
   const isPast = detail ? new Date(detail.endAt) <= new Date() : false
   const reopenedStatus = detail ? getReopenedAppointmentStatus(detail.paymentStatus) : null
   const actions: { label: string; status: AppointmentStatus; destructive?: boolean }[] = detail
@@ -145,13 +225,57 @@ export function AppointmentDrawer({
                 <div><dt>Reference</dt><dd><code>{detail.publicReference}</code></dd></div>
                 <div><dt>Source</dt><dd>{detail.source}</dd></div>
                 <div><dt>Admin review</dt><dd>{detail.needsAdminReview ? 'Required' : 'No'}</dd></div>
+                <div><dt>Conflict contact</dt><dd>{detail.conflictContactedAt ? `${detail.conflictContactMethod ?? 'Recorded'} — ${formatDateTimeForCustomer(detail.conflictContactedAt)}` : 'Not recorded'}</dd></div>
+                <div><dt>Conflict resolution</dt><dd>{detail.conflictResolution ?? 'Open'}</dd></div>
+                <div><dt>Refund status</dt><dd>{detail.refundStatus ?? 'Not requested'}</dd></div>
                 <div><dt>Customer notes</dt><dd>{detail.notes || '—'}</dd></div>
                 <div><dt>Internal notes</dt><dd>{detail.internalNotes || '—'}</dd></div>
               </dl>
+              {detail.status === 'payment_received_conflict' && detail.paymentStatus === 'paid' ? (
+                <section className="paid-conflict-actions" aria-labelledby="paid-conflict-actions-heading">
+                  <h3 id="paid-conflict-actions-heading">Resolve paid conflict</h3>
+                  <p>
+                    Contact the customer using the links above, then record the channel. Do not include
+                    internal payment or scheduling errors in customer messages.
+                  </p>
+                  <div className="appointment-drawer__actions">
+                    <button className="calendar-button" disabled={busy} onClick={() => runConflictAction({ action: 'contact', channel: 'email' })} type="button">Record email contact</button>
+                    <button className="calendar-button" disabled={busy} onClick={() => runConflictAction({ action: 'contact', channel: 'phone' })} type="button">Record phone contact</button>
+                    <button className="calendar-button calendar-button--primary" disabled={busy} onClick={() => runConflictAction({ action: 'confirm' })} type="button">Confirm current slot</button>
+                    <button className="calendar-button calendar-button--danger" disabled={busy} onClick={() => runConflictAction({ action: 'cancel' })} type="button">Cancel without refund</button>
+                    {detail.capabilities.canRefundPaidConflict ? (
+                      <button className="calendar-button calendar-button--danger" disabled={busy} onClick={() => runConflictAction({ action: 'refund' })} type="button">Refund full fitting fee</button>
+                    ) : null}
+                  </div>
+                  <form className="paid-conflict-reschedule" onSubmit={submitReschedule}>
+                    <h4>Reschedule and confirm</h4>
+                    <div className="new-appointment-form__row">
+                      <label>
+                        <span>Date</span>
+                        <input max={bounds.maxDate} min={bounds.minDate} onChange={(event) => { setRescheduleDate(event.target.value); setRescheduleTime('') }} required type="date" value={rescheduleDate} />
+                      </label>
+                      <label>
+                        <span>Time</span>
+                        <select onChange={(event) => setRescheduleTime(event.target.value)} required value={rescheduleTime}>
+                          <option disabled value="">Choose time</option>
+                          {rescheduleTimes.map((time) => <option key={time} value={time}>{time}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                    <label className="paid-conflict-reschedule__override">
+                      <input checked={overrideNoticeRules} onChange={(event) => { setOverrideNoticeRules(event.target.checked); setRescheduleTime('') }} type="checkbox" />
+                      <span>Override minimum notice and next-day cutoff</span>
+                    </label>
+                    {overrideNoticeRules ? <p className="calendar-warning">{ADMIN_NOTICE_OVERRIDE_WARNING}</p> : null}
+                    <button className="calendar-button calendar-button--primary" disabled={busy || !rescheduleDate || !rescheduleTime} type="submit">Reschedule and confirm</button>
+                  </form>
+                </section>
+              ) : null}
               <details className="appointment-technical">
                 <summary>Technical payment details</summary>
                 <dl><div><dt>Checkout Session</dt><dd><code>{detail.stripeCheckoutSessionId || '—'}</code></dd></div>
-                <div><dt>Payment Intent</dt><dd><code>{detail.stripePaymentIntentId || '—'}</code></dd></div></dl>
+                <div><dt>Payment Intent</dt><dd><code>{detail.stripePaymentIntentId || '—'}</code></dd></div>
+                <div><dt>Refund</dt><dd><code>{detail.stripeRefundId || '—'}</code></dd></div></dl>
               </details>
               <div className="appointment-drawer__actions">
                 {actions.map((action) => (

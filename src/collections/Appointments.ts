@@ -514,6 +514,8 @@ export const Appointments: CollectionConfig = {
         position: 'sidebar',
         readOnly: true,
       },
+      index: true,
+      unique: true,
     },
     {
       name: 'fittingFee',
@@ -662,6 +664,150 @@ export const Appointments: CollectionConfig = {
         update: protectedAppointmentFieldWrite,
       },
       admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'conflictContactedAt',
+      type: 'date',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        description: 'Most recent recorded customer contact for a paid conflict.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'conflictContactMethod',
+      type: 'select',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      options: [
+        { label: 'Email', value: 'email' },
+        { label: 'Phone', value: 'phone' },
+      ],
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'conflictResolution',
+      type: 'select',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      options: [
+        { label: 'Confirmed', value: 'confirmed' },
+        { label: 'Cancelled', value: 'cancelled' },
+        { label: 'Refunded', value: 'refunded' },
+      ],
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'conflictResolvedAt',
+      type: 'date',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'conflictResolvedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'stripeRefundId',
+      type: 'text',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      index: true,
+      unique: true,
+      admin: {
+        description: 'Stripe refund used to resolve the paid fitting conflict.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'refundStatus',
+      type: 'select',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Requires action', value: 'requires_action' },
+        { label: 'Succeeded', value: 'succeeded' },
+        { label: 'Failed', value: 'failed' },
+        { label: 'Canceled', value: 'canceled' },
+      ],
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'refundAmount',
+      type: 'number',
+      min: 0,
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        description: 'Refund amount in integer cents.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'refundedAt',
+      type: 'date',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'refundFailureReason',
+      type: 'text',
+      access: {
+        create: protectedAppointmentFieldWrite,
+        update: protectedAppointmentFieldWrite,
+      },
+      admin: {
+        description: 'Privacy-safe operational reason for a failed refund.',
         position: 'sidebar',
         readOnly: true,
       },

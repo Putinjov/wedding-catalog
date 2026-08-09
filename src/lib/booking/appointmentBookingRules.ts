@@ -11,7 +11,7 @@ import { isAppointmentStatusNonBlocking } from '@/lib/booking/appointmentLifecyc
 
 type AdminBookingRulesContext = {
   allowNoticeOverride: boolean
-  origin: 'admin-create'
+  origin: 'admin-create' | 'paid-conflict-resolution'
 }
 
 type BookingRulesRequestContext = {
@@ -27,12 +27,24 @@ export function adminBookingRulesContext(allowNoticeOverride: boolean): RequestC
   }
 }
 
+export function paidConflictBookingRulesContext(
+  allowNoticeOverride: boolean,
+): RequestContext {
+  return {
+    appointmentBookingRules: {
+      allowNoticeOverride,
+      origin: 'paid-conflict-resolution',
+    },
+  }
+}
+
 export function getAdminBookingRulesContext(
   context: RequestContext | undefined,
 ): AdminBookingRulesContext | null {
   if (!context) return null
   const bookingRules = (context as BookingRulesRequestContext).appointmentBookingRules
-  return bookingRules?.origin === 'admin-create' &&
+  return (bookingRules?.origin === 'admin-create' ||
+    bookingRules?.origin === 'paid-conflict-resolution') &&
     typeof bookingRules.allowNoticeOverride === 'boolean'
     ? bookingRules
     : null
@@ -76,7 +88,8 @@ export function assertAppointmentScheduleRules({
     )
   const reopening =
     operation === 'update' &&
-    originalDoc?.status === 'cancelled' &&
+    originalDoc != null &&
+    isAppointmentStatusNonBlocking(originalDoc.status) &&
     !isAppointmentStatusNonBlocking(effectiveStatus)
   const scheduleChanged = bookingTimeChanged || reopening
   const startAt = data.startAt ?? originalDoc?.startAt

@@ -59,6 +59,16 @@ export const AppointmentAudits: CollectionConfig = {
       required: true,
     },
     {
+      name: 'idempotencyKey',
+      type: 'text',
+      index: true,
+      unique: true,
+      admin: {
+        description: 'Server-generated operation key used to prevent duplicate audit mutations.',
+        readOnly: true,
+      },
+    },
+    {
       name: 'previousStatus',
       type: 'text',
     },
