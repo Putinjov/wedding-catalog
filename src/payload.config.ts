@@ -117,7 +117,8 @@ export default buildConfig({
   editor: defaultLexical,
   db: mongooseAdapter({
     connectOptions: {
-      autoIndex: process.env.PAYLOAD_MIGRATING !== 'true',
+      autoIndex:
+        process.env.NODE_ENV !== 'production' && process.env.PAYLOAD_MIGRATING !== 'true',
     },
     url: environment.DATABASE_URL ?? '',
   }),

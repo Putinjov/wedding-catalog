@@ -136,7 +136,8 @@ describe('deployment configuration', () => {
     expect(packageConfig.scripts.build).toMatch(/^npm run migrations:check/)
     expect(packageConfig.scripts['migrations:run']).toContain('src/scripts/run-migrations.ts')
     expect(payloadConfig).not.toContain('prodMigrations')
-    expect(payloadConfig).toContain("autoIndex: process.env.PAYLOAD_MIGRATING !== 'true'")
+    expect(payloadConfig).toContain("process.env.NODE_ENV !== 'production'")
+    expect(payloadConfig).toContain("process.env.PAYLOAD_MIGRATING !== 'true'")
     expect(migrationRunner).toContain('disableOnInit: true')
     expect(migrationRunner.indexOf('createCollection()')).toBeLessThan(
       migrationRunner.indexOf('payload.db.migrate()'),
