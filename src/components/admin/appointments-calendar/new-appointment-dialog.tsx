@@ -4,10 +4,15 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { type FormEvent, useMemo, useState } from 'react'
 
+import {
+  bookingPurposeValues,
+  type BookingPurpose,
+  type ResolvedBookingSettings,
+} from '@/config/booking'
 import type { ManualAppointmentDress } from '@/lib/admin/appointments/calendarTypes'
-import { getBookingDateBounds, getConfiguredSlotTimes } from '@/lib/booking/date'
 import { UNPAID_MANUAL_CONFIRMATION_WARNING } from '@/lib/admin/appointments/statusWarnings'
-import type { ResolvedBookingSettings } from '@/config/booking'
+import { getBookingDateBounds, getConfiguredSlotTimes } from '@/lib/booking/date'
+import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
 
 type CreateResponse = { message?: string }
 
@@ -24,7 +29,7 @@ export function NewAppointmentDialog({
   open: boolean
   settings: ResolvedBookingSettings
 }) {
-  const [purpose, setPurpose] = useState<'buy' | 'rent'>('buy')
+  const [purpose, setPurpose] = useState<BookingPurpose>('buy')
   const [initialStatus, setInitialStatus] = useState<'pending' | 'confirmed'>('pending')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -33,7 +38,8 @@ export function NewAppointmentDialog({
   const dressOptions = useMemo(
     () =>
       dresses.filter((dress) =>
-        purpose === 'buy' ? dress.availableForBuy : dress.availableForRent,
+        purpose === 'undecided' ||
+        (purpose === 'buy' ? dress.availableForBuy : dress.availableForRent),
       ),
     [dresses, purpose],
   )
@@ -93,7 +99,7 @@ export function NewAppointmentDialog({
           <Dialog.Close className="calendar-dialog__close" aria-label="Close new appointment"><X /></Dialog.Close>
           {error ? <p className="calendar-message calendar-message--error" role="alert">{error}</p> : null}
           <form className="new-appointment-form" onSubmit={submit}>
-            <label><span>Purpose</span><select onChange={(event) => setPurpose(event.target.value as 'buy' | 'rent')} value={purpose}><option value="buy">Buy</option><option value="rent">Rent</option></select></label>
+            <label><span>Purpose</span><select onChange={(event) => setPurpose(event.target.value as BookingPurpose)} value={purpose}>{bookingPurposeValues.map((value) => <option key={value} value={value}>{getBookingPurposeAdminLabel(value)}</option>)}</select></label>
             <label><span>Dress (optional)</span><select name="dressId" defaultValue=""><option value="">No dress selected</option>{dressOptions.map((dress) => <option key={dress.id} value={dress.id}>{dress.name}</option>)}</select></label>
             <div className="new-appointment-form__row">
               <label><span>Date</span><input max={bounds.maxDate} min={bounds.minDate} name="date" onChange={(event) => setDate(event.target.value)} required type="date" value={date} /></label>

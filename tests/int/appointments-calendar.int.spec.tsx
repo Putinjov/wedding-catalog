@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 
 import { CalendarEmptyState } from '@/components/admin/appointments-calendar/calendar-empty-state'
 import { getVisibleRange } from '@/lib/admin/appointments/calendarDate'
-import { toCalendarAppointment } from '@/lib/admin/appointments/calendarTypes'
+import {
+  parseCalendarAppointments,
+  toCalendarAppointment,
+} from '@/lib/admin/appointments/calendarTypes'
 import type { Appointment } from '@/payload-types'
 
 function appointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -46,6 +49,14 @@ describe('appointments calendar', () => {
     expect(() => toCalendarAppointment(appointment({ startAt: 'not-a-date' }))).toThrow(
       'invalid calendar dates',
     )
+  })
+
+  it('preserves undecided intent in calendar responses', () => {
+    const event = toCalendarAppointment(appointment({ purpose: 'undecided' }))
+
+    expect(parseCalendarAppointments([event])).toEqual([
+      expect.objectContaining({ purpose: 'undecided' }),
+    ])
   })
 
   it('builds a six-week Dublin-safe range for month view', () => {

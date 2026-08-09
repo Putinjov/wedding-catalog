@@ -1,4 +1,5 @@
 import type { BookingPurpose } from '@/config/booking'
+import { getBookingPurposeCustomerLabel } from '@/lib/booking/purpose'
 
 export function BookingSummary({
   date,
@@ -19,7 +20,9 @@ export function BookingSummary({
     <dl className="divide-y divide-brand-warm-border border-y border-brand-warm-border">
       <div className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4">
         <dt className="text-sm text-muted-foreground">Purpose</dt>
-        <dd className="font-medium capitalize text-foreground">{purpose}</dd>
+        <dd className="font-medium text-foreground">
+          {getBookingPurposeCustomerLabel(purpose)}
+        </dd>
       </div>
       {dressName ? (
         <div className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4">

@@ -7,6 +7,7 @@ import {
 } from 'payload'
 
 import { appointmentTeam, ownerOrManager } from '@/access/roles'
+import { bookingPurposeValues } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import { appointmentCalendarEndpoints } from '@/lib/admin/appointments/endpoints'
 import {
@@ -27,6 +28,7 @@ import {
   getAppointmentPaymentContext,
   protectedAppointmentFieldWrite,
 } from '@/lib/booking/paymentIntegrity'
+import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
 import type { Appointment } from '@/payload-types'
 import { writeAppointmentAudit } from '@/lib/booking/writeAppointmentAudit'
 import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
@@ -225,10 +227,10 @@ export const Appointments: CollectionConfig = {
       name: 'purpose',
       type: 'select',
       required: true,
-      options: [
-        { label: 'Buy', value: 'buy' },
-        { label: 'Rent', value: 'rent' },
-      ],
+      options: bookingPurposeValues.map((value) => ({
+        label: getBookingPurposeAdminLabel(value),
+        value,
+      })),
     },
     {
       name: 'dress',
@@ -291,7 +293,7 @@ export const Appointments: CollectionConfig = {
       defaultValue: 'unpaid',
       required: true,
       admin: {
-        description: 'Online payment covers the private fitting fee only; dress buy/rent is in store.',
+        description: 'Online payment covers the private fitting fee only; any dress purchase or rental is arranged in store.',
         position: 'sidebar',
         readOnly: true,
       },

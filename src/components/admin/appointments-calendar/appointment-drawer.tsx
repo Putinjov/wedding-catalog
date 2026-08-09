@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 
 import type { AppointmentDetail, AppointmentStatus } from '@/lib/admin/appointments/calendarTypes'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
+import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
 import {
   PAID_CANCELLATION_WARNING,
   PAID_REOPEN_WARNING,
@@ -120,7 +121,7 @@ export function AppointmentDrawer({
                 <div><dt>Customer</dt><dd>{detail.customerName}</dd></div>
                 <div><dt>Email</dt><dd><a href={`mailto:${detail.email}`}>{detail.email}</a></dd></div>
                 <div><dt>Phone</dt><dd><a href={`tel:${detail.phone}`}>{detail.phone}</a></dd></div>
-                <div><dt>Purpose</dt><dd>{detail.purpose === 'buy' ? 'Buy' : 'Rent'}</dd></div>
+                <div><dt>Purpose</dt><dd>{getBookingPurposeAdminLabel(detail.purpose)}</dd></div>
                 <div><dt>Dress</dt><dd>{detail.dress?.name ?? 'Not selected'}</dd></div>
                 <div><dt>Date and time</dt><dd>{formatDateTimeForCustomer(detail.startAt)}</dd></div>
                 <div><dt>Status</dt><dd><span className={`calendar-status calendar-status--${detail.status}`}>{detail.status}</span></dd></div>

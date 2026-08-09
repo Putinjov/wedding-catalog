@@ -1,9 +1,10 @@
 import type { AppointmentStatus, PaymentStatus } from '@/lib/admin/appointments/calendarTypes'
+import type { Appointment } from '@/payload-types'
 
 export type CalendarFilterState = {
   customer: string
   paymentStatus: PaymentStatus | 'all'
-  purpose: 'buy' | 'rent' | 'all'
+  purpose: Appointment['purpose'] | 'all'
   status: AppointmentStatus | 'all'
   unpaid: boolean
   upcoming: boolean
@@ -59,7 +60,7 @@ export function CalendarFilters({
       <label>
         <span>Purpose</span>
         <select onChange={(event) => update('purpose', event.target.value as CalendarFilterState['purpose'])} value={filters.purpose}>
-          <option value="all">Buy or rent</option><option value="buy">Buy</option><option value="rent">Rent</option>
+          <option value="all">All purposes</option><option value="buy">Buy</option><option value="rent">Rent</option><option value="undecided">Undecided</option>
         </select>
       </label>
       <label className="calendar-filter-check">

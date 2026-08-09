@@ -6,6 +6,7 @@ import { privatePageRobots } from '@/config/indexation'
 import { formatCurrency } from '@/config/site'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
+import { getBookingPurposeCustomerLabel } from '@/lib/booking/purpose'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -65,7 +66,9 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
           <dl className="divide-y divide-brand-warm-border">
             <div className="grid gap-2 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
               <dt className="text-sm text-muted-foreground">Purpose</dt>
-              <dd className="font-medium capitalize text-foreground">{appointment.purpose}</dd>
+              <dd className="font-medium text-foreground">
+                {getBookingPurposeCustomerLabel(appointment.purpose)}
+              </dd>
             </div>
             {dressName ? (
               <div className="grid gap-2 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
@@ -95,8 +98,8 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
         {isPaid ? (
           <div className="mt-8">
             <p className="text-sm leading-6 text-muted-foreground">
-              Online payment covers the private fitting fee only. Dress purchase and rental are
-              completed in store.
+              Online payment covers the private fitting fee only. Any dress purchase or rental is
+              arranged in store.
             </p>
           </div>
         ) : (

@@ -21,11 +21,12 @@ import {
 import { createPendingAppointment, type BookingActionResult } from '@/lib/booking/createAppointment'
 import { getAvailableSlots } from '@/lib/booking/getAvailableSlots'
 import { getFullyBookedDates } from '@/lib/booking/getFullyBookedDates'
+import { getAvailableBookingPurposes } from '@/lib/booking/purpose'
 import type { BookingFieldErrors, BookingInput } from '@/lib/booking/validation'
 
 import type { PurposeOption, SelectedDressSummary as SelectedDress } from './types'
 
-const purposeOptions: PurposeOption[] = [
+export const purposeOptions: PurposeOption[] = [
   {
     description: 'Explore dresses available to purchase.',
     label: 'Buy',
@@ -35,6 +36,11 @@ const purposeOptions: PurposeOption[] = [
     description: 'Explore dresses available to rent.',
     label: 'Rent',
     value: 'rent',
+  },
+  {
+    description: 'Explore both options with guidance during your fitting.',
+    label: 'I’m not sure yet',
+    value: 'undecided',
   },
 ]
 
@@ -48,16 +54,6 @@ type SubmitState = {
   fieldErrors?: BookingFieldErrors
   message?: string
   status: 'idle' | 'submitting' | 'error'
-}
-
-function getAvailablePurposeValues(dress: SelectedDress | null): BookingPurpose[] {
-  if (!dress) {
-    return purposeOptions.map((option) => option.value)
-  }
-
-  return purposeOptions
-    .map((option) => option.value)
-    .filter((purpose) => (purpose === 'buy' ? dress.supportsBuy : dress.supportsRent))
 }
 
 export function BookingFlow({
@@ -103,7 +99,7 @@ export function BookingFlow({
   const [notes, setNotes] = useState('')
   const [stepError, setStepError] = useState('')
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
-  const availablePurposes = getAvailablePurposeValues(selectedDress)
+  const availablePurposes = getAvailableBookingPurposes(selectedDress)
 
   useEffect(() => {
     void getFullyBookedDates()
@@ -293,9 +289,10 @@ export function BookingFlow({
         <fieldset className="mt-10" aria-describedby={stepError ? 'booking-step-error' : undefined}>
           <legend className="font-serif text-3xl text-foreground">What brings you in?</legend>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Choose whether this private appointment is for buying or renting a dress.
+            Choose whether this private appointment is for buying, renting, or deciding with our
+            guidance.
           </p>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2" role="group">
+          <div className="mt-7 grid gap-4 sm:grid-cols-3" role="group">
             {purposeOptions
               .filter((option) => availablePurposes.includes(option.value))
               .map((option) => (

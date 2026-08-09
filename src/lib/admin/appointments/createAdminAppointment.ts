@@ -1,6 +1,7 @@
 import type { Payload, TypedUser } from 'payload'
 import { z } from 'zod'
 
+import { bookingPurposeValues } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import {
@@ -13,6 +14,7 @@ import {
 } from '@/lib/booking/date'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
+import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
 import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 import { isDressAvailableForMode } from '@/lib/dress-utils'
 
@@ -20,7 +22,7 @@ import { AdminAppointmentError } from './getCalendarAppointments'
 import { validateAppointmentStatusTransition } from './updateAppointmentStatus'
 
 export const createAdminAppointmentSchema = z.object({
-  purpose: z.enum(['buy', 'rent']),
+  purpose: z.enum(bookingPurposeValues),
   dressId: z.string().trim().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time: z.string().regex(/^\d{2}:\d{2}$/),
@@ -76,8 +78,8 @@ export async function createAdminAppointment({
       overrideAccess: false,
       user,
     })
-    const supportsPurpose = isDressAvailableForMode(dress, input.purpose)
-    if (!supportsPurpose) {
+    const dressMode = getBookingPurposeDressMode(input.purpose)
+    if (dressMode && !isDressAvailableForMode(dress, dressMode)) {
       throw new AdminAppointmentError('The selected dress is not available for that purpose.')
     }
     dressId = dress.id
