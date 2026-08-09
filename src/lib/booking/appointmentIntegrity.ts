@@ -19,6 +19,7 @@ export type AppointmentSlotDetails = {
 export function getAppointmentSlotDetails(
   appointment: Pick<Appointment, 'startAt' | 'endAt'>,
   settings: ResolvedBookingSettings,
+  now: Date = new Date(),
 ): AppointmentSlotDetails | null {
   const storedStartAt = new Date(appointment.startAt)
   const storedEndAt = new Date(appointment.endAt)
@@ -29,10 +30,10 @@ export function getAppointmentSlotDetails(
   const dateKey = getDateKey(storedStartAt)
   const time = formatTimeInputValue(appointment.startAt)
   if (
-    !isDateWithinBookingWindow(dateKey, settings) ||
+    !isDateWithinBookingWindow(dateKey, settings, now) ||
     isClosedDate(dateKey, settings) ||
     !isValidSlotTime(dateKey, time, settings) ||
-    storedStartAt <= new Date()
+    storedStartAt <= now
   ) {
     return null
   }
@@ -60,6 +61,7 @@ export function getAppointmentSlotDetails(
 export function isAppointmentSlotValid(
   appointment: Pick<Appointment, 'startAt' | 'endAt'>,
   settings: ResolvedBookingSettings,
+  now: Date = new Date(),
 ): boolean {
-  return getAppointmentSlotDetails(appointment, settings) !== null
+  return getAppointmentSlotDetails(appointment, settings, now) !== null
 }

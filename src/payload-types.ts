@@ -2643,11 +2643,11 @@ export interface BookingSetting {
   holdMinutes: number;
   bookingWindowDays: number;
   /**
-   * Stored for Task 19 enforcement.
+   * Required elapsed hours between the booking request and slot start. Exact boundary times are allowed.
    */
   minimumNoticeHours: number;
   /**
-   * Optional Europe/Dublin cutoff in HH:mm. Stored for Task 19 enforcement.
+   * Optional Europe/Dublin HH:mm time when next-day bookings close. The exact cutoff time is closed.
    */
   nextDayCutoffTime?: string | null;
   closedWeekdays: ('0' | '1' | '2' | '3' | '4' | '5' | '6')[];

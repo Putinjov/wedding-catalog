@@ -21,6 +21,7 @@ import {
 import { createPendingAppointment, type BookingActionResult } from '@/lib/booking/createAppointment'
 import { getAvailableSlots } from '@/lib/booking/getAvailableSlots'
 import { getFullyBookedDates } from '@/lib/booking/getFullyBookedDates'
+import { getBookingNoticeLabel } from '@/lib/booking/noticeRules'
 import { getAvailableBookingPurposes } from '@/lib/booking/purpose'
 import type { BookingFieldErrors, BookingInput } from '@/lib/booking/validation'
 
@@ -100,6 +101,7 @@ export function BookingFlow({
   const [stepError, setStepError] = useState('')
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
   const availablePurposes = getAvailableBookingPurposes(selectedDress)
+  const bookingNoticeLabel = getBookingNoticeLabel(settings)
 
   useEffect(() => {
     void getFullyBookedDates()
@@ -344,6 +346,7 @@ export function BookingFlow({
             </div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground" id="fitting-date-help">
               {getBookingWindowLabel(settings)} {getBookingScheduleLabel(settings)}
+              {bookingNoticeLabel ? ` ${bookingNoticeLabel}` : ''}
             </p>
             {calendarAvailabilityError ? (
               <p className="mt-2 text-sm text-muted-foreground" role="status">

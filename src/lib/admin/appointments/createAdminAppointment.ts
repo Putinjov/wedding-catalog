@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { bookingPurposeValues } from '@/config/booking'
 import { siteConfig } from '@/config/site'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
+import { adminBookingRulesContext } from '@/lib/booking/appointmentBookingRules'
 import {
   getBookingScheduleLabel,
   getBookingWindowLabel,
@@ -15,6 +16,10 @@ import {
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
+import {
+  getBookingNoticeMessage,
+  getBookingNoticeViolation,
+} from '@/lib/booking/noticeRules'
 import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 import { isDressAvailableForMode } from '@/lib/dress-utils'
 
@@ -32,6 +37,7 @@ export const createAdminAppointmentSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
   initialStatus: z.enum(['pending', 'confirmed']),
   allowUnpaidManualConfirmation: z.boolean().optional(),
+  overrideNoticeRules: z.boolean().optional(),
 })
 
 export type CreateAdminAppointmentInput = z.infer<typeof createAdminAppointmentSchema>
@@ -53,7 +59,8 @@ export async function createAdminAppointment({
   input: CreateAdminAppointmentInput
 }) {
   const settings = await getBookingSettingsFromPayload(payload)
-  if (!isDateWithinBookingWindow(input.date, settings)) {
+  const now = new Date()
+  if (!isDateWithinBookingWindow(input.date, settings, now)) {
     throw new AdminAppointmentError(getBookingWindowLabel(settings))
   }
   if (isClosedDate(input.date, settings)) {
@@ -64,8 +71,18 @@ export async function createAdminAppointment({
   }
 
   const dateTimes = getSlotDateTimes(input.date, input.time, settings)
-  if (!dateTimes || dateTimes.startAt <= new Date()) {
+  if (!dateTimes || dateTimes.startAt <= now) {
     throw new AdminAppointmentError('Choose a future fitting time.')
+  }
+
+  const noticeViolation = getBookingNoticeViolation({
+    dateKey: input.date,
+    now,
+    settings,
+    startAt: dateTimes.startAt,
+  })
+  if (noticeViolation && !input.overrideNoticeRules) {
+    throw new AdminAppointmentError(getBookingNoticeMessage(noticeViolation, settings))
   }
 
   let dressId: string | undefined
@@ -129,6 +146,7 @@ export async function createAdminAppointment({
         currency: siteConfig.currency,
       },
       context: {
+        ...adminBookingRulesContext(input.overrideNoticeRules === true),
         ...appointmentPaymentContext('admin-create'),
         appointmentStatusTransition: transitionOptions,
       },

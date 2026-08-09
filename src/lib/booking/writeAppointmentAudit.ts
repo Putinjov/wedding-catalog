@@ -1,5 +1,6 @@
 import type { CollectionAfterChangeHook } from 'payload'
 
+import { getAdminBookingRulesContext } from '@/lib/booking/appointmentBookingRules'
 import { getAppointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import type { Appointment } from '@/payload-types'
 
@@ -11,6 +12,7 @@ export const writeAppointmentAudit: CollectionAfterChangeHook<Appointment> = asy
   req,
 }) => {
   const paymentContext = getAppointmentPaymentContext(context)
+  const bookingRulesContext = getAdminBookingRulesContext(context)
   const statusChanged = previousDoc?.status !== doc.status
   const paymentChanged = previousDoc?.paymentStatus !== doc.paymentStatus
   const action =
@@ -38,6 +40,7 @@ export const writeAppointmentAudit: CollectionAfterChangeHook<Appointment> = asy
       actorType,
       appointment: doc.id,
       metadata: {
+        noticeRulesOverridden: bookingRulesContext?.allowNoticeOverride ?? false,
         needsAdminReview: doc.needsAdminReview ?? false,
         paymentStatus: doc.paymentStatus,
         source: doc.source,

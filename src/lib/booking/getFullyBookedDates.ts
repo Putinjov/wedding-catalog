@@ -17,6 +17,7 @@ import {
   isClosedDate,
 } from '@/lib/booking/date'
 import { getBookingSettings } from '@/lib/booking/settings'
+import { getBookingNoticeViolation } from '@/lib/booking/noticeRules'
 import { consumeRateLimits, ipRateLimitRule } from '@/lib/security/rateLimit'
 
 export type FullyBookedDatesResult =
@@ -67,7 +68,13 @@ export async function getFullyBookedDates(): Promise<FullyBookedDatesResult> {
   const dates = dateKeys.filter((dateKey) =>
     getConfiguredSlotTimes(settings, dateKey).every((time) => {
       const slot = getSlotDateTimes(dateKey, time, settings)
-      if (!slot || slot.startAt <= now) return true
+      if (
+        !slot ||
+        slot.startAt <= now ||
+        getBookingNoticeViolation({ dateKey, now, settings, startAt: slot.startAt })
+      ) {
+        return true
+      }
       return existing.docs.some(
         (appointment) =>
           isAppointmentBlockingSlot(appointment, now) &&

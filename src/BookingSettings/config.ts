@@ -97,13 +97,17 @@ export const BookingSettings: GlobalConfig = {
       min: 0,
       max: 720,
       required: true,
-      admin: { description: 'Stored for Task 19 enforcement.' },
+      admin: {
+        description:
+          'Required elapsed hours between the booking request and slot start. Exact boundary times are allowed.',
+      },
     },
     {
       name: 'nextDayCutoffTime',
       type: 'text',
       admin: {
-        description: 'Optional Europe/Dublin cutoff in HH:mm. Stored for Task 19 enforcement.',
+        description:
+          'Optional Europe/Dublin HH:mm time when next-day bookings close. The exact cutoff time is closed.',
         placeholder: 'HH:mm',
       },
       validate: (value: null | string | undefined) =>

@@ -25,6 +25,10 @@ import { getBookingSettings } from '@/lib/booking/settings'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
 import {
+  getBookingNoticeMessage,
+  getBookingNoticeViolation,
+} from '@/lib/booking/noticeRules'
+import {
   consumeRateLimits,
   identifierRateLimitRule,
   ipRateLimitRule,
@@ -80,7 +84,8 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
     return invalidBooking('Too many booking attempts. Please wait and try again.')
   }
   const settings = await getBookingSettings()
-  if (!isDateWithinBookingWindow(data.date, settings)) {
+  const now = new Date()
+  if (!isDateWithinBookingWindow(data.date, settings, now)) {
     return invalidBooking(getBookingWindowLabel(settings), {
       date: getBookingWindowLabel(settings),
     })
@@ -99,10 +104,21 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   }
 
   const dateTimes = getSlotDateTimes(data.date, data.time, settings)
-  if (!dateTimes || dateTimes.startAt <= new Date()) {
+  if (!dateTimes || dateTimes.startAt <= now) {
     return invalidBooking('That fitting time is no longer available. Please choose another.', {
       time: 'That fitting time is no longer available. Please choose another.',
     })
+  }
+
+  const noticeViolation = getBookingNoticeViolation({
+    dateKey: data.date,
+    now,
+    settings,
+    startAt: dateTimes.startAt,
+  })
+  if (noticeViolation) {
+    const message = getBookingNoticeMessage(noticeViolation, settings)
+    return invalidBooking(message, { time: message })
   }
 
   const dressSlug = data.dressSlug || undefined
