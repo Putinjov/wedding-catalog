@@ -73,7 +73,9 @@ Record the Node/npm versions and the successful command output in the PR descrip
 
 Payload migrations must run as a single protected release step. Application startup and Next.js
 build workers never apply migrations. A Vercel production build checks migration history and stops
-before compilation when a migration file has not been recorded in `payload-migrations`.
+before compilation when a migration file has not been recorded in `payload-migrations`. MongoDB
+automatic index creation is disabled whenever `NODE_ENV=production`; production schema changes
+must therefore be owned by a reviewed migration.
 
 Configure GitHub before the first production migration:
 
@@ -98,6 +100,11 @@ Release order:
 The workflow uses `concurrency: production-database-migrations` with cancellation disabled, so two
 workflow runs cannot migrate the production database simultaneously. Do not run production
 migrations from a developer workstation or a Vercel build command.
+
+Task 24 may encounter a legacy non-sparse `jobId_1` index created by an earlier production build.
+Migration `20260810_003000_add_email_delivery_queue` replaces that index only while
+`email-deliveries` is empty. If any delivery record exists, it aborts before dropping the index and
+requires an explicit data review. Rollback removes Task 24 indexes but preserves delivery records.
 
 ## 6. Cloudflare R2 media
 

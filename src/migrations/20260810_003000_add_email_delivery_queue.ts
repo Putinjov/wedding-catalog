@@ -3,6 +3,7 @@ import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-mongodb'
 type MongoIndex = {
   key?: Record<string, unknown>
   name?: string
+  sparse?: boolean
   unique?: boolean
 }
 
@@ -32,7 +33,7 @@ const indexes = [
 function getEmailDeliveriesModel(payload: MigrateUpArgs['payload'] | MigrateDownArgs['payload']) {
   const deliveries = payload.db.collections['email-deliveries']
   if (!deliveries) {
-    throw new Error('Task 24 migration aborted: email-deliveries model is unavailable.')
+    throw new Error('[migration-gate] Task 24 aborted: email-deliveries model is unavailable.')
   }
   return deliveries
 }
@@ -68,17 +69,72 @@ async function assertNoDuplicateIdempotencyKeys(
     )
     .toArray()
   if (duplicates.length > 0) {
-    throw new Error('Task 24 migration aborted: duplicate email idempotency keys require manual review.')
+    throw new Error(
+      '[migration-gate] Task 24 aborted: duplicate email idempotency keys require manual review.',
+    )
   }
+}
+
+function hasMatchingKey(index: MongoIndex, definition: (typeof indexes)[number]): boolean {
+  const actualEntries = Object.entries(index.key ?? {})
+  const expectedEntries = Object.entries(definition.key)
+  return (
+    actualEntries.length === expectedEntries.length &&
+    expectedEntries.every(
+      ([field, direction], position) =>
+        actualEntries[position]?.[0] === field && actualEntries[position]?.[1] === direction,
+    )
+  )
 }
 
 function hasMatchingDefinition(index: MongoIndex, definition: (typeof indexes)[number]): boolean {
   const requiresUnique =
     'unique' in definition.options && definition.options.unique === true
+  const requiresSparse =
+    'sparse' in definition.options && definition.options.sparse === true
   return (
-    Object.entries(definition.key).every(([field, direction]) => index.key?.[field] === direction) &&
-    (!requiresUnique || index.unique === true)
+    hasMatchingKey(index, definition) &&
+    (!requiresUnique || index.unique === true) &&
+    (!requiresSparse || index.sparse === true)
   )
+}
+
+function isRepairableEmptyCollectionIndex(
+  index: MongoIndex,
+  definition: (typeof indexes)[number],
+): boolean {
+  return (
+    definition.name === 'jobId_1' &&
+    hasMatchingKey(index, definition) &&
+    index.sparse !== true &&
+    index.unique !== true
+  )
+}
+
+async function createIndex(
+  deliveries: ReturnType<typeof getEmailDeliveriesModel>,
+  definition: (typeof indexes)[number],
+): Promise<void> {
+  await deliveries.collection.createIndex(definition.key, {
+    name: definition.name,
+    ...definition.options,
+  })
+}
+
+async function repairEmptyCollectionIndex(
+  deliveries: ReturnType<typeof getEmailDeliveriesModel>,
+  definition: (typeof indexes)[number],
+  session: MigrateUpArgs['session'],
+): Promise<void> {
+  const documentCount = await deliveries.collection.countDocuments({}, { limit: 1, session })
+  if (documentCount > 0) {
+    throw new Error(
+      `[migration-gate] Task 24 aborted: ${definition.name} is incompatible and email-deliveries is not empty.`,
+    )
+  }
+
+  await deliveries.collection.dropIndex(definition.name)
+  await createIndex(deliveries, definition)
 }
 
 export async function up({ payload, session }: MigrateUpArgs): Promise<void> {
@@ -90,16 +146,17 @@ export async function up({ payload, session }: MigrateUpArgs): Promise<void> {
     const existing = currentIndexes.find((index) => index.name === definition.name)
     if (existing) {
       if (!hasMatchingDefinition(existing, definition)) {
+        if (isRepairableEmptyCollectionIndex(existing, definition)) {
+          await repairEmptyCollectionIndex(deliveries, definition, session)
+          continue
+        }
         throw new Error(
-          `Task 24 migration aborted: ${definition.name} has an incompatible definition.`,
+          `[migration-gate] Task 24 aborted: ${definition.name} has an incompatible definition.`,
         )
       }
       continue
     }
-    await deliveries.collection.createIndex(definition.key, {
-      name: definition.name,
-      ...definition.options,
-    })
+    await createIndex(deliveries, definition)
   }
 
   payload.logger.info({
