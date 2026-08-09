@@ -46,6 +46,7 @@ import { getBookingPurposeAdminLabel } from '@/lib/booking/purpose'
 import type { Appointment } from '@/payload-types'
 import { writeAppointmentAudit } from '@/lib/booking/writeAppointmentAudit'
 import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
+import { queueAppointmentEmails } from '@/lib/notifications/queueAppointmentEmailsHook'
 
 const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   context,
@@ -196,7 +197,7 @@ export const Appointments: CollectionConfig = {
     update: appointmentTeam,
   },
   hooks: {
-    afterChange: [releaseDateMutexAfterChange, writeAppointmentAudit],
+    afterChange: [releaseDateMutexAfterChange, writeAppointmentAudit, queueAppointmentEmails],
     afterError: [releaseDateMutexAfterError],
     beforeChange: [validateStatusChange],
     beforeValidate: [

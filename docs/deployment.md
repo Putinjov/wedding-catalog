@@ -19,6 +19,11 @@ NEXT_PUBLIC_SERVER_URL
 PREVIEW_SECRET
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
+SMTP_USER
+SMTP_PASSWORD
+EMAIL_FROM
+EMAIL_REPLY_TO
+BOOKING_ADMIN_EMAIL
 CRON_SECRET
 R2_BUCKET
 R2_ACCESS_KEY_ID
@@ -26,6 +31,13 @@ R2_SECRET_ACCESS_KEY
 R2_ENDPOINT
 R2_PUBLIC_URL
 ```
+
+Google Workspace SMTP uses `smtp.gmail.com:465` with TLS. `SMTP_USER` authenticates as
+`sales@caitbridal.ie`, while `EMAIL_FROM` uses its verified send-as alias
+`noreply@caitbridal.ie`. Replies and privacy-safe booking alerts go to
+`bookings@caitbridal.ie`. Confirm the alias is enabled for the account before deployment. Use an
+administrator-approved app password or equivalent SMTP credential and never paste it into issues,
+PRs, logs or committed files.
 
 Vercel supplies `VERCEL_ENV=production`, which enables the migration check automatically. For any
 other production build environment, set the non-secret variable `MIGRATION_GATE_REQUIRED=true`.
@@ -108,6 +120,19 @@ These checks are manual because CI must never perform real R2 writes.
 - [ ] Exercise expired, async success and async failure events.
 - [ ] Confirm logs include only the Stripe event ID/type and no customer data.
 - [ ] Confirm failed claims can be retried and stale `processing` claims recover after five minutes.
+
+## 7a. Appointment email delivery
+
+- [ ] Confirm the `sales@caitbridal.ie` Google Workspace SMTP credential is present in Production
+      and Preview, and that `noreply@caitbridal.ie` is enabled as its send-as alias.
+- [ ] Create an unpaid fitting and confirm one pending email is accepted by SMTP.
+- [ ] Complete one Stripe test payment and confirm exactly one confirmation email is accepted.
+- [ ] Replay the webhook and confirm no second automatic delivery record is created.
+- [ ] Force a transient SMTP failure and confirm the bounded immediate retries are sanitised.
+- [ ] Confirm exhausted jobs are visible in `Email Deliveries` and manual resend creates one new job.
+- [ ] The Hobby deployment runs immediate jobs with Next.js `after()` and uses the authenticated
+      daily cron only as a fallback; a prolonged outage can delay a retry until the next daily run.
+- [ ] Confirm logs never include recipient addresses, phone numbers, notes or message bodies.
 
 ## 8. Vercel smoke test
 

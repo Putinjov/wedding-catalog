@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { emailDeliveryDefaults } from '@/config/email-addresses'
 import {
   normalizeHttpOrigin,
   normalizePublicAssetOrigin,
@@ -11,9 +12,17 @@ const optionalValue = z.preprocess(
   z.string().trim().min(1).optional(),
 )
 
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.email().optional(),
+)
+
 const serverEnvironmentSchema = z.object({
   CRON_SECRET: optionalValue,
   DATABASE_URL: optionalValue,
+  BOOKING_ADMIN_EMAIL: optionalEmail,
+  EMAIL_FROM: optionalEmail,
+  EMAIL_REPLY_TO: optionalEmail,
   NEXT_PUBLIC_SERVER_URL: optionalValue,
   PAYLOAD_SECRET: optionalValue,
   PREVIEW_SECRET: optionalValue,
@@ -22,6 +31,8 @@ const serverEnvironmentSchema = z.object({
   R2_ENDPOINT: optionalValue,
   R2_PUBLIC_URL: optionalValue,
   R2_SECRET_ACCESS_KEY: optionalValue,
+  SMTP_PASSWORD: optionalValue,
+  SMTP_USER: optionalEmail,
   STRIPE_SECRET_KEY: optionalValue,
   STRIPE_WEBHOOK_SECRET: optionalValue,
 })
@@ -29,6 +40,9 @@ const serverEnvironmentSchema = z.object({
 const requiredProductionVariables = [
   'CRON_SECRET',
   'DATABASE_URL',
+  'BOOKING_ADMIN_EMAIL',
+  'EMAIL_FROM',
+  'EMAIL_REPLY_TO',
   'NEXT_PUBLIC_SERVER_URL',
   'PAYLOAD_SECRET',
   'PREVIEW_SECRET',
@@ -37,6 +51,8 @@ const requiredProductionVariables = [
   'R2_ENDPOINT',
   'R2_PUBLIC_URL',
   'R2_SECRET_ACCESS_KEY',
+  'SMTP_PASSWORD',
+  'SMTP_USER',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
 ] as const
@@ -65,6 +81,22 @@ function validateProductionSecrets(environment: ServerEnvironment): void {
 
   if (environment.CRON_SECRET && environment.CRON_SECRET.length < 24) {
     throw new Error('[env] CRON_SECRET must be at least 24 characters in production.')
+  }
+
+  if (environment.SMTP_PASSWORD && environment.SMTP_PASSWORD.length < 16) {
+    throw new Error('[env] SMTP_PASSWORD must be at least 16 characters in production.')
+  }
+
+  if (environment.SMTP_USER !== emailDeliveryDefaults.smtpUser) {
+    throw new Error(
+      `[env] SMTP_USER must be ${emailDeliveryDefaults.smtpUser} for Google Workspace SMTP.`,
+    )
+  }
+
+  if (environment.EMAIL_FROM !== emailDeliveryDefaults.fromAddress) {
+    throw new Error(
+      `[env] EMAIL_FROM must be the verified Google Workspace alias ${emailDeliveryDefaults.fromAddress}.`,
+    )
   }
 
   if (

@@ -2,6 +2,7 @@ import { APIError, type Endpoint, type PayloadRequest, type TypedUser } from 'pa
 import { z } from 'zod'
 
 import { hasRole } from '@/access/roles'
+import { queueAppointmentEmail } from '@/lib/notifications/queueAppointmentEmail'
 
 import {
   appointmentStatuses,
@@ -26,6 +27,8 @@ const statusUpdateSchema = z.object({
   acknowledgePaidReopen: z.boolean().optional(),
   allowUnpaidManualConfirmation: z.boolean().optional(),
 })
+
+const resendConfirmationSchema = z.object({ operationKey: z.uuid() })
 
 function getAuthenticatedUser(req: PayloadRequest): TypedUser | null {
   return req.user ?? null
@@ -80,7 +83,10 @@ function errorResponse(error: unknown) {
 }
 
 function getCapabilities(user: TypedUser) {
-  return { canRefundPaidConflict: hasRole(user, ['owner', 'manager']) }
+  return {
+    canRefundPaidConflict: hasRole(user, ['owner', 'manager']),
+    canResendConfirmation: false,
+  }
 }
 
 const getCalendarEndpoint: Endpoint = {
@@ -198,10 +204,52 @@ const paidConflictActionEndpoint: Endpoint = {
   },
 }
 
+const resendConfirmationEndpoint: Endpoint = {
+  path: '/calendar/:id/email/resend-confirmation',
+  method: 'post',
+  handler: async (req) => {
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
+    const id = getRouteID(req)
+    if (!id) return Response.json({ message: 'Appointment not found.' }, { status: 404 })
+
+    try {
+      const input = resendConfirmationSchema.parse(await getJSONBody(req))
+      const appointment = await req.payload.findByID({
+        collection: 'appointments',
+        id,
+        depth: 1,
+        locale: 'en',
+        overrideAccess: false,
+        req,
+        user,
+      })
+      if (appointment.status !== 'confirmed') {
+        throw new AdminAppointmentError('Only a confirmed appointment email can be resent.', 409)
+      }
+
+      const delivery = await queueAppointmentEmail({
+        appointment,
+        event: 'confirmed',
+        idempotencyKey: `appointment-email:${String(appointment.id)}:confirmed:manual:${input.operationKey}`,
+        req,
+        requestedBy: user,
+        trigger: 'manual',
+      })
+      return Response.json({
+        delivery: { event: delivery.event, id: delivery.id, status: delivery.status },
+      })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
 export const appointmentCalendarEndpoints: Endpoint[] = [
   getCalendarEndpoint,
   updateCalendarStatusEndpoint,
   createCalendarAppointmentEndpoint,
   getCalendarAppointmentDetailEndpoint,
   paidConflictActionEndpoint,
+  resendConfirmationEndpoint,
 ]

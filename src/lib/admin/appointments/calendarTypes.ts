@@ -52,6 +52,7 @@ export type AppointmentDetail = CalendarAppointment & {
   stripeRefundId?: string | null
   capabilities: {
     canRefundPaidConflict: boolean
+    canResendConfirmation: boolean
   }
 }
 
@@ -128,7 +129,10 @@ export function parseCalendarAppointments(value: unknown): CalendarAppointment[]
 
 export function toAppointmentDetail(
   appointment: Appointment,
-  capabilities: AppointmentDetail['capabilities'] = { canRefundPaidConflict: false },
+  capabilities: AppointmentDetail['capabilities'] = {
+    canRefundPaidConflict: false,
+    canResendConfirmation: false,
+  },
 ): AppointmentDetail {
   return {
     ...toCalendarAppointment(appointment),
@@ -152,6 +156,9 @@ export function toAppointmentDetail(
     refundStatus: appointment.refundStatus,
     refundedAt: appointment.refundedAt,
     stripeRefundId: appointment.stripeRefundId,
-    capabilities,
+    capabilities: {
+      ...capabilities,
+      canResendConfirmation: appointment.status === 'confirmed',
+    },
   }
 }

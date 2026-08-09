@@ -42,7 +42,62 @@ describe('deployment configuration', () => {
           NODE_ENV: 'production',
         } as NodeJS.ProcessEnv,
       }),
-    ).toThrow(/R2_BUCKET.*STRIPE_SECRET_KEY/)
+    ).toThrow(/EMAIL_FROM.*SMTP_PASSWORD.*STRIPE_SECRET_KEY/)
+  })
+
+  it('supports a verified Google Workspace sender alias', () => {
+    const environment = getServerEnvironment({
+      source: {
+        BOOKING_ADMIN_EMAIL: 'bookings@caitbridal.ie',
+        CRON_SECRET: 'cron-secret-at-least-24-characters',
+        DATABASE_URL: 'mongodb://127.0.0.1/wedding-catalog',
+        EMAIL_FROM: 'noreply@caitbridal.ie',
+        EMAIL_REPLY_TO: 'bookings@caitbridal.ie',
+        NEXT_PUBLIC_SERVER_URL: 'https://caitbridal.ie',
+        NODE_ENV: 'production',
+        PAYLOAD_SECRET: 'payload-secret-at-least-32-characters',
+        PREVIEW_SECRET: 'preview-secret-at-least-24-characters',
+        R2_ACCESS_KEY_ID: 'key',
+        R2_BUCKET: 'bucket',
+        R2_ENDPOINT: 'https://example.r2.cloudflarestorage.com',
+        R2_PUBLIC_URL: 'https://media.caitbridal.ie',
+        R2_SECRET_ACCESS_KEY: 'secret',
+        SMTP_PASSWORD: 'smtp-password-at-least-16-characters',
+        SMTP_USER: 'sales@caitbridal.ie',
+        STRIPE_SECRET_KEY: 'sk_test_placeholder',
+        STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',
+      } as NodeJS.ProcessEnv,
+    })
+
+    expect(environment.SMTP_USER).toBe('sales@caitbridal.ie')
+    expect(environment.EMAIL_FROM).toBe('noreply@caitbridal.ie')
+  })
+
+  it('rejects an unapproved Google Workspace sender alias', () => {
+    expect(() =>
+      getServerEnvironment({
+        source: {
+          BOOKING_ADMIN_EMAIL: 'bookings@caitbridal.ie',
+          CRON_SECRET: 'cron-secret-at-least-24-characters',
+          DATABASE_URL: 'mongodb://127.0.0.1/wedding-catalog',
+          EMAIL_FROM: 'other@caitbridal.ie',
+          EMAIL_REPLY_TO: 'bookings@caitbridal.ie',
+          NEXT_PUBLIC_SERVER_URL: 'https://caitbridal.ie',
+          NODE_ENV: 'production',
+          PAYLOAD_SECRET: 'payload-secret-at-least-32-characters',
+          PREVIEW_SECRET: 'preview-secret-at-least-24-characters',
+          R2_ACCESS_KEY_ID: 'key',
+          R2_BUCKET: 'bucket',
+          R2_ENDPOINT: 'https://example.r2.cloudflarestorage.com',
+          R2_PUBLIC_URL: 'https://media.caitbridal.ie',
+          R2_SECRET_ACCESS_KEY: 'secret',
+          SMTP_PASSWORD: 'smtp-password-at-least-16-characters',
+          SMTP_USER: 'sales@caitbridal.ie',
+          STRIPE_SECRET_KEY: 'sk_test_placeholder',
+          STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',
+        } as NodeJS.ProcessEnv,
+      }),
+    ).toThrow('EMAIL_FROM must be the verified Google Workspace alias noreply@caitbridal.ie')
   })
 
   it('requires the migration gate for Vercel production and explicit non-Vercel builds', () => {
