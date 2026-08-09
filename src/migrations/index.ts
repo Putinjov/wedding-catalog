@@ -5,6 +5,7 @@ import * as migration_20260801_210000_create_booking_settings from './20260801_2
 import * as migration_20260809_101500_add_undecided_booking_intent from './20260809_101500_add_undecided_booking_intent'
 import * as migration_20260809_160000_add_privacy_records from './20260809_160000_add_privacy_records'
 import * as migration_20260809_210000_formalize_appointment_lifecycle from './20260809_210000_formalize_appointment_lifecycle'
+import * as migration_20260809_220000_enforce_stripe_hold_minimum from './20260809_220000_enforce_stripe_hold_minimum'
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260809_210000_formalize_appointment_lifecycle.up,
     down: migration_20260809_210000_formalize_appointment_lifecycle.down,
     name: '20260809_210000_formalize_appointment_lifecycle',
+  },
+  {
+    up: migration_20260809_220000_enforce_stripe_hold_minimum.up,
+    down: migration_20260809_220000_enforce_stripe_hold_minimum.down,
+    name: '20260809_220000_enforce_stripe_hold_minimum',
   },
 ]

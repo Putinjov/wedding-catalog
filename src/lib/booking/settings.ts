@@ -5,6 +5,8 @@ import { getPayload, type Payload, type PayloadRequest } from 'payload'
 import {
   BOOKING_TIMEZONE,
   defaultBookingSettings,
+  MAXIMUM_BOOKING_HOLD_MINUTES,
+  STRIPE_CHECKOUT_MINIMUM_HOLD_MINUTES,
   type BookingBlockedInterval,
   type BookingDateRange,
   type BookingHours,
@@ -222,7 +224,13 @@ export function resolveBookingSettings(value: unknown): ResolvedBookingSettings 
     closedWeekdays: readWeekdays(record.closedWeekdays ?? ['0', '1'], 'closedWeekdays'),
     closures: readDateRanges(record.closures),
     durationMinutes,
-    holdMinutes: readInteger(record, 'holdMinutes', 30, 5, 120),
+    holdMinutes: readInteger(
+      record,
+      'holdMinutes',
+      30,
+      STRIPE_CHECKOUT_MINIMUM_HOLD_MINUTES,
+      MAXIMUM_BOOKING_HOLD_MINUTES,
+    ),
     holidays: readArray(record.holidays, 'holidays', 200).map((entry, index) => {
       const holiday = asRecord(entry)
       return readDate(holiday?.date ?? entry, `holidays.${index}.date`)

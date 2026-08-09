@@ -10,6 +10,7 @@ import {
 } from '@/lib/booking/date'
 import { resolveBookingSettings, validateBookingSettings } from '@/lib/booking/settings'
 import { settingsMatchDefaults } from '@/migrations/20260801_210000_create_booking_settings'
+import { assertStripeCompatibleBookingHold } from '@/migrations/20260809_220000_enforce_stripe_hold_minimum'
 
 describe('booking settings', () => {
   it('resolves safe defaults when the global has not been seeded yet', () => {
@@ -42,6 +43,14 @@ describe('booking settings', () => {
       }),
     ).toMatch(/Saturday cannot be both enabled/i)
     expect(validateBookingSettings({ closedWeekdays: ['1'] })).toMatch(/Sunday must remain closed/i)
+  })
+
+  it('rejects holds shorter than Stripe Checkout supports without rewriting them', () => {
+    expect(validateBookingSettings({ holdMinutes: 29 })).toMatch(/30 to 120/)
+    expect(() => assertStripeCompatibleBookingHold({ holdMinutes: 29 })).toThrow(
+      /Task 21 migration aborted.*at least 30/i,
+    )
+    expect(() => assertStripeCompatibleBookingHold({ holdMinutes: 30 })).not.toThrow()
   })
 
   it('rejects lunch breaks outside opening hours or on closed days', () => {

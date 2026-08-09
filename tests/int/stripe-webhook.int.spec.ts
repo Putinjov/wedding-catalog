@@ -36,15 +36,18 @@ import {
 } from '@/app/(frontend)/api/stripe/webhook/route'
 
 function createAppointment(overrides: Partial<Appointment> = {}): Appointment {
+  const checkoutExpiresAt = new Date(1_907_001_800 * 1000).toISOString()
   return {
     id: 'appointment-1',
     amountPaid: null,
     createdAt: '2030-01-01T00:00:00.000Z',
+    checkoutExpiresAt,
     currency: 'EUR',
     customerName: 'Test customer',
     email: 'customer@example.com',
     endAt: '2030-06-01T11:00:00.000Z',
     fittingFee: 20,
+    holdExpiresAt: checkoutExpiresAt,
     needsAdminReview: false,
     paymentStatus: 'processing',
     phone: '+353000000000',
@@ -76,6 +79,7 @@ function createSession(
     },
     mode: 'payment',
     object: 'checkout.session',
+    expires_at: 1_907_001_800,
     payment_intent: 'pi_test_1',
     payment_status: 'unpaid',
     status: 'open',
@@ -182,6 +186,99 @@ describe('Stripe webhook reliability', () => {
           needsAdminReview: true,
           paymentStatus: 'paid',
           status: 'payment_received_conflict',
+        }),
+      }),
+    )
+  })
+
+  it('routes a payment created at the exact hold boundary to conflict review', async () => {
+    const payload = createPayloadFixture()
+    mocks.getBookingPayload.mockResolvedValue(payload)
+    const session = createSession({ payment_status: 'paid', status: 'complete' })
+    const event = createEvent('checkout.session.completed', session)
+    event.created = session.expires_at
+
+    await processSessionEvent(event, session)
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          needsAdminReview: true,
+          paymentStatus: 'paid',
+          status: 'payment_received_conflict',
+        }),
+      }),
+    )
+  })
+
+  it('routes a paid event with mismatched stored expiry to conflict review', async () => {
+    const payload = createPayloadFixture()
+    mocks.getBookingPayload.mockResolvedValue(payload)
+    mocks.getAppointmentByReference.mockResolvedValue(
+      createAppointment({ checkoutExpiresAt: '2030-06-01T09:59:00.000Z' }),
+    )
+    const session = createSession({ payment_status: 'paid', status: 'complete' })
+
+    await processSessionEvent(createEvent('checkout.session.completed', session), session)
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          needsAdminReview: true,
+          status: 'payment_received_conflict',
+        }),
+      }),
+    )
+  })
+
+  it('records a paid event from an unbound session as a conflict instead of retrying forever', async () => {
+    const payload = createPayloadFixture()
+    mocks.getBookingPayload.mockResolvedValue(payload)
+    mocks.getAppointmentByReference.mockResolvedValue(
+      createAppointment({
+        checkoutExpiresAt: null,
+        paymentStatus: 'unpaid',
+        status: 'pending_payment',
+        stripeCheckoutSessionId: null,
+      }),
+    )
+    const session = createSession({ payment_status: 'paid', status: 'complete' })
+
+    await expect(
+      processSessionEvent(createEvent('checkout.session.completed', session), session),
+    ).resolves.toBe('processed')
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          needsAdminReview: true,
+          paymentStatus: 'paid',
+          status: 'payment_received_conflict',
+          stripeCheckoutSessionId: session.id,
+        }),
+      }),
+    )
+  })
+
+  it('records a paid event from a replaced session as a conflict', async () => {
+    const payload = createPayloadFixture()
+    mocks.getBookingPayload.mockResolvedValue(payload)
+    mocks.getAppointmentByReference.mockResolvedValue(
+      createAppointment({ stripeCheckoutSessionId: 'cs_test_replacement' }),
+    )
+    const session = createSession({ payment_status: 'paid', status: 'complete' })
+
+    await expect(
+      processSessionEvent(createEvent('checkout.session.completed', session), session),
+    ).resolves.toBe('processed')
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          needsAdminReview: true,
+          paymentStatus: 'paid',
+          status: 'payment_received_conflict',
+          stripeCheckoutSessionId: session.id,
         }),
       }),
     )

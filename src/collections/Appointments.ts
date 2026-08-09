@@ -23,6 +23,7 @@ import {
   isAppointmentStatusNonBlocking,
 } from '@/lib/booking/appointmentLifecycle'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
+import { createAppointmentHoldExpiry } from '@/lib/booking/appointmentHold'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { assertAppointmentScheduleRules } from '@/lib/booking/appointmentBookingRules'
 import {
@@ -220,7 +221,7 @@ export const Appointments: CollectionConfig = {
           holdExpiresAt:
             data.holdExpiresAt ??
             (source === 'website'
-              ? new Date(Date.now() + settings.holdMinutes * 60 * 1000).toISOString()
+              ? createAppointmentHoldExpiry(settings.holdMinutes).iso
               : undefined),
           paymentStatus: data.paymentStatus ?? 'unpaid',
           publicReference: data.publicReference ?? createPublicReference(),

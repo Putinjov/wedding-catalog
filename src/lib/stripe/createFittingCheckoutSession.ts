@@ -3,6 +3,10 @@ import { getPayload } from 'payload'
 import type Stripe from 'stripe'
 
 import { isAppointmentSlotValid } from '@/lib/booking/appointmentIntegrity'
+import {
+  createAppointmentHoldExpiry,
+  isAppointmentHoldActive,
+} from '@/lib/booking/appointmentHold'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
@@ -16,10 +20,9 @@ import {
   getFittingCurrency,
   getFittingFeeCents,
   getSessionExpirationDate,
+  isMatchingFittingCheckoutExpiry,
   isMatchingFittingCheckoutSession,
 } from './fitting'
-
-const checkoutLifetimeSeconds = 60 * 60
 
 export type CreateFittingCheckoutResult =
   | { status: 'paid' }
@@ -56,7 +59,15 @@ export async function createFittingCheckoutSession(
   }
 
   const settings = await getBookingSettings()
-  if (!isAppointmentSlotValid(appointment, settings)) {
+  const now = new Date()
+  if (!isAppointmentHoldActive(appointment, now)) {
+    return {
+      message: 'This payment hold has expired. Please choose the fitting time again.',
+      status: 'unavailable',
+    }
+  }
+
+  if (!isAppointmentSlotValid(appointment, settings, now)) {
     return {
       message: 'This fitting time is no longer available. Please contact us for help.',
       status: 'unavailable',
@@ -98,6 +109,7 @@ export async function createFittingCheckoutSession(
     const matchesAppointment = isMatchingFittingCheckoutSession(existingSession, appointment)
     if (
       matchesAppointment &&
+      isMatchingFittingCheckoutExpiry(existingSession, appointment) &&
       existingSession.status === 'open' &&
       existingSession.url &&
       (getSessionExpirationDate(existingSession)?.getTime() ?? 0) > Date.now()
@@ -139,14 +151,14 @@ export async function createFittingCheckoutSession(
   }
 
   const idempotencyKey = `fitting-checkout:${appointmentForCheckout.id}:${appointmentForCheckout.updatedAt}`
-  const checkoutExpiresAt = Math.floor(Date.now() / 1000) + checkoutLifetimeSeconds
+  const checkoutExpiry = createAppointmentHoldExpiry(settings.holdMinutes)
   const baseUrl = getCheckoutBaseUrl()
   const session = await stripe.checkout.sessions.create(
     {
       cancel_url: `${baseUrl}/book-a-fitting/payment/cancelled?reference=${encodeURIComponent(appointment.publicReference)}`,
       client_reference_id: appointment.publicReference,
       customer_email: appointment.email,
-      expires_at: checkoutExpiresAt,
+      expires_at: checkoutExpiry.unixSeconds,
       line_items: [
         {
           price_data: {
@@ -173,25 +185,45 @@ export async function createFittingCheckoutSession(
     },
   )
 
-  if (!session.url) {
+  if (
+    session.status !== 'open' ||
+    !session.url ||
+    session.expires_at !== checkoutExpiry.unixSeconds
+  ) {
+    try {
+      if (session.status === 'open') {
+        await stripe.checkout.sessions.expire(session.id)
+      }
+    } catch {
+      // A verified late payment is routed to conflict review by the webhook.
+    }
     return {
-      message: 'Stripe did not return a Checkout URL. Please try again.',
+      message: 'Stripe did not create a matching payment hold. Please try again.',
       status: 'unavailable',
     }
   }
 
-  await payload.update({
-    collection: 'appointments',
-    id: appointment.id,
-    data: {
-      checkoutExpiresAt: new Date(checkoutExpiresAt * 1000).toISOString(),
-      holdExpiresAt: new Date(checkoutExpiresAt * 1000).toISOString(),
-      paymentStatus: 'processing',
-      status: 'payment_processing',
-      stripeCheckoutSessionId: session.id,
-    },
-    context: appointmentPaymentContext('checkout-session'),
-  })
+  try {
+    await payload.update({
+      collection: 'appointments',
+      id: appointment.id,
+      data: {
+        checkoutExpiresAt: checkoutExpiry.iso,
+        holdExpiresAt: checkoutExpiry.iso,
+        paymentStatus: 'processing',
+        status: 'payment_processing',
+        stripeCheckoutSessionId: session.id,
+      },
+      context: appointmentPaymentContext('checkout-session'),
+    })
+  } catch (error) {
+    try {
+      await stripe.checkout.sessions.expire(session.id)
+    } catch {
+      // A verified unbound or late payment is routed to conflict review by the webhook.
+    }
+    throw error
+  }
 
   return { status: 'redirect', url: session.url }
 }

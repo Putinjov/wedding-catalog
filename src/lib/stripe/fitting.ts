@@ -2,6 +2,7 @@ import type Stripe from 'stripe'
 
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
 import type { Appointment } from '@/payload-types'
+import { getExpiryTime } from '@/lib/booking/appointmentHold'
 
 export const fittingProductName = 'CAIT Bridal private fitting'
 
@@ -67,4 +68,19 @@ export function getSessionCustomerEmail(session: Stripe.Checkout.Session): strin
 
 export function getSessionExpirationDate(session: Stripe.Checkout.Session): Date | null {
   return session.expires_at ? new Date(session.expires_at * 1000) : null
+}
+
+export function isMatchingFittingCheckoutExpiry(
+  session: Stripe.Checkout.Session,
+  appointment: Pick<Appointment, 'checkoutExpiresAt' | 'holdExpiresAt'>,
+): boolean {
+  const sessionExpiry = getSessionExpirationDate(session)?.getTime() ?? null
+  const checkoutExpiry = getExpiryTime(appointment.checkoutExpiresAt)
+  const holdExpiry = getExpiryTime(appointment.holdExpiresAt)
+
+  return (
+    sessionExpiry !== null &&
+    sessionExpiry === checkoutExpiry &&
+    sessionExpiry === holdExpiry
+  )
 }

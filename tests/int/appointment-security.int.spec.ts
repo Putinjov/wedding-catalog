@@ -76,8 +76,9 @@ describe('appointment payment integrity', () => {
     ).toBe(true)
   })
 
-  it('keeps payment processing blocking but releases a paid conflict for explicit resolution', () => {
+  it('keeps an active payment hold blocking but releases it and paid conflicts explicitly', () => {
     const processing = appointment({
+      holdExpiresAt: '2030-01-01T09:30:00.000Z',
       paymentStatus: 'processing',
       status: 'payment_processing',
     })
@@ -86,7 +87,10 @@ describe('appointment payment integrity', () => {
       status: 'payment_received_conflict',
     })
 
-    expect(isAppointmentBlockingSlot(processing)).toBe(true)
-    expect(isAppointmentBlockingSlot(conflict)).toBe(false)
+    const beforeExpiry = new Date('2030-01-01T09:29:59.999Z')
+    const atExpiry = new Date('2030-01-01T09:30:00.000Z')
+    expect(isAppointmentBlockingSlot(processing, beforeExpiry)).toBe(true)
+    expect(isAppointmentBlockingSlot(processing, atExpiry)).toBe(false)
+    expect(isAppointmentBlockingSlot(conflict, beforeExpiry)).toBe(false)
   })
 })
