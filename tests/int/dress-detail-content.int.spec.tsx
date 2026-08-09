@@ -2,6 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { DressPricePanel } from '@/components/boutique/dress-price-panel'
+import { defaultBookingSettings } from '@/config/booking'
 import type { Dress } from '@/payload-types'
 
 vi.mock('@/components/booking/booking-dialog', () => ({
@@ -50,7 +51,7 @@ function dress(overrides: Partial<Dress> = {}): Dress {
 
 describe('dress detail commercial content', () => {
   it('shows only active Buy terms and matching desktop/mobile fitting actions', () => {
-    render(<DressPricePanel dress={dress()} mode="buy" />)
+    render(<DressPricePanel dress={dress()} mode="buy" settings={defaultBookingSettings} />)
 
     expect(screen.getByText('Purchase terms')).toBeTruthy()
     expect(screen.queryByText('Rental terms')).toBeNull()
@@ -60,7 +61,13 @@ describe('dress detail commercial content', () => {
   })
 
   it('renders a sold state without any misleading CTA', () => {
-    render(<DressPricePanel dress={dress({ saleStatus: 'sold' })} mode="buy" />)
+    render(
+      <DressPricePanel
+        dress={dress({ saleStatus: 'sold' })}
+        mode="buy"
+        settings={defaultBookingSettings}
+      />,
+    )
 
     expect(screen.getByText('Sold')).toBeTruthy()
     expect(screen.getByText('This dress has been sold and cannot be purchased.')).toBeTruthy()
@@ -69,7 +76,13 @@ describe('dress detail commercial content', () => {
   })
 
   it('keeps unavailable modes out of the booking flow', () => {
-    render(<DressPricePanel dress={dress({ saleStatus: 'sold' })} mode="rent" />)
+    render(
+      <DressPricePanel
+        dress={dress({ saleStatus: 'sold' })}
+        mode="rent"
+        settings={defaultBookingSettings}
+      />,
+    )
 
     expect(screen.getByText('Rental terms')).toBeTruthy()
     expect(screen.getByTestId('available-modes').textContent).toBe('false:true')

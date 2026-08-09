@@ -8,6 +8,7 @@ import { getPublicDressRedirect } from '@/lib/dress-redirects'
 import { getRequestedDressMode, type DressMode } from '@/lib/catalogue'
 import { getSupportedDressModes, supportsDressMode } from '@/lib/dress-utils'
 import { normalizeCatalogueReturnTo } from '@/utilities/dress-routing'
+import { getBookingSettings } from '@/lib/booking/settings'
 
 type Args = {
   params: Promise<{
@@ -63,7 +64,10 @@ export default async function DressPage({ params: paramsPromise, searchParams }:
   const initialMode = getInitialMode(dress, getRequestedDressMode(mode))
   const normalizedReturnTo =
     normalizeCatalogueReturnTo(returnTo, initialMode) ?? `/${initialMode}#catalogue-results`
-  const relatedDresses = await getRelatedDresses({ dress, mode: initialMode })
+  const [relatedDresses, settings] = await Promise.all([
+    getRelatedDresses({ dress, mode: initialMode }),
+    getBookingSettings(),
+  ])
 
   return (
     <DressDetail
@@ -71,6 +75,7 @@ export default async function DressPage({ params: paramsPromise, searchParams }:
       initialMode={initialMode}
       relatedDresses={relatedDresses}
       returnTo={normalizedReturnTo}
+      settings={settings}
     />
   )
 }

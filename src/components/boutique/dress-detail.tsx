@@ -12,17 +12,20 @@ import {
   getSupportedDressModes,
 } from '@/lib/dress-utils'
 import type { DressWithMedia } from '@/lib/dress-media'
+import type { ResolvedBookingSettings } from '@/config/booking'
 
 export function DressDetail({
   dress,
   initialMode,
   relatedDresses,
   returnTo,
+  settings,
 }: {
   dress: DressWithMedia
   initialMode: DressMode
   relatedDresses: DressWithMedia[]
   returnTo: string
+  settings: ResolvedBookingSettings
 }) {
   const designer = getRelationshipLabel(dress.designer)
   const modes = getSupportedDressModes(dress)
@@ -73,7 +76,7 @@ export function DressDetail({
             </div>
 
             <DressModeSelector initialMode={initialMode} modes={modes} returnTo={returnTo} />
-            <DressPricePanel dress={dress} mode={initialMode} />
+            <DressPricePanel dress={dress} mode={initialMode} settings={settings} />
             <DressDetails dress={dress} />
           </aside>
         </div>
