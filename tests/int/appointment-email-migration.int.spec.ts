@@ -47,6 +47,27 @@ describe('appointment email delivery migration', () => {
     expect(test.collection.createIndex).not.toHaveBeenCalled()
   })
 
+  it('keeps preflight reads outside the Payload migration transaction', async () => {
+    const test = fixture([
+      { key: { idempotencyKey: 1 }, name: 'idempotencyKey_1', unique: true },
+      { key: { jobId: 1 }, name: 'jobId_1' },
+    ])
+    const session = { marker: 'payload-migration-session' }
+
+    await up({ payload: test.payload, session } as unknown as MigrateUpArgs)
+
+    expect(test.collection.aggregate).toHaveBeenCalledWith(expect.any(Array))
+    expect(test.collection.countDocuments).toHaveBeenCalledWith({}, { limit: 1 })
+    expect(test.collection.aggregate).not.toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ session }),
+    )
+    expect(test.collection.countDocuments).not.toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ session }),
+    )
+  })
+
   it('repairs the known non-sparse job index only while the collection is empty', async () => {
     const test = fixture([
       { key: { idempotencyKey: 1 }, name: 'idempotencyKey_1', unique: true },
@@ -55,7 +76,7 @@ describe('appointment email delivery migration', () => {
 
     await up({ payload: test.payload } as unknown as MigrateUpArgs)
 
-    expect(test.collection.countDocuments).toHaveBeenCalledWith({}, { limit: 1, session: undefined })
+    expect(test.collection.countDocuments).toHaveBeenCalledWith({}, { limit: 1 })
     expect(test.collection.dropIndex).toHaveBeenCalledWith('jobId_1')
     expect(test.collection.createIndex).toHaveBeenCalledWith(
       { jobId: 1 },
