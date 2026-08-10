@@ -55,18 +55,14 @@ async function getIndexes(
 
 async function assertNoDuplicateIdempotencyKeys(
   model: ReturnType<typeof getEmailDeliveriesModel>,
-  session: MigrateUpArgs['session'],
 ): Promise<void> {
   const duplicates = await model.collection
-    .aggregate(
-      [
-        { $match: { idempotencyKey: { $exists: true, $nin: [null, ''] } } },
-        { $group: { _id: '$idempotencyKey', count: { $sum: 1 } } },
-        { $match: { count: { $gt: 1 } } },
-        { $limit: 1 },
-      ],
-      { session },
-    )
+    .aggregate([
+      { $match: { idempotencyKey: { $exists: true, $nin: [null, ''] } } },
+      { $group: { _id: '$idempotencyKey', count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+      { $limit: 1 },
+    ])
     .toArray()
   if (duplicates.length > 0) {
     throw new Error(
@@ -124,9 +120,8 @@ async function createIndex(
 async function repairEmptyCollectionIndex(
   deliveries: ReturnType<typeof getEmailDeliveriesModel>,
   definition: (typeof indexes)[number],
-  session: MigrateUpArgs['session'],
 ): Promise<void> {
-  const documentCount = await deliveries.collection.countDocuments({}, { limit: 1, session })
+  const documentCount = await deliveries.collection.countDocuments({}, { limit: 1 })
   if (documentCount > 0) {
     throw new Error(
       `[migration-gate] Task 24 aborted: ${definition.name} is incompatible and email-deliveries is not empty.`,
@@ -137,9 +132,9 @@ async function repairEmptyCollectionIndex(
   await createIndex(deliveries, definition)
 }
 
-export async function up({ payload, session }: MigrateUpArgs): Promise<void> {
+export async function up({ payload }: MigrateUpArgs): Promise<void> {
   const deliveries = getEmailDeliveriesModel(payload)
-  await assertNoDuplicateIdempotencyKeys(deliveries, session)
+  await assertNoDuplicateIdempotencyKeys(deliveries)
   const currentIndexes = await getIndexes(deliveries)
 
   for (const definition of indexes) {
@@ -147,7 +142,7 @@ export async function up({ payload, session }: MigrateUpArgs): Promise<void> {
     if (existing) {
       if (!hasMatchingDefinition(existing, definition)) {
         if (isRepairableEmptyCollectionIndex(existing, definition)) {
-          await repairEmptyCollectionIndex(deliveries, definition, session)
+          await repairEmptyCollectionIndex(deliveries, definition)
           continue
         }
         throw new Error(
