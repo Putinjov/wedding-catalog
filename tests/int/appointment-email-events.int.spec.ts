@@ -38,10 +38,21 @@ function state(
 }
 
 describe('appointment email event mapping', () => {
-  it('queues one pending event when a booking is created', () => {
+  it('does not queue a customer email when an unpaid booking is created', () => {
     expect(
       getAppointmentEmailEvents({ appointment: state(), operation: 'create' }),
-    ).toEqual(['pending'])
+    ).toEqual([])
+  })
+
+  it('does not revive the retired pending notice on a transition back to pending payment', () => {
+    expect(
+      getAppointmentEmailEvents({
+        appointment: state(),
+        operation: 'update',
+        previous: state({ paymentStatus: 'failed', status: 'payment_failed' }),
+      }),
+    ).toEqual([])
+    expect(shouldDeliverAppointmentEmail('pending', state())).toBe(false)
   })
 
   it('does not turn a paid conflict into a customer confirmation', () => {
