@@ -79,6 +79,29 @@ describe('appointment email worker', () => {
     )
   })
 
+  it('sends branded HTML with a plain-text fallback for customer emails', async () => {
+    const { payload, req } = fixture()
+
+    await expect(
+      sendAppointmentEmail({ deliveryId: 'delivery-1', req: req as never }),
+    ).resolves.toBe('sent')
+
+    expect(payload.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        html: expect.stringContaining('Your fitting is confirmed'),
+        subject: 'Your private fitting is confirmed',
+        text: expect.stringContaining('Your fitting fee and appointment have been confirmed.'),
+        to: appointment.email,
+      }),
+    )
+    const sentMessage = JSON.stringify(payload.sendEmail.mock.calls[0])
+    expect(sentMessage).toContain('#fbf6ee')
+    expect(sentMessage).toContain('#8e6fa0')
+    expect(sentMessage).toContain('CAIT')
+    expect(sentMessage).not.toContain(appointment.phone)
+    expect(sentMessage).not.toContain(appointment.notes)
+  })
+
   it('stores only a sanitized category for a permanent provider failure', async () => {
     const { payload, req } = fixture()
     payload.sendEmail.mockRejectedValue(
@@ -95,8 +118,14 @@ describe('appointment email worker', () => {
     expect(storedUpdates).not.toContain('sensitive provider response')
   })
 
-  it('skips an obsolete pending email after the appointment is confirmed', async () => {
-    const { payload, req } = fixture(delivery({ event: 'pending' }))
+  it('skips all legacy pending emails, even while the appointment is still pending', async () => {
+    const pendingAppointment = {
+      ...appointment,
+      amountPaid: null,
+      paymentStatus: 'unpaid' as const,
+      status: 'pending_payment' as const,
+    }
+    const { payload, req } = fixture(delivery({ event: 'pending' }), pendingAppointment)
 
     await expect(
       sendAppointmentEmail({ deliveryId: 'delivery-1', req: req as never }),
@@ -126,5 +155,6 @@ describe('appointment email worker', () => {
     expect(message).not.toContain(appointment.notes)
     expect(message).not.toContain(appointment.customerName)
     expect(message).not.toContain(appointment.publicReference)
+    expect(message).not.toContain('<html')
   })
 })
