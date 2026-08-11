@@ -129,6 +129,7 @@ export async function sendAppointmentEmail({
     try {
       await req.payload.sendEmail({
         from: addresses.from,
+        ...(message.html ? { html: message.html } : {}),
         replyTo: addresses.replyTo,
         subject: message.subject,
         text: message.text,
