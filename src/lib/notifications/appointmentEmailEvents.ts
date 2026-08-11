@@ -20,7 +20,6 @@ function getCreatedEvent(appointment: AppointmentEmailState): AppointmentEmailEv
   if (appointment.status === 'payment_failed') return 'failed'
   if (appointment.status === 'expired') return 'expired'
   if (appointment.status === 'cancelled') return 'cancelled'
-  if (appointment.status === 'pending_payment') return 'pending'
   return null
 }
 
@@ -51,7 +50,6 @@ function getUpdatedCustomerEvent(
     return 'failed'
   }
   if (statusChanged && appointment.status === 'expired') return 'expired'
-  if (statusChanged && appointment.status === 'pending_payment') return 'pending'
   return null
 }
 
@@ -86,7 +84,9 @@ export function shouldDeliverAppointmentEmail(
 ): boolean {
   switch (event) {
     case 'pending':
-      return appointment.status === 'pending_payment'
+      // Pending-request notices were intentionally retired. Keep the event type so legacy delivery
+      // records remain readable, but never send one after this release.
+      return false
     case 'confirmed':
     case 'rescheduled':
       return appointment.status === 'confirmed'
