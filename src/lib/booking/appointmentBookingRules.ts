@@ -11,7 +11,7 @@ import { isAppointmentStatusNonBlocking } from '@/lib/booking/appointmentLifecyc
 
 type AdminBookingRulesContext = {
   allowNoticeOverride: boolean
-  origin: 'admin-create' | 'paid-conflict-resolution'
+  origin: 'admin-create' | 'admin-reschedule' | 'paid-conflict-resolution'
 }
 
 type BookingRulesRequestContext = {
@@ -38,12 +38,24 @@ export function paidConflictBookingRulesContext(
   }
 }
 
+export function adminRescheduleBookingRulesContext(
+  allowNoticeOverride: boolean,
+): RequestContext {
+  return {
+    appointmentBookingRules: {
+      allowNoticeOverride,
+      origin: 'admin-reschedule',
+    },
+  }
+}
+
 export function getAdminBookingRulesContext(
   context: RequestContext | undefined,
 ): AdminBookingRulesContext | null {
   if (!context) return null
   const bookingRules = (context as BookingRulesRequestContext).appointmentBookingRules
   return (bookingRules?.origin === 'admin-create' ||
+    bookingRules?.origin === 'admin-reschedule' ||
     bookingRules?.origin === 'paid-conflict-resolution') &&
     typeof bookingRules.allowNoticeOverride === 'boolean'
     ? bookingRules

@@ -29,6 +29,45 @@ export type CalendarAppointment = {
   dress?: CalendarDress | null
 }
 
+export type AppointmentAuditHistoryEntry = {
+  id: string
+  action: string
+  actorLabel: string
+  actorType: 'public' | 'stripe' | 'system' | 'user'
+  newStatus?: AppointmentStatus | null
+  noticeRulesOverridden?: boolean
+  paymentStatus?: PaymentStatus | null
+  previousPaymentStatus?: PaymentStatus | null
+  previousStatus?: AppointmentStatus | null
+  refundAmount?: number | null
+  refundStatus?: 'canceled' | 'failed' | 'pending' | 'requires_action' | 'succeeded' | null
+  timestamp: string
+}
+
+export type AppointmentEmailHistoryEntry = {
+  id: string
+  attempts: number
+  createdAt: string
+  event:
+    | 'admin_alert'
+    | 'cancelled'
+    | 'confirmed'
+    | 'expired'
+    | 'failed'
+    | 'pending'
+    | 'refund'
+    | 'rescheduled'
+  failureCategory?: string | null
+  sentAt?: string | null
+  status: 'failed' | 'queued' | 'sending' | 'sent' | 'skipped'
+  trigger: 'automatic' | 'manual'
+}
+
+export type AppointmentHistory = {
+  audits: AppointmentAuditHistoryEntry[]
+  emails: AppointmentEmailHistoryEntry[]
+}
+
 export type AppointmentDetail = CalendarAppointment & {
   email: string
   phone: string
@@ -38,8 +77,6 @@ export type AppointmentDetail = CalendarAppointment & {
   amountPaid?: number | null
   currency: Appointment['currency']
   source: Appointment['source']
-  stripeCheckoutSessionId?: string | null
-  stripePaymentIntentId?: string | null
   reviewReason?: string | null
   conflictContactedAt?: string | null
   conflictContactMethod?: 'email' | 'phone' | null
@@ -49,10 +86,14 @@ export type AppointmentDetail = CalendarAppointment & {
   refundFailureReason?: string | null
   refundStatus?: 'canceled' | 'failed' | 'pending' | 'requires_action' | 'succeeded' | null
   refundedAt?: string | null
-  stripeRefundId?: string | null
+  history: AppointmentHistory
   capabilities: {
+    canEditInternalNotes: boolean
     canRefundPaidConflict: boolean
     canResendConfirmation: boolean
+    canReschedule: boolean
+    canViewAuditTrail: boolean
+    canViewEmailHistory: boolean
   }
 }
 
@@ -129,11 +170,13 @@ export function parseCalendarAppointments(value: unknown): CalendarAppointment[]
 
 export function toAppointmentDetail(
   appointment: Appointment,
-  capabilities: AppointmentDetail['capabilities'] = {
-    canRefundPaidConflict: false,
-    canResendConfirmation: false,
-  },
+  options: {
+    capabilities?: Partial<AppointmentDetail['capabilities']>
+    history?: AppointmentHistory
+  } = {},
 ): AppointmentDetail {
+  const capabilities = options.capabilities ?? {}
+
   return {
     ...toCalendarAppointment(appointment),
     email: appointment.email,
@@ -144,8 +187,6 @@ export function toAppointmentDetail(
     amountPaid: appointment.amountPaid,
     currency: appointment.currency,
     source: appointment.source,
-    stripeCheckoutSessionId: appointment.stripeCheckoutSessionId,
-    stripePaymentIntentId: appointment.stripePaymentIntentId,
     reviewReason: appointment.reviewReason,
     conflictContactedAt: appointment.conflictContactedAt,
     conflictContactMethod: appointment.conflictContactMethod,
@@ -155,10 +196,15 @@ export function toAppointmentDetail(
     refundFailureReason: appointment.refundFailureReason,
     refundStatus: appointment.refundStatus,
     refundedAt: appointment.refundedAt,
-    stripeRefundId: appointment.stripeRefundId,
+    history: options.history ?? { audits: [], emails: [] },
     capabilities: {
+      canEditInternalNotes: capabilities.canEditInternalNotes ?? false,
+      canRefundPaidConflict: capabilities.canRefundPaidConflict ?? false,
       ...capabilities,
       canResendConfirmation: appointment.status === 'confirmed',
+      canReschedule: appointment.status === 'confirmed',
+      canViewAuditTrail: capabilities.canViewAuditTrail ?? false,
+      canViewEmailHistory: capabilities.canViewEmailHistory ?? false,
     },
   }
 }
