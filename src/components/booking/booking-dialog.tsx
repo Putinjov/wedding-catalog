@@ -70,36 +70,46 @@ export function BookingDialog({
 
   const trigger = (label: string, className?: string) => (
     <DialogTrigger asChild>
-      <button className={className} type="button">
+      <button className={cn(className, 'hidden lg:inline-flex')} type="button">
         {label}
       </button>
     </DialogTrigger>
   )
 
   return (
-    <Dialog onOpenChange={updateOpen} open={open}>
-      {trigger(primaryLabel, primaryClassName)}
-      {secondaryLabel ? trigger(secondaryLabel, secondaryClassName) : null}
-      {mobileLabel ? trigger(mobileLabel, mobileClassName) : null}
-      <DialogContent closeLabel="Close booking dialog" className="max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))] sm:max-h-[calc(100dvh-3rem)] sm:p-7 sm:pt-14">
-        <DialogTitle className="sr-only">Book a private fitting</DialogTitle>
-        <DialogDescription className="sr-only">
-          Choose a fitting purpose, date and time, enter your details, then continue to payment.
-        </DialogDescription>
-        <BookingFlow
-          initialDate={searchParams.get('date') ?? ''}
-          initialPurpose={initialPurpose}
-          initialTime={searchParams.get('time') ?? ''}
-          maxDate={maxDate}
-          minDate={minDate}
-          selectedDress={selectedDress}
-          settings={settings}
-          syncURLState
-        />
-        <p className={cn('mt-4 text-center text-xs text-muted-foreground')}>
-          Prefer a full page? <Link className="underline" href={fallbackHref}>Open booking page</Link>
-        </p>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Link
+        className={cn(
+          'inline-flex min-h-11 items-center justify-center text-center lg:hidden',
+          mobileClassName ?? primaryClassName,
+        )}
+        href={fallbackHref}
+      >
+        {mobileLabel ?? primaryLabel}
+      </Link>
+      <Dialog onOpenChange={updateOpen} open={open}>
+        {trigger(primaryLabel, primaryClassName)}
+        {secondaryLabel ? trigger(secondaryLabel, secondaryClassName) : null}
+        <DialogContent closeLabel="Close booking dialog" className="max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain p-7 pt-14">
+          <DialogTitle className="sr-only">Book a private fitting</DialogTitle>
+          <DialogDescription className="sr-only">
+            Choose a fitting purpose, date and time, enter your details, then continue to payment.
+          </DialogDescription>
+          <BookingFlow
+            initialDate={searchParams.get('date') ?? ''}
+            initialPurpose={initialPurpose}
+            initialTime={searchParams.get('time') ?? ''}
+            maxDate={maxDate}
+            minDate={minDate}
+            selectedDress={selectedDress}
+            settings={settings}
+            syncURLState
+          />
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Prefer a full page? <Link className="underline" href={fallbackHref}>Open booking page</Link>
+          </p>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

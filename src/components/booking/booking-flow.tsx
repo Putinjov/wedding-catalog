@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 
 import { BookingProgress } from '@/components/booking/booking-progress'
 import { BookingSummary } from '@/components/booking/booking-summary'
@@ -25,7 +25,21 @@ import { getAvailableSlots } from '@/lib/booking/getAvailableSlots'
 import { getFullyBookedDates } from '@/lib/booking/getFullyBookedDates'
 import { getBookingNoticeLabel } from '@/lib/booking/noticeRules'
 import { getAvailableBookingPurposes } from '@/lib/booking/purpose'
-import type { BookingFieldErrors, BookingInput } from '@/lib/booking/validation'
+import {
+  getBookingErrorsForStep,
+  getBookingFieldStep,
+  getBookingStepAnnouncement,
+  getFirstBookingError,
+  type BookingField,
+  type BookingStep,
+} from '@/lib/booking/focus'
+import {
+  bookingNotesMaxLength,
+  bookingSchema,
+  getBookingFieldErrors,
+  type BookingFieldErrors,
+  type BookingInput,
+} from '@/lib/booking/validation'
 
 import type { PurposeOption, SelectedDressSummary as SelectedDress } from './types'
 
@@ -54,8 +68,6 @@ type AvailabilityState = {
 }
 
 type SubmitState = {
-  fieldErrors?: BookingFieldErrors
-  message?: string
   status: 'idle' | 'submitting' | 'error'
 }
 
@@ -100,7 +112,14 @@ export function BookingFlow({
   const searchParams = useSearchParams()
   const requestId = useRef(0)
   const requestedInitialTime = useRef(initialTime)
-  const [step, setStep] = useState(1)
+  const fieldRefs = useRef<Partial<Record<BookingField, HTMLElement | null>>>({})
+  const formErrorRef = useRef<HTMLParagraphElement>(null)
+  const pendingFieldFocus = useRef<BookingField | null>(null)
+  const pendingFormErrorFocus = useRef(false)
+  const previousStep = useRef<BookingStep>(1)
+  const stepHeadingRefs = useRef<Partial<Record<BookingStep, HTMLElement | null>>>({})
+  const [step, setStep] = useState<BookingStep>(1)
+  const [announcement, setAnnouncement] = useState(getBookingStepAnnouncement(1))
   const [purpose, setPurpose] = useState(initialPurpose)
   const [selectedDress, setSelectedDress] = useState<SelectedDress | null>(
     initialSelectedDress,
@@ -119,10 +138,63 @@ export function BookingFlow({
   const [notes, setNotes] = useState('')
   const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false)
   const [marketingEmailOptIn, setMarketingEmailOptIn] = useState(false)
-  const [stepError, setStepError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({})
+  const [formError, setFormError] = useState('')
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
   const availablePurposes = getAvailableBookingPurposes(selectedDress)
   const bookingNoticeLabel = getBookingNoticeLabel(settings)
+
+  const clearValidationState = useCallback(() => {
+    setFieldErrors({})
+    setFormError('')
+    setSubmitState({ status: 'idle' })
+  }, [])
+
+  const clearFieldError = useCallback((field: BookingField) => {
+    setFieldErrors((currentErrors) => {
+      if (!currentErrors[field]) return currentErrors
+      const nextErrors = { ...currentErrors }
+      delete nextErrors[field]
+      return nextErrors
+    })
+    setFormError('')
+    setSubmitState({ status: 'idle' })
+  }, [])
+
+  const focusField = useCallback((field: BookingField) => {
+    const target = fieldRefs.current[field]
+    if (target) {
+      const focusTarget = target.hasAttribute('tabindex')
+        ? target
+        : target.matches('button, input, textarea, select')
+          ? target
+          : target.querySelector<HTMLElement>('button, input, textarea, select')
+      focusTarget?.focus()
+      return
+    }
+
+    stepHeadingRefs.current[getBookingFieldStep(field)]?.focus()
+  }, [])
+
+  useEffect(() => {
+    const stepChanged = previousStep.current !== step
+    if (stepChanged) {
+      setAnnouncement(getBookingStepAnnouncement(step))
+    }
+
+    const fieldToFocus = pendingFieldFocus.current
+    if (fieldToFocus) {
+      pendingFieldFocus.current = null
+      focusField(fieldToFocus)
+    } else if (pendingFormErrorFocus.current && formErrorRef.current) {
+      pendingFormErrorFocus.current = false
+      formErrorRef.current.focus()
+    } else if (stepChanged) {
+      stepHeadingRefs.current[step]?.focus()
+    }
+
+    previousStep.current = step
+  }, [fieldErrors, focusField, formError, step])
 
   useEffect(() => {
     void getFullyBookedDates()
@@ -201,60 +273,88 @@ export function BookingFlow({
     requestedInitialTime.current = ''
     setDate(value)
     setSelectedSlot(null)
-    setStepError('')
+    clearFieldError('date')
+    clearFieldError('time')
     if (!value) setAvailability({ slots: [], status: 'idle' })
   }
 
-  function handleNext() {
-    setStepError('')
+  function getCurrentFieldErrors(): BookingFieldErrors {
+    const parsed = bookingSchema.safeParse({
+      customerName,
+      date,
+      dressSlug: selectedDress?.slug,
+      email,
+      marketingEmailOptIn,
+      notes: notes || undefined,
+      phone,
+      privacyAcknowledged,
+      purpose,
+      time: selectedSlot ? formatTimeInputValue(selectedSlot.startAt) : '',
+    })
 
+    return parsed.success ? {} : getBookingFieldErrors(parsed.error)
+  }
+
+  function showFieldErrors(
+    errors: BookingFieldErrors,
+    message: string,
+    status: SubmitState['status'] = 'idle',
+  ) {
+    const firstError = getFirstBookingError(errors)
+    setFieldErrors(errors)
+    setFormError(
+      status === 'idle' && firstError ? (errors[firstError] ?? message) : message,
+    )
+    setSubmitState({ status })
+
+    if (firstError) {
+      pendingFieldFocus.current = firstError
+      setStep(getBookingFieldStep(firstError))
+      return
+    }
+
+    pendingFormErrorFocus.current = true
+  }
+
+  function handleNext() {
     if (step === 1) {
       if (!availablePurposes.includes(purpose)) {
-        setStepError('Please choose an available fitting purpose.')
+        showFieldErrors(
+          { purpose: 'Please choose an available fitting purpose.' },
+          'Please check the highlighted details.',
+        )
         return
       }
+      clearValidationState()
       setStep(2)
       return
     }
 
     if (step === 2) {
-      if (!date) {
-        setStepError('Please choose a date.')
+      const errors = getBookingErrorsForStep(getCurrentFieldErrors(), 2)
+      if (getFirstBookingError(errors)) {
+        showFieldErrors(errors, 'Please check the highlighted details.')
         return
       }
-      if (!selectedSlot) {
-        setStepError('Please choose an available time.')
-        return
-      }
+      clearValidationState()
       setStep(3)
       return
     }
 
     if (step === 3) {
-      if (customerName.trim().length < 2) {
-        setStepError('Please enter your name.')
+      const errors = getBookingErrorsForStep(getCurrentFieldErrors(), 3)
+      if (getFirstBookingError(errors)) {
+        showFieldErrors(errors, 'Please check the highlighted details.')
         return
       }
-      if (!email.trim()) {
-        setStepError('Please enter your email address.')
-        return
-      }
-      if (phone.trim().length < 7) {
-        setStepError('Please enter a phone number so we can reach you.')
-        return
-      }
-      if (!privacyAcknowledged) {
-        setStepError('Please confirm that you have read the Privacy Policy.')
-        return
-      }
+      clearValidationState()
       setStep(4)
     }
   }
 
   function handleBack() {
-    setStepError('')
-    setSubmitState({ status: 'idle' })
-    setStep((currentStep) => Math.max(1, currentStep - 1))
+    clearValidationState()
+    setStep((currentStep) => (currentStep > 1 ? ((currentStep - 1) as BookingStep) : 1))
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -282,43 +382,75 @@ export function BookingFlow({
       return
     }
 
-    setSubmitState({
-      fieldErrors: result.fieldErrors,
-      message: result.message,
-      status: 'error',
-    })
-    if (result.fieldErrors?.date || result.fieldErrors?.time) {
-      setStep(2)
-    } else if (
-      result.fieldErrors?.customerName ||
-      result.fieldErrors?.email ||
-      result.fieldErrors?.phone ||
-      result.fieldErrors?.notes ||
-      result.fieldErrors?.privacyAcknowledged ||
-      result.fieldErrors?.marketingEmailOptIn
-    ) {
-      setStep(3)
-    }
+    showFieldErrors(result.fieldErrors ?? {}, result.message, 'error')
   }
 
   function getFieldError(field: keyof BookingInput): string | undefined {
-    return submitState.status === 'error' ? submitState.fieldErrors?.[field] : undefined
+    return fieldErrors[field]
   }
 
   const summaryDate = date ? formatDateForCustomer(date) : 'Not selected'
   const summaryTime = selectedSlot?.label ?? 'Not selected'
 
   return (
-    <form className="border border-brand-warm-border bg-brand-blush/25 p-5 sm:p-8 md:p-10" noValidate onSubmit={handleSubmit}>
+    <form
+      aria-busy={submitState.status === 'submitting'}
+      autoComplete="on"
+      className="border border-brand-warm-border bg-brand-blush/25 p-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:p-8 sm:pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:p-10 md:pb-[calc(7.5rem+env(safe-area-inset-bottom))] lg:pb-10"
+      noValidate
+      onSubmit={handleSubmit}
+    >
+      <p aria-atomic="true" aria-live="polite" className="sr-only" role="status">
+        {announcement}
+      </p>
       <BookingProgress currentStep={step} />
 
       {selectedDress ? (
-        <SelectedDressSummary dress={selectedDress} onRemove={() => setSelectedDress(null)} />
+        <>
+          <SelectedDressSummary
+            dress={selectedDress}
+            onRemove={() => {
+              setSelectedDress(null)
+              clearFieldError('dressSlug')
+              clearFieldError('purpose')
+            }}
+            removeButtonDescriptionID={
+              getFieldError('dressSlug') ? 'selected-dress-error' : undefined
+            }
+            removeButtonRef={(node) => {
+              fieldRefs.current.dressSlug = node
+            }}
+          />
+          {getFieldError('dressSlug') ? (
+            <p className="mt-2 text-sm text-destructive" id="selected-dress-error">
+              {getFieldError('dressSlug')}
+            </p>
+          ) : null}
+        </>
       ) : null}
 
       {step === 1 ? (
-        <fieldset className="mt-10" aria-describedby={stepError ? 'booking-step-error' : undefined}>
-          <legend className="font-serif text-3xl text-foreground">What brings you in?</legend>
+        <fieldset
+          aria-describedby={getFieldError('purpose') ? 'booking-purpose-error' : undefined}
+          aria-invalid={Boolean(getFieldError('purpose'))}
+          className="mt-10 outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
+          ref={(node) => {
+            fieldRefs.current.purpose = node
+          }}
+          tabIndex={-1}
+        >
+          <legend
+            className="font-serif text-3xl text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
+            ref={(node) => {
+              stepHeadingRefs.current[1] = node
+            }}
+            tabIndex={-1}
+          >
+            What brings you in?{' '}
+            <span className="font-sans text-sm font-normal text-muted-foreground">
+              (required)
+            </span>
+          </legend>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             Choose whether this private appointment is for buying, renting, or deciding with our
             guidance.
@@ -329,30 +461,45 @@ export function BookingFlow({
               .map((option) => (
                 <button
                   aria-pressed={purpose === option.value}
-                  className="flex min-h-36 flex-col items-start justify-between border border-brand-warm-border bg-background p-5 text-left outline-none transition-colors hover:border-brand-deep-lavender focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 data-[selected=true]:border-brand-deep-lavender data-[selected=true]:bg-brand-soft-lavender/55"
+                  className="group flex min-h-36 flex-col items-start justify-between border border-brand-warm-border bg-background p-5 text-left outline-none transition-colors hover:border-brand-deep-lavender focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 data-[selected=true]:border-brand-deep-lavender data-[selected=true]:bg-brand-soft-lavender/55"
                   data-selected={purpose === option.value}
                   key={option.value}
-                  onClick={() => setPurpose(option.value)}
+                  onClick={() => {
+                    setPurpose(option.value)
+                    clearFieldError('purpose')
+                  }}
                   type="button"
                 >
-                  <span className="text-xs uppercase tracking-[0.22em] text-brand-deep-lavender">
+                  <span className="text-xs uppercase tracking-[0.22em] text-brand-deep-lavender group-data-[selected=true]:text-foreground">
                     {option.label}
                   </span>
                   <span>
                     <span className="block font-serif text-2xl text-foreground">{option.label}</span>
-                    <span className="mt-2 block text-sm leading-6 text-muted-foreground">
+                    <span className="mt-2 block text-sm leading-6 text-muted-foreground group-data-[selected=true]:text-foreground">
                       {option.description}
                     </span>
                   </span>
                 </button>
               ))}
           </div>
+          {getFieldError('purpose') ? (
+            <p className="mt-3 text-sm text-destructive" id="booking-purpose-error">
+              {getFieldError('purpose')}
+            </p>
+          ) : null}
         </fieldset>
       ) : null}
 
       {step === 2 ? (
         <section aria-labelledby="date-time-heading" className="mt-10">
-          <h2 className="font-serif text-3xl text-foreground" id="date-time-heading">
+          <h2
+            className="font-serif text-3xl text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
+            id="date-time-heading"
+            ref={(node) => {
+              stepHeadingRefs.current[2] = node
+            }}
+            tabIndex={-1}
+          >
             Choose a date and time
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -361,9 +508,18 @@ export function BookingFlow({
           </p>
           <div className="mt-7 min-w-0">
             <p className="text-sm font-medium text-foreground" id="fitting-date-label">
-              Preferred date
+              Preferred date <span className="font-normal text-muted-foreground">(required)</span>
             </p>
-            <div aria-labelledby="fitting-date-label" className="mt-2">
+            <div
+              aria-describedby={`fitting-date-help${getFieldError('date') ? ' fitting-date-error' : ''}`}
+              aria-labelledby="fitting-date-label"
+              className="mt-2 outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
+              ref={(node) => {
+                fieldRefs.current.date = node
+              }}
+              role="group"
+              tabIndex={-1}
+            >
               <BookingCalendar
                 fullyBookedDates={fullyBookedDates}
                 maxDate={maxDate}
@@ -377,6 +533,11 @@ export function BookingFlow({
               {getBookingWindowLabel(settings)} {getBookingScheduleLabel(settings)}
               {bookingNoticeLabel ? ` ${bookingNoticeLabel}` : ''}
             </p>
+            {getFieldError('date') ? (
+              <p className="mt-2 text-sm text-destructive" id="fitting-date-error">
+                {getFieldError('date')}
+              </p>
+            ) : null}
             {calendarAvailabilityError ? (
               <p className="mt-2 text-sm text-muted-foreground" role="status">
                 {calendarAvailabilityError}
@@ -384,7 +545,21 @@ export function BookingFlow({
             ) : null}
           </div>
 
-          <div aria-live="polite" className="mt-8">
+          <div
+            aria-busy={availability.status === 'loading'}
+            aria-describedby={`fitting-time-required${getFieldError('time') ? ' fitting-time-error' : ''}`}
+            aria-label="Fitting time"
+            aria-live="polite"
+            className="mt-8 outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
+            ref={(node) => {
+              fieldRefs.current.time = node
+            }}
+            role="group"
+            tabIndex={-1}
+          >
+            <span className="sr-only" id="fitting-time-required">
+              Fitting time selection is required.
+            </span>
             {availability.status === 'loading' ? (
               <p className="text-sm text-muted-foreground">Checking available times…</p>
             ) : null}
@@ -400,8 +575,15 @@ export function BookingFlow({
             ) : null}
             {availability.slots.length > 0 ? (
               <div>
-                <p className="text-sm font-medium text-foreground">Available times</p>
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4" role="group">
+                <p className="text-sm font-medium text-foreground" id="fitting-time-label">
+                  Available times{' '}
+                  <span className="font-normal text-muted-foreground">(required)</span>
+                </p>
+                <div
+                  aria-labelledby="fitting-time-label"
+                  className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
+                  role="group"
+                >
                   {availability.slots.map((slot) => (
                     <button
                       aria-pressed={selectedSlot?.startAt === slot.startAt}
@@ -410,8 +592,7 @@ export function BookingFlow({
                       key={slot.startAt}
                       onClick={() => {
                         setSelectedSlot(slot)
-                        setStepError('')
-                        setSubmitState({ status: 'idle' })
+                        clearFieldError('time')
                       }}
                       type="button"
                     >
@@ -421,17 +602,32 @@ export function BookingFlow({
                 </div>
               </div>
             ) : null}
+            {getFieldError('time') ? (
+              <p className="mt-2 text-sm text-destructive" id="fitting-time-error">
+                {getFieldError('time')}
+              </p>
+            ) : null}
           </div>
         </section>
       ) : null}
 
       {step === 3 ? (
         <section aria-labelledby="customer-details-heading" className="mt-10">
-          <h2 className="font-serif text-3xl text-foreground" id="customer-details-heading">
+          <h2
+            className="font-serif text-3xl text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
+            id="customer-details-heading"
+            ref={(node) => {
+              stepHeadingRefs.current[3] = node
+            }}
+            tabIndex={-1}
+          >
             Your details
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             We will use these details to prepare your private fitting request.
+          </p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Fields marked required must be completed. Notes and marketing emails are optional.
           </p>
           <div className="mt-7">
             <BookingSummary
@@ -442,16 +638,32 @@ export function BookingFlow({
             />
           </div>
           <div className="mt-8 grid gap-5 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="text-sm font-medium text-foreground" htmlFor="customer-name">
-                Name
-              </label>
+            <div
+              className="sm:col-span-2"
+              ref={(node) => {
+                fieldRefs.current.customerName = node
+              }}
+            >
+              <div className="flex items-baseline gap-1 text-sm">
+                <label className="font-medium text-foreground" htmlFor="customer-name">
+                  Name
+                </label>
+                <span aria-hidden="true" className="font-normal text-muted-foreground">
+                  (required)
+                </span>
+              </div>
               <Input
                 aria-describedby={getFieldError('customerName') ? 'customer-name-error' : undefined}
                 aria-invalid={Boolean(getFieldError('customerName'))}
-                className="mt-2 rounded-sm bg-background"
+                autoComplete="name"
+                className="mt-2 min-h-11 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-name"
-                onChange={(event) => setCustomerName(event.target.value)}
+                name="name"
+                onChange={(event) => {
+                  setCustomerName(event.target.value)
+                  clearFieldError('customerName')
+                }}
+                required
                 value={customerName}
               />
               {getFieldError('customerName') ? (
@@ -460,16 +672,32 @@ export function BookingFlow({
                 </p>
               ) : null}
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground" htmlFor="customer-email">
-                Email
-              </label>
+            <div
+              ref={(node) => {
+                fieldRefs.current.email = node
+              }}
+            >
+              <div className="flex items-baseline gap-1 text-sm">
+                <label className="font-medium text-foreground" htmlFor="customer-email">
+                  Email
+                </label>
+                <span aria-hidden="true" className="font-normal text-muted-foreground">
+                  (required)
+                </span>
+              </div>
               <Input
                 aria-describedby={getFieldError('email') ? 'customer-email-error' : undefined}
                 aria-invalid={Boolean(getFieldError('email'))}
-                className="mt-2 rounded-sm bg-background"
+                autoComplete="email"
+                className="mt-2 min-h-11 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-email"
-                onChange={(event) => setEmail(event.target.value)}
+                inputMode="email"
+                name="email"
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  clearFieldError('email')
+                }}
+                required
                 type="email"
                 value={email}
               />
@@ -479,16 +707,32 @@ export function BookingFlow({
                 </p>
               ) : null}
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground" htmlFor="customer-phone">
-                Phone
-              </label>
+            <div
+              ref={(node) => {
+                fieldRefs.current.phone = node
+              }}
+            >
+              <div className="flex items-baseline gap-1 text-sm">
+                <label className="font-medium text-foreground" htmlFor="customer-phone">
+                  Phone
+                </label>
+                <span aria-hidden="true" className="font-normal text-muted-foreground">
+                  (required)
+                </span>
+              </div>
               <Input
                 aria-describedby={getFieldError('phone') ? 'customer-phone-error' : undefined}
                 aria-invalid={Boolean(getFieldError('phone'))}
-                className="mt-2 rounded-sm bg-background"
+                autoComplete="tel"
+                className="mt-2 min-h-11 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-phone"
-                onChange={(event) => setPhone(event.target.value)}
+                inputMode="tel"
+                name="tel"
+                onChange={(event) => {
+                  setPhone(event.target.value)
+                  clearFieldError('phone')
+                }}
+                required
                 type="tel"
                 value={phone}
               />
@@ -498,17 +742,26 @@ export function BookingFlow({
                 </p>
               ) : null}
             </div>
-            <div className="sm:col-span-2">
+            <div
+              className="sm:col-span-2"
+              ref={(node) => {
+                fieldRefs.current.notes = node
+              }}
+            >
               <label className="text-sm font-medium text-foreground" htmlFor="customer-notes">
                 Notes <span className="font-normal text-muted-foreground">(optional)</span>
               </label>
               <Textarea
-                aria-describedby={getFieldError('notes') ? 'customer-notes-error' : undefined}
+                aria-describedby={`customer-notes-help customer-notes-count${getFieldError('notes') ? ' customer-notes-error' : ''}`}
                 aria-invalid={Boolean(getFieldError('notes'))}
-                className="mt-2 rounded-sm bg-background"
+                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-notes"
-                maxLength={1000}
-                onChange={(event) => setNotes(event.target.value)}
+                maxLength={bookingNotesMaxLength}
+                name="notes"
+                onChange={(event) => {
+                  setNotes(event.target.value)
+                  clearFieldError('notes')
+                }}
                 rows={4}
                 value={notes}
               />
@@ -517,9 +770,20 @@ export function BookingFlow({
                   {getFieldError('notes')}
                 </p>
               ) : null}
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Please do not include medical or other sensitive personal information.
-              </p>
+              <div className="mt-2 flex flex-col gap-1 text-xs leading-5 text-muted-foreground sm:flex-row sm:justify-between sm:gap-4">
+                <p id="customer-notes-help">
+                  Please do not include medical or other sensitive personal information.
+                </p>
+                <p
+                  aria-atomic="true"
+                  aria-live="polite"
+                  className="shrink-0"
+                  id="customer-notes-count"
+                  role="status"
+                >
+                  {notes.length} of {bookingNotesMaxLength} characters used
+                </p>
+              </div>
             </div>
           </div>
           <div className="mt-8 border-t border-brand-warm-border pt-6">
@@ -532,14 +796,20 @@ export function BookingFlow({
                 aria-invalid={Boolean(getFieldError('privacyAcknowledged'))}
                 checked={privacyAcknowledged}
                 className="mt-1 size-5 shrink-0 accent-foreground"
+                name="privacyAcknowledged"
                 onChange={(event) => {
                   setPrivacyAcknowledged(event.target.checked)
-                  setStepError('')
+                  clearFieldError('privacyAcknowledged')
                 }}
+                ref={(node) => {
+                  fieldRefs.current.privacyAcknowledged = node
+                }}
+                required
                 type="checkbox"
               />
               <span>
-                <PrivacyPolicyText text={currentPrivacyPolicy.acknowledgementText} />
+                <PrivacyPolicyText text={currentPrivacyPolicy.acknowledgementText} />{' '}
+                <span className="text-muted-foreground">(required)</span>
               </span>
             </label>
             {getFieldError('privacyAcknowledged') ? (
@@ -549,9 +819,20 @@ export function BookingFlow({
             ) : null}
             <label className="mt-5 flex min-h-11 cursor-pointer items-start gap-3 text-sm leading-6 text-foreground">
               <input
+                aria-describedby={
+                  getFieldError('marketingEmailOptIn') ? 'marketing-email-error' : undefined
+                }
+                aria-invalid={Boolean(getFieldError('marketingEmailOptIn'))}
                 checked={marketingEmailOptIn}
                 className="mt-1 size-5 shrink-0 accent-foreground"
-                onChange={(event) => setMarketingEmailOptIn(event.target.checked)}
+                name="marketingEmailOptIn"
+                onChange={(event) => {
+                  setMarketingEmailOptIn(event.target.checked)
+                  clearFieldError('marketingEmailOptIn')
+                }}
+                ref={(node) => {
+                  fieldRefs.current.marketingEmailOptIn = node
+                }}
                 type="checkbox"
               />
               <span>
@@ -559,13 +840,25 @@ export function BookingFlow({
                 <span className="text-muted-foreground">(optional)</span>
               </span>
             </label>
+            {getFieldError('marketingEmailOptIn') ? (
+              <p className="mt-2 text-sm text-destructive" id="marketing-email-error">
+                {getFieldError('marketingEmailOptIn')}
+              </p>
+            ) : null}
           </div>
         </section>
       ) : null}
 
       {step === 4 ? (
         <section aria-labelledby="booking-review-heading" className="mt-10">
-          <h2 className="font-serif text-3xl text-foreground" id="booking-review-heading">
+          <h2
+            className="font-serif text-3xl text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2"
+            id="booking-review-heading"
+            ref={(node) => {
+              stepHeadingRefs.current[4] = node
+            }}
+            tabIndex={-1}
+          >
             Review your request
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -587,33 +880,38 @@ export function BookingFlow({
         </section>
       ) : null}
 
-      {stepError ? (
-        <p aria-live="polite" className="mt-6 text-sm text-destructive" id="booking-step-error" role="alert">
-          {stepError}
-        </p>
-      ) : null}
-      {submitState.status === 'error' && submitState.message ? (
-        <p aria-live="polite" className="mt-6 text-sm text-destructive" role="alert">
-          {submitState.message}
+      {formError ? (
+        <p
+          className="mt-6 text-sm text-destructive outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+          ref={formErrorRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          {formError}
         </p>
       ) : null}
 
-      <div className="mt-8 flex flex-col-reverse gap-3 border-t border-brand-warm-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-brand-warm-border bg-background/95 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-3 shadow-[0_-8px_24px_rgba(44,38,33,0.12)] backdrop-blur lg:static lg:mt-8 lg:flex lg:items-center lg:justify-between lg:bg-transparent lg:px-0 lg:pb-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
         {step > 1 ? (
-          <Button className="rounded-sm" onClick={handleBack} type="button" variant="outline">
+          <Button className="min-h-11 rounded-sm" onClick={handleBack} type="button" variant="outline">
             Back
           </Button>
-        ) : (
-          <span />
-        )}
+        ) : null}
         {step < 4 ? (
-          <Button className="rounded-sm" onClick={handleNext} size="lg" type="button">
+          <Button
+            className={`${step === 1 ? 'col-span-2' : ''} w-full rounded-sm lg:ml-auto lg:w-auto`}
+            key={`continue-step-${step}`}
+            onClick={handleNext}
+            size="lg"
+            type="button"
+          >
             Continue to {step === 1 ? 'date and time' : step === 2 ? 'your details' : 'review'}
           </Button>
         ) : (
           <Button
-            className="rounded-sm"
+            className="w-full rounded-sm lg:ml-auto lg:w-auto"
             disabled={submitState.status === 'submitting'}
+            key="submit-booking"
             size="lg"
             type="submit"
           >

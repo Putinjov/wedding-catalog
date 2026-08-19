@@ -1,10 +1,9 @@
-const steps = ['Purpose', 'Date and time', 'Your details', 'Review'] as const
+import { bookingSteps, type BookingStep } from '@/lib/booking/focus'
 
-export function BookingProgress({ currentStep }: { currentStep: number }) {
+export function BookingProgress({ currentStep }: { currentStep: BookingStep }) {
   return (
     <ol aria-label="Booking progress" className="grid grid-cols-4 gap-2">
-      {steps.map((label, index) => {
-        const step = index + 1
+      {bookingSteps.map(({ label, step }) => {
         const isCurrent = step === currentStep
         const isComplete = step < currentStep
 

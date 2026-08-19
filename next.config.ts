@@ -4,6 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { redirects } from './redirects'
+import { getAllowedDevOrigins } from './src/config/dev-origins'
 import { getPrivateBookingHeaderRules } from './src/config/indexation'
 import { getServerSideOrigin, normalizePublicAssetOrigin } from './src/config/site-url'
 
@@ -36,6 +37,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: getAllowedDevOrigins(),
   // Temporarily required on Windows until Next.js fixes Turbopack Sass resolution.
   // See: https://github.com/vercel/next.js/issues/86431
   sassOptions: {
