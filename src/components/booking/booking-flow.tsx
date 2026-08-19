@@ -396,7 +396,7 @@ export function BookingFlow({
     <form
       aria-busy={submitState.status === 'submitting'}
       autoComplete="on"
-      className="border border-brand-warm-border bg-brand-blush/25 p-5 sm:p-8 md:p-10"
+      className="border border-brand-warm-border bg-brand-blush/25 p-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:p-8 sm:pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:p-10 md:pb-[calc(7.5rem+env(safe-area-inset-bottom))] lg:pb-10"
       noValidate
       onSubmit={handleSubmit}
     >
@@ -656,7 +656,7 @@ export function BookingFlow({
                 aria-describedby={getFieldError('customerName') ? 'customer-name-error' : undefined}
                 aria-invalid={Boolean(getFieldError('customerName'))}
                 autoComplete="name"
-                className="mt-2 rounded-sm bg-background"
+                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-name"
                 name="name"
                 onChange={(event) => {
@@ -689,7 +689,7 @@ export function BookingFlow({
                 aria-describedby={getFieldError('email') ? 'customer-email-error' : undefined}
                 aria-invalid={Boolean(getFieldError('email'))}
                 autoComplete="email"
-                className="mt-2 rounded-sm bg-background"
+                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-email"
                 inputMode="email"
                 name="email"
@@ -724,7 +724,7 @@ export function BookingFlow({
                 aria-describedby={getFieldError('phone') ? 'customer-phone-error' : undefined}
                 aria-invalid={Boolean(getFieldError('phone'))}
                 autoComplete="tel"
-                className="mt-2 rounded-sm bg-background"
+                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-phone"
                 inputMode="tel"
                 name="tel"
@@ -754,7 +754,7 @@ export function BookingFlow({
               <Textarea
                 aria-describedby={`customer-notes-help customer-notes-count${getFieldError('notes') ? ' customer-notes-error' : ''}`}
                 aria-invalid={Boolean(getFieldError('notes'))}
-                className="mt-2 rounded-sm bg-background"
+                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-notes"
                 maxLength={bookingNotesMaxLength}
                 name="notes"
@@ -891,15 +891,15 @@ export function BookingFlow({
         </p>
       ) : null}
 
-      <div className="mt-8 flex flex-col gap-3 border-t border-brand-warm-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-brand-warm-border bg-background/95 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-3 shadow-[0_-8px_24px_rgba(44,38,33,0.12)] backdrop-blur lg:static lg:mt-8 lg:flex lg:items-center lg:justify-between lg:bg-transparent lg:px-0 lg:pb-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
         {step > 1 ? (
-          <Button className="rounded-sm" onClick={handleBack} type="button" variant="outline">
+          <Button className="min-h-11 rounded-sm" onClick={handleBack} type="button" variant="outline">
             Back
           </Button>
         ) : null}
         {step < 4 ? (
           <Button
-            className="rounded-sm sm:ml-auto"
+            className={`${step === 1 ? 'col-span-2' : ''} w-full rounded-sm lg:ml-auto lg:w-auto`}
             onClick={handleNext}
             size="lg"
             type="button"
@@ -908,7 +908,7 @@ export function BookingFlow({
           </Button>
         ) : (
           <Button
-            className="rounded-sm sm:ml-auto"
+            className="w-full rounded-sm lg:ml-auto lg:w-auto"
             disabled={submitState.status === 'submitting'}
             size="lg"
             type="submit"

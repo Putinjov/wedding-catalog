@@ -50,7 +50,7 @@ describe('booking dialog', () => {
 
   it('opens through URL state while preserving dress and Rent purpose', () => {
     const view = render(<BookingDialog {...props} />)
-    fireEvent.click(screen.getByText('Book rent fitting'))
+    fireEvent.click(screen.getByRole('button', { name: 'Book rent fitting' }))
 
     expect(push).toHaveBeenCalledWith(
       '/dresses/test-dress?mode=rent&booking=dress-1-rent&purpose=rent&dress=test-dress',
@@ -71,5 +71,37 @@ describe('booking dialog', () => {
       '/dresses/test-dress?mode=rent&purpose=rent&dress=test-dress',
       { scroll: false },
     )
+  })
+
+  it('uses the dedicated booking page on mobile and keeps modal triggers desktop-only', () => {
+    render(<BookingDialog {...props} mobileLabel="Mobile booking" />)
+
+    const mobileLink = screen.getByRole('link', { name: 'Mobile booking' })
+    expect(mobileLink.getAttribute('href')).toBe(
+      '/book-a-fitting?dress=test-dress&purpose=rent',
+    )
+    expect(mobileLink.className).toContain('lg:hidden')
+
+    const desktopTrigger = screen.getByRole('button', { name: 'Book rent fitting' })
+    expect(desktopTrigger.className).toContain('hidden')
+    expect(desktopTrigger.className).toContain('lg:inline-flex')
+  })
+
+  it('closes the desktop dialog on Escape and when browser history removes its URL state', () => {
+    currentSearch = 'mode=rent&booking=dress-1-rent&purpose=rent&dress=test-dress'
+    const view = render(<BookingDialog {...props} />)
+
+    expect(screen.getByRole('dialog')).not.toBeNull()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(replace).toHaveBeenCalledWith(
+      '/dresses/test-dress?mode=rent&purpose=rent&dress=test-dress',
+      { scroll: false },
+    )
+
+    replace.mockClear()
+    currentSearch = 'mode=rent'
+    view.rerender(<BookingDialog {...props} />)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(replace).not.toHaveBeenCalled()
   })
 })

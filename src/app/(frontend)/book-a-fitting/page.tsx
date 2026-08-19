@@ -56,7 +56,7 @@ export default async function BookAFittingPage({ searchParams }: Args) {
 
   return (
     <main className="bg-background">
-      <section className="container grid gap-12 py-16 md:py-24 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+      <section className="container grid gap-12 pb-16 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-16 md:px-8 md:py-24 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
         <div className="max-w-xl">
           <p className="text-xs uppercase tracking-[0.28em] text-brand-deep-lavender">
             Private fitting
