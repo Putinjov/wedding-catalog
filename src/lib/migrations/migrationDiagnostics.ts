@@ -79,6 +79,52 @@ function isSafeGateMessage(message: string): boolean {
   )
 }
 
+function getSafeEnvironmentFailure(error: unknown): string | null {
+  if (!(error instanceof Error) || !error.message.startsWith('[env] ')) return null
+
+  const message = error.message
+
+  if (message === '[env] DATABASE_URL must be a MongoDB connection string.') {
+    return '[migration-gate] DATABASE_URL is not a valid MongoDB connection URI.'
+  }
+  if (message.startsWith('[env] Missing required production variables:')) {
+    return '[migration-gate] Production environment is incomplete; verify required GitHub production secrets.'
+  }
+  if (message.startsWith('[env] Invalid server environment:')) {
+    return '[migration-gate] Production environment contains an invalid value; verify GitHub production secrets.'
+  }
+  if (message === '[env] PAYLOAD_SECRET must be at least 32 characters in production.') {
+    return '[migration-gate] PAYLOAD_SECRET is too short; update the GitHub production secret.'
+  }
+  if (message === '[env] PREVIEW_SECRET must be at least 24 characters in production.') {
+    return '[migration-gate] PREVIEW_SECRET is too short; update the GitHub production secret.'
+  }
+  if (message === '[env] CRON_SECRET must be at least 24 characters in production.') {
+    return '[migration-gate] CRON_SECRET is too short; update the GitHub production secret.'
+  }
+  if (message === '[env] SMTP_PASSWORD must be at least 16 characters in production.') {
+    return '[migration-gate] SMTP_PASSWORD is too short; update the GitHub production secret.'
+  }
+  if (message.startsWith('[env] SMTP_USER must be ')) {
+    return '[migration-gate] SMTP_USER does not match the expected Google Workspace account.'
+  }
+  if (message.startsWith('[env] EMAIL_FROM must be the verified Google Workspace alias ')) {
+    return '[migration-gate] EMAIL_FROM does not match the expected verified Google Workspace alias.'
+  }
+  if (message.startsWith('[env] NEXT_PUBLIC_SERVER_URL must be ')) {
+    return '[migration-gate] NEXT_PUBLIC_SERVER_URL does not match the production site origin.'
+  }
+
+  const urlVariable = message.match(
+    /^\[env\] (NEXT_PUBLIC_SERVER_URL|R2_ENDPOINT|R2_PUBLIC_URL) must /,
+  )?.[1]
+  if (urlVariable) {
+    return `[migration-gate] ${urlVariable} is invalid; verify the GitHub production secret.`
+  }
+
+  return '[migration-gate] Production environment validation failed; verify GitHub production secrets.'
+}
+
 export function assertMigrationDatabaseURL(value: string | undefined): void {
   if (!value) {
     throw new Error('[migration-gate] DATABASE_URL is missing.')
@@ -103,6 +149,9 @@ export function getSafeMigrationFailure(error: unknown): string {
   if (error instanceof Error && isSafeGateMessage(error.message)) {
     return error.message
   }
+
+  const environmentFailure = getSafeEnvironmentFailure(error)
+  if (environmentFailure) return environmentFailure
 
   const signals = collectErrorSignals(error)
   const combinedMessages = signals.messages.join('\n')
