@@ -11,6 +11,7 @@ import {
   type BookingDateRange,
   type BookingHours,
   type BookingLunchBreak,
+  type BookingVisitDetails,
   type ResolvedBookingSettings,
 } from '@/config/booking'
 
@@ -90,6 +91,53 @@ function readArray(value: unknown, name: string, maximum: number): unknown[] {
     throw new Error(`${name} must contain no more than ${maximum} entries.`)
   }
   return value
+}
+
+function readOptionalText(value: unknown, name: string, maximum: number): null | string {
+  if (value == null || value === '') return null
+  if (typeof value !== 'string') throw new Error(`${name} must be text.`)
+  const resolved = value.trim()
+  if (resolved === '') return null
+  if (resolved.length > maximum) {
+    throw new Error(`${name} must contain no more than ${maximum} characters.`)
+  }
+  return resolved
+}
+
+function readVisitDetails(value: unknown): BookingVisitDetails {
+  const record = asRecord(value) ?? {}
+  const mapUrl = readOptionalText(record.mapUrl, 'visitDetails.mapUrl', 2048)
+  if (mapUrl) {
+    let parsed: URL
+    try {
+      parsed = new URL(mapUrl)
+    } catch {
+      throw new Error('visitDetails.mapUrl must be a valid public HTTPS URL.')
+    }
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
+      throw new Error('visitDetails.mapUrl must be a public HTTPS URL without credentials.')
+    }
+  }
+
+  const whatToBring = readArray(record.whatToBring, 'visitDetails.whatToBring', 12).map(
+    (entry, index) => {
+      const item = asRecord(entry)?.item ?? entry
+      const resolved = readOptionalText(item, `visitDetails.whatToBring.${index}.item`, 200)
+      if (!resolved) throw new Error(`visitDetails.whatToBring.${index}.item is required.`)
+      return resolved
+    },
+  )
+
+  return {
+    address: readOptionalText(record.address, 'visitDetails.address', 500),
+    arrivalInstructions: readOptionalText(
+      record.arrivalInstructions,
+      'visitDetails.arrivalInstructions',
+      2000,
+    ),
+    mapUrl,
+    whatToBring,
+  }
 }
 
 function readWeekdays(value: unknown, name: string): number[] {
@@ -240,6 +288,7 @@ export function resolveBookingSettings(value: unknown): ResolvedBookingSettings 
     nextDayCutoffTime,
     saturdayHours: { ...saturdayBase, enabled: saturdayEnabled },
     timezone: BOOKING_TIMEZONE,
+    visitDetails: readVisitDetails(record.visitDetails),
     weekdayHours,
   }
 

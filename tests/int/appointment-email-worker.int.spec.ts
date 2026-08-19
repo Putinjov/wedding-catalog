@@ -98,6 +98,7 @@ describe('appointment email worker', () => {
     expect(sentMessage).toContain('#fbf6ee')
     expect(sentMessage).toContain('#8e6fa0')
     expect(sentMessage).toContain('CAIT')
+    expect(sentMessage).not.toContain('Tullamore')
     expect(sentMessage).not.toContain(appointment.phone)
     expect(sentMessage).not.toContain(appointment.notes)
   })

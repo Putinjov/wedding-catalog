@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultBookingSettings } from '@/config/booking'
+import { defaultBookingSettings, verifiedBookingVisitDetails } from '@/config/booking'
 import { appointmentOverlapsSlot } from '@/lib/booking/appointmentConflicts'
 import {
   getConfiguredSlotTimes,
@@ -43,6 +43,40 @@ describe('booking settings', () => {
       }),
     ).toMatch(/Saturday cannot be both enabled/i)
     expect(validateBookingSettings({ closedWeekdays: ['1'] })).toMatch(/Sunday must remain closed/i)
+  })
+
+  it('accepts only verified-shape visit guidance and safe public map URLs', () => {
+    const settings = resolveBookingSettings({
+      visitDetails: {
+        address: '  Verified address  ',
+        arrivalInstructions: 'Use the marked entrance.',
+        mapUrl: 'https://maps.example.test/place',
+        whatToBring: [{ item: 'Your preferred shoes' }],
+      },
+    })
+
+    expect(settings.visitDetails).toEqual({
+      address: 'Verified address',
+      arrivalInstructions: 'Use the marked entrance.',
+      mapUrl: 'https://maps.example.test/place',
+      whatToBring: ['Your preferred shoes'],
+    })
+    expect(
+      validateBookingSettings({ visitDetails: { mapUrl: 'javascript:alert(1)' } }),
+    ).toMatch(/public HTTPS URL/i)
+    expect(
+      validateBookingSettings({ visitDetails: { mapUrl: 'https://user:pass@example.test' } }),
+    ).toMatch(/without credentials/i)
+  })
+
+  it('keeps the customer-facing address limited to verified business information', () => {
+    expect(verifiedBookingVisitDetails).toEqual({
+      address: "JOHN'S PLACE\nBIRR\nCO. OFFALY\nR42 YX50",
+      arrivalInstructions: null,
+      mapUrl:
+        'https://www.google.com/maps/search/?api=1&query=JOHN%27S%20PLACE%2C%20BIRR%2C%20CO.%20OFFALY%2C%20R42%20YX50',
+      whatToBring: [],
+    })
   })
 
   it('rejects holds shorter than Stripe Checkout supports without rewriting them', () => {

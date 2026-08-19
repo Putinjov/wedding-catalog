@@ -2833,6 +2833,29 @@ export interface BookingSetting {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Verified customer-facing fitting location and visit guidance. Leave unverified details blank.
+   */
+  visitDetails?: {
+    /**
+     * Full public fitting address, exactly as customers should see it.
+     */
+    address?: string | null;
+    /**
+     * Public HTTPS map or directions link.
+     */
+    mapUrl?: string | null;
+    /**
+     * Parking, entrance, arrival-time or accessibility guidance.
+     */
+    arrivalInstructions?: string | null;
+    whatToBring?:
+      | {
+          item: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2937,6 +2960,19 @@ export interface BookingSettingsSelect<T extends boolean = true> {
         start?: T;
         end?: T;
         id?: T;
+      };
+  visitDetails?:
+    | T
+    | {
+        address?: T;
+        mapUrl?: T;
+        arrivalInstructions?: T;
+        whatToBring?:
+          | T
+          | {
+              item?: T;
+              id?: T;
+            };
       };
   updatedAt?: T;
   createdAt?: T;

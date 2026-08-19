@@ -9,6 +9,7 @@ import * as migration_20260809_220000_enforce_stripe_hold_minimum from './202608
 import * as migration_20260809_230000_add_expired_hold_job_concurrency from './20260809_230000_add_expired_hold_job_concurrency'
 import * as migration_20260809_234500_add_paid_conflict_workflow from './20260809_234500_add_paid_conflict_workflow'
 import * as migration_20260810_003000_add_email_delivery_queue from './20260810_003000_add_email_delivery_queue'
+import * as migration_20260819_193000_add_booking_visit_address from './20260819_193000_add_booking_visit_address'
 
 export const migrations = [
   {
@@ -65,5 +66,10 @@ export const migrations = [
     up: migration_20260810_003000_add_email_delivery_queue.up,
     down: migration_20260810_003000_add_email_delivery_queue.down,
     name: '20260810_003000_add_email_delivery_queue',
+  },
+  {
+    up: migration_20260819_193000_add_booking_visit_address.up,
+    down: migration_20260819_193000_add_booking_visit_address.down,
+    name: '20260819_193000_add_booking_visit_address',
   },
 ]

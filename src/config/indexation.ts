@@ -12,6 +12,7 @@ const privateBookingHeaders = [
 ]
 
 const privateBookingRouteSources = [
+  '/book-a-fitting/calendar/:path*',
   '/book-a-fitting/pending/:path*',
   '/book-a-fitting/payment/:path*',
 ]

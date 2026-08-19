@@ -52,6 +52,18 @@ const dateField = (name: 'date' | 'endDate' | 'startDate', label: string) => ({
   },
 })
 
+function validateMapUrl(value: null | string | undefined): true | string {
+  if (value == null || value.trim() === '') return true
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && !url.username && !url.password
+      ? true
+      : 'Use a public HTTPS map URL without credentials.'
+  } catch {
+    return 'Use a valid public HTTPS map URL.'
+  }
+}
+
 export const BookingSettings: GlobalConfig = {
   slug: 'booking-settings',
   label: 'Booking settings',
@@ -193,6 +205,48 @@ export const BookingSettings: GlobalConfig = {
       type: 'array',
       maxRows: 250,
       fields: [dateField('date', 'Date'), timeField('start', 'Start'), timeField('end', 'End')],
+    },
+    {
+      name: 'visitDetails',
+      type: 'group',
+      admin: {
+        description:
+          'Verified customer-facing fitting location and visit guidance. Leave unverified details blank.',
+      },
+      fields: [
+        {
+          name: 'address',
+          type: 'textarea',
+          admin: { description: 'Full public fitting address, exactly as customers should see it.' },
+          maxLength: 500,
+        },
+        {
+          name: 'mapUrl',
+          type: 'text',
+          admin: { description: 'Public HTTPS map or directions link.' },
+          maxLength: 2048,
+          validate: validateMapUrl,
+        },
+        {
+          name: 'arrivalInstructions',
+          type: 'textarea',
+          admin: { description: 'Parking, entrance, arrival-time or accessibility guidance.' },
+          maxLength: 2000,
+        },
+        {
+          name: 'whatToBring',
+          type: 'array',
+          maxRows: 12,
+          fields: [
+            {
+              name: 'item',
+              type: 'text',
+              maxLength: 200,
+              required: true,
+            },
+          ],
+        },
+      ],
     },
   ],
   hooks: {
