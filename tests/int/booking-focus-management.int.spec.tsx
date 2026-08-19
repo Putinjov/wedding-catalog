@@ -164,7 +164,9 @@ describe('booking focus management', () => {
     expect(screen.getByText('2. Date and time').closest('li')?.getAttribute('aria-current')).toBe(
       'step',
     )
-    expect(timeField.getAttribute('aria-describedby')).toBe('fitting-time-error')
+    expect(timeField.getAttribute('aria-describedby')?.split(' ')).toEqual(
+      expect.arrayContaining(['fitting-time-required', 'fitting-time-error']),
+    )
     expect(
       screen.getAllByText('That fitting time has just been taken. Please choose another.'),
     ).toHaveLength(2)
