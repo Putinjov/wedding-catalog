@@ -33,14 +33,20 @@ async function runMigrations(): Promise<void> {
     await payload.destroy()
   }
 }
-
 runMigrations().catch((error: unknown) => {
   const errorName = error instanceof Error ? error.name : 'UnknownError'
+  const errorMessage = error instanceof Error ? error.message : String(error)
   const safeMessage =
     error instanceof Error && error.message.startsWith('[migration-gate]')
       ? error.message
       : `[migration-gate] Production migration failed (${errorName}).`
 
   console.error(safeMessage)
+  if (!safeMessage.includes('[migration-gate]')) {
+    console.error('Full error details:', errorMessage)
+    if (error instanceof Error && error.stack) {
+      console.error('Stack trace:', error.stack)
+    }
+  }
   process.exitCode = 1
 })
