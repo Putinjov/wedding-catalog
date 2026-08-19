@@ -1,5 +1,10 @@
 import payload from 'payload'
 
+import {
+  assertMigrationDatabaseURL,
+  getSafeMigrationFailure,
+} from '@/lib/migrations/migrationDiagnostics'
+
 function isNamespaceExistsError(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) return false
 
@@ -9,6 +14,7 @@ function isNamespaceExistsError(error: unknown): boolean {
 
 async function runMigrations(): Promise<void> {
   process.env.PAYLOAD_MIGRATING = 'true'
+  assertMigrationDatabaseURL(process.env.DATABASE_URL)
   const { default: config } = await import('@payload-config')
 
   await payload.init({
@@ -34,19 +40,6 @@ async function runMigrations(): Promise<void> {
   }
 }
 runMigrations().catch((error: unknown) => {
-  const errorName = error instanceof Error ? error.name : 'UnknownError'
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  const safeMessage =
-    error instanceof Error && error.message.startsWith('[migration-gate]')
-      ? error.message
-      : `[migration-gate] Production migration failed (${errorName}).`
-
-  console.error(safeMessage)
-  if (!safeMessage.includes('[migration-gate]')) {
-    console.error('Full error details:', errorMessage)
-    if (error instanceof Error && error.stack) {
-      console.error('Stack trace:', error.stack)
-    }
-  }
+  console.error(getSafeMigrationFailure(error))
   process.exitCode = 1
 })
