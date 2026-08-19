@@ -12,6 +12,10 @@ import { getStripeClient } from '@/lib/stripe/client'
 import type { Appointment } from '@/payload-types'
 
 import { AdminAppointmentError } from './getCalendarAppointments'
+import {
+  isDuplicateAppointmentOperationError,
+  wasAppointmentOperationApplied,
+} from './appointmentOperation'
 
 const operationKeySchema = z.uuid()
 const refundWorkflow = 'paid-conflict-full-refund'
@@ -56,18 +60,6 @@ async function findAppointment(
   })
 }
 
-async function operationAlreadyApplied(req: PayloadRequest, idempotencyKey: string): Promise<boolean> {
-  const result = await req.payload.find({
-    collection: 'appointment-audits',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    req,
-    where: { idempotencyKey: { equals: idempotencyKey } },
-  })
-  return result.totalDocs > 0
-}
-
 function assertOpenPaidConflict(appointment: Appointment): void {
   if (
     appointment.status !== 'payment_received_conflict' ||
@@ -105,10 +97,6 @@ function resolutionContext({
   }
 }
 
-function isDuplicateOperationError(error: unknown): boolean {
-  return error instanceof Error && /duplicate|idempotencyKey.*unique/i.test(error.message)
-}
-
 async function updateConflict(
   req: PayloadRequest,
   user: TypedUser,
@@ -139,7 +127,7 @@ async function updateConflict(
       user,
     })
   } catch (error) {
-    if (isDuplicateOperationError(error)) {
+    if (isDuplicateAppointmentOperationError(error)) {
       return findAppointment(req, user, appointment.id)
     }
     throw error
@@ -318,7 +306,7 @@ export async function applyPaidConflictAction({
   user: TypedUser
 }): Promise<Appointment> {
   const idempotencyKey = getAuditKey(id, input.operationKey)
-  if (await operationAlreadyApplied(req, idempotencyKey)) {
+  if (await wasAppointmentOperationApplied(req, idempotencyKey)) {
     return findAppointment(req, user, id)
   }
 

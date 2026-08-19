@@ -1,8 +1,8 @@
 'use client'
 
 import * as Dialog from '@radix-ui/react-dialog'
-import { ExternalLink, X } from 'lucide-react'
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { ExternalLink, Mail, Phone, X } from 'lucide-react'
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { ResolvedBookingSettings } from '@/config/booking'
 import type { AppointmentDetail, AppointmentStatus } from '@/lib/admin/appointments/calendarTypes'
@@ -18,6 +18,9 @@ import {
   PAID_REOPEN_WARNING,
   UNPAID_MANUAL_CONFIRMATION_WARNING,
 } from '@/lib/admin/appointments/statusWarnings'
+
+import { AppointmentHistoryPanel } from './appointment-history'
+import { AppointmentRescheduleForm } from './appointment-reschedule-form'
 
 type DetailResponse = { appointment: AppointmentDetail; warning?: string | null; message?: string }
 type DeliveryResponse = {
@@ -47,6 +50,8 @@ export function AppointmentDrawer({
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
   const [overrideNoticeRules, setOverrideNoticeRules] = useState(false)
+  const [internalNotes, setInternalNotes] = useState('')
+  const operationKeys = useRef(new Map<string, string>())
   const bounds = getBookingDateBounds(settings)
   const rescheduleTimes = useMemo(
     () =>
@@ -60,20 +65,46 @@ export function AppointmentDrawer({
     [overrideNoticeRules, rescheduleDate, settings],
   )
 
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch(`/api/appointments/calendar/${appointmentId}`, { credentials: 'same-origin', signal: controller.signal })
-      .then(async (response) => {
+  const applyDetail = useCallback((appointment: AppointmentDetail) => {
+    setDetail(appointment)
+    setInternalNotes(appointment.internalNotes ?? '')
+  }, [])
+
+  function getOperationKey(scope: string): string {
+    const existing = operationKeys.current.get(scope)
+    if (existing) return existing
+    const operationKey = crypto.randomUUID()
+    operationKeys.current.set(scope, operationKey)
+    return operationKey
+  }
+
+  const loadDetail = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const response = await fetch(`/api/appointments/calendar/${appointmentId}`, {
+          credentials: 'same-origin',
+          signal,
+        })
         const body = (await response.json()) as DetailResponse
         if (!response.ok) throw new Error(body.message ?? 'Unable to load appointment details.')
-        setDetail(body.appointment)
-      })
-      .catch((fetchError: unknown) => {
+        applyDetail(body.appointment)
+      } catch (fetchError) {
         if (fetchError instanceof DOMException && fetchError.name === 'AbortError') return
-        setError(fetchError instanceof Error ? fetchError.message : 'Unable to load appointment details.')
-      })
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : 'Unable to load appointment details.',
+        )
+      }
+    },
+    [appointmentId, applyDetail],
+  )
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void Promise.resolve().then(() => loadDetail(controller.signal))
     return () => controller.abort()
-  }, [appointmentId])
+  }, [loadDetail])
 
   async function changeStatus(status: AppointmentStatus) {
     if (!detail) return
@@ -108,8 +139,8 @@ export function AppointmentDrawer({
       })
       const body = (await response.json()) as DetailResponse
       if (!response.ok) throw new Error(body.message ?? 'Unable to update appointment status.')
-      setDetail(body.appointment)
-      if (body.warning) setError(body.warning)
+      applyDetail(body.appointment)
+      if (body.warning) setNotice(body.warning)
       await onChanged()
     } catch (statusError) {
       setError(statusError instanceof Error ? statusError.message : 'Unable to update appointment status.')
@@ -140,20 +171,25 @@ export function AppointmentDrawer({
     if (action.action === 'reschedule' && action.allowNoticeOverride) {
       if (!window.confirm(ADMIN_NOTICE_OVERRIDE_WARNING)) return
     }
+    const operationScope =
+      action.action === 'reschedule'
+        ? `paid-conflict-reschedule:${action.date}:${action.time}:${String(action.allowNoticeOverride)}`
+        : `paid-conflict:${action.action}`
 
     setBusy(true)
     setError('')
     setNotice('')
     try {
       const response = await fetch(`/api/appointments/calendar/${appointmentId}/paid-conflict`, {
-        body: JSON.stringify({ ...action, operationKey: crypto.randomUUID() }),
+        body: JSON.stringify({ ...action, operationKey: getOperationKey(operationScope) }),
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
       })
       const body = (await response.json()) as DetailResponse
       if (!response.ok) throw new Error(body.message ?? 'Unable to resolve the paid conflict.')
-      setDetail(body.appointment)
+      applyDetail(body.appointment)
+      operationKeys.current.delete(operationScope)
       await onChanged()
     } catch (actionError) {
       setError(
@@ -169,12 +205,83 @@ export function AppointmentDrawer({
   function submitReschedule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!rescheduleDate || !rescheduleTime) return
-    void runConflictAction({
-      action: 'reschedule',
-      allowNoticeOverride: overrideNoticeRules,
-      date: rescheduleDate,
-      time: rescheduleTime,
-    })
+    if (detail?.status === 'payment_received_conflict') {
+      void runConflictAction({
+        action: 'reschedule',
+        allowNoticeOverride: overrideNoticeRules,
+        date: rescheduleDate,
+        time: rescheduleTime,
+      })
+      return
+    }
+
+    void rescheduleConfirmedAppointment()
+  }
+
+  async function rescheduleConfirmedAppointment() {
+    if (!detail?.capabilities.canReschedule || !rescheduleDate || !rescheduleTime) return
+    if (overrideNoticeRules && !window.confirm(ADMIN_NOTICE_OVERRIDE_WARNING)) return
+    const operationScope = `reschedule:${rescheduleDate}:${rescheduleTime}:${String(overrideNoticeRules)}`
+
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const response = await fetch(`/api/appointments/calendar/${appointmentId}/reschedule`, {
+        body: JSON.stringify({
+          allowNoticeOverride: overrideNoticeRules,
+          date: rescheduleDate,
+          operationKey: getOperationKey(operationScope),
+          time: rescheduleTime,
+        }),
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      const body = (await response.json()) as DetailResponse
+      if (!response.ok) throw new Error(body.message ?? 'Unable to reschedule the appointment.')
+      applyDetail(body.appointment)
+      operationKeys.current.delete(operationScope)
+      setRescheduleDate('')
+      setRescheduleTime('')
+      setOverrideNoticeRules(false)
+      setNotice('Appointment rescheduled and customer email queued.')
+      await onChanged()
+    } catch (rescheduleError) {
+      setError(
+        rescheduleError instanceof Error
+          ? rescheduleError.message
+          : 'Unable to reschedule the appointment.',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function saveInternalNotes(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!detail?.capabilities.canEditInternalNotes) return
+
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const response = await fetch(`/api/appointments/calendar/${appointmentId}/notes`, {
+        body: JSON.stringify({ internalNotes, operationKey: getOperationKey('notes') }),
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      const body = (await response.json()) as DetailResponse
+      if (!response.ok) throw new Error(body.message ?? 'Unable to save internal notes.')
+      applyDetail(body.appointment)
+      operationKeys.current.delete('notes')
+      setNotice('Internal notes saved.')
+    } catch (notesError) {
+      setError(notesError instanceof Error ? notesError.message : 'Unable to save internal notes.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function resendConfirmation() {
@@ -186,7 +293,7 @@ export function AppointmentDrawer({
       const response = await fetch(
         `/api/appointments/calendar/${appointmentId}/email/resend-confirmation`,
         {
-          body: JSON.stringify({ operationKey: crypto.randomUUID() }),
+          body: JSON.stringify({ operationKey: getOperationKey('resend-confirmation') }),
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           method: 'POST',
@@ -194,6 +301,7 @@ export function AppointmentDrawer({
       )
       const body = (await response.json()) as DeliveryResponse
       if (!response.ok) throw new Error(body.message ?? 'Unable to queue the confirmation email.')
+      operationKeys.current.delete('resend-confirmation')
       setNotice('Confirmation email queued for delivery.')
     } catch (resendError) {
       setError(
@@ -233,12 +341,12 @@ export function AppointmentDrawer({
     <Dialog.Root onOpenChange={(open) => { if (!open) onClose() }} open>
       <Dialog.Portal>
         <Dialog.Overlay className="calendar-dialog__overlay" />
-        <Dialog.Content className="appointment-drawer">
+        <Dialog.Content aria-busy={busy} className="appointment-drawer">
           <Dialog.Title>Appointment details</Dialog.Title>
           <Dialog.Description>Review booking and payment state, then choose a valid status action.</Dialog.Description>
           <Dialog.Close className="calendar-dialog__close" aria-label="Close appointment details"><X /></Dialog.Close>
-          {error ? <p className="calendar-message" role="status">{error}</p> : null}
-          {notice ? <p className="calendar-message" role="status">{notice}</p> : null}
+          {error ? <p className="calendar-message calendar-message--error" role="alert">{error}</p> : null}
+          {notice ? <p aria-live="polite" className="calendar-message" role="status">{notice}</p> : null}
           {!detail && !error ? <p>Loading appointment…</p> : null}
           {detail ? (
             <>
@@ -266,8 +374,61 @@ export function AppointmentDrawer({
                 <div><dt>Conflict resolution</dt><dd>{detail.conflictResolution ?? 'Open'}</dd></div>
                 <div><dt>Refund status</dt><dd>{detail.refundStatus ?? 'Not requested'}</dd></div>
                 <div><dt>Customer notes</dt><dd>{detail.notes || '—'}</dd></div>
-                <div><dt>Internal notes</dt><dd>{detail.internalNotes || '—'}</dd></div>
               </dl>
+              <nav aria-label="Customer contact actions" className="appointment-contact-actions">
+                <a className="calendar-button" href={`mailto:${detail.email}`}>
+                  <Mail aria-hidden="true" /> Email customer
+                </a>
+                <a className="calendar-button" href={`tel:${detail.phone}`}>
+                  <Phone aria-hidden="true" /> Call customer
+                </a>
+              </nav>
+              {detail.capabilities.canEditInternalNotes ? (
+                <form className="appointment-notes" onSubmit={saveInternalNotes}>
+                  <label htmlFor="appointment-internal-notes">Internal notes</label>
+                  <textarea
+                    id="appointment-internal-notes"
+                    maxLength={1000}
+                    onChange={(event) => {
+                      operationKeys.current.delete('notes')
+                      setInternalNotes(event.target.value)
+                    }}
+                    rows={4}
+                    value={internalNotes}
+                  />
+                  <p>Internal only. Do not copy unnecessary customer or payment data here.</p>
+                  <button className="calendar-button" disabled={busy} type="submit">
+                    Save internal notes
+                  </button>
+                </form>
+              ) : null}
+              {detail.capabilities.canReschedule ? (
+                <section
+                  aria-label="Reschedule appointment"
+                  className="appointment-standard-actions"
+                >
+                  <AppointmentRescheduleForm
+                    bounds={bounds}
+                    busy={busy}
+                    buttonLabel="Reschedule appointment"
+                    date={rescheduleDate}
+                    heading="Reschedule appointment"
+                    onDateChange={(value) => {
+                      setRescheduleDate(value)
+                      setRescheduleTime('')
+                    }}
+                    onOverrideChange={(value) => {
+                      setOverrideNoticeRules(value)
+                      setRescheduleTime('')
+                    }}
+                    onSubmit={submitReschedule}
+                    onTimeChange={setRescheduleTime}
+                    overrideNoticeRules={overrideNoticeRules}
+                    time={rescheduleTime}
+                    times={rescheduleTimes}
+                  />
+                </section>
+              ) : null}
               {detail.status === 'payment_received_conflict' && detail.paymentStatus === 'paid' ? (
                 <section className="paid-conflict-actions" aria-labelledby="paid-conflict-actions-heading">
                   <h3 id="paid-conflict-actions-heading">Resolve paid conflict</h3>
@@ -284,36 +445,29 @@ export function AppointmentDrawer({
                       <button className="calendar-button calendar-button--danger" disabled={busy} onClick={() => runConflictAction({ action: 'refund' })} type="button">Refund full fitting fee</button>
                     ) : null}
                   </div>
-                  <form className="paid-conflict-reschedule" onSubmit={submitReschedule}>
-                    <h4>Reschedule and confirm</h4>
-                    <div className="new-appointment-form__row">
-                      <label>
-                        <span>Date</span>
-                        <input max={bounds.maxDate} min={bounds.minDate} onChange={(event) => { setRescheduleDate(event.target.value); setRescheduleTime('') }} required type="date" value={rescheduleDate} />
-                      </label>
-                      <label>
-                        <span>Time</span>
-                        <select onChange={(event) => setRescheduleTime(event.target.value)} required value={rescheduleTime}>
-                          <option disabled value="">Choose time</option>
-                          {rescheduleTimes.map((time) => <option key={time} value={time}>{time}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                    <label className="paid-conflict-reschedule__override">
-                      <input checked={overrideNoticeRules} onChange={(event) => { setOverrideNoticeRules(event.target.checked); setRescheduleTime('') }} type="checkbox" />
-                      <span>Override minimum notice and next-day cutoff</span>
-                    </label>
-                    {overrideNoticeRules ? <p className="calendar-warning">{ADMIN_NOTICE_OVERRIDE_WARNING}</p> : null}
-                    <button className="calendar-button calendar-button--primary" disabled={busy || !rescheduleDate || !rescheduleTime} type="submit">Reschedule and confirm</button>
-                  </form>
+                  <AppointmentRescheduleForm
+                    bounds={bounds}
+                    busy={busy}
+                    buttonLabel="Reschedule and confirm"
+                    date={rescheduleDate}
+                    heading="Reschedule and confirm"
+                    onDateChange={(value) => {
+                      setRescheduleDate(value)
+                      setRescheduleTime('')
+                    }}
+                    onOverrideChange={(value) => {
+                      setOverrideNoticeRules(value)
+                      setRescheduleTime('')
+                    }}
+                    onSubmit={submitReschedule}
+                    onTimeChange={setRescheduleTime}
+                    overrideNoticeRules={overrideNoticeRules}
+                    time={rescheduleTime}
+                    times={rescheduleTimes}
+                  />
                 </section>
               ) : null}
-              <details className="appointment-technical">
-                <summary>Technical payment details</summary>
-                <dl><div><dt>Checkout Session</dt><dd><code>{detail.stripeCheckoutSessionId || '—'}</code></dd></div>
-                <div><dt>Payment Intent</dt><dd><code>{detail.stripePaymentIntentId || '—'}</code></dd></div>
-                <div><dt>Refund</dt><dd><code>{detail.stripeRefundId || '—'}</code></dd></div></dl>
-              </details>
+              <AppointmentHistoryPanel detail={detail} />
               <div className="appointment-drawer__actions">
                 {detail.capabilities.canResendConfirmation ? (
                   <button

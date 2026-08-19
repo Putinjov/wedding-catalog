@@ -3,12 +3,20 @@ import { z } from 'zod'
 
 import { hasRole } from '@/access/roles'
 import { queueAppointmentEmail } from '@/lib/notifications/queueAppointmentEmail'
+import type { Appointment } from '@/payload-types'
 
 import {
   appointmentStatuses,
   toAppointmentDetail,
   type AppointmentStatus,
 } from './calendarTypes'
+import {
+  rescheduleAppointment,
+  rescheduleAppointmentSchema,
+  updateAppointmentNotes,
+  updateAppointmentNotesSchema,
+} from './appointmentActions'
+import { getAppointmentHistory } from './appointmentHistory'
 import {
   createAdminAppointment,
   createAdminAppointmentSchema,
@@ -84,9 +92,23 @@ function errorResponse(error: unknown) {
 
 function getCapabilities(user: TypedUser) {
   return {
+    canEditInternalNotes: true,
     canRefundPaidConflict: hasRole(user, ['owner', 'manager']),
-    canResendConfirmation: false,
+    canViewAuditTrail: hasRole(user, ['owner']),
+    canViewEmailHistory: hasRole(user, ['owner', 'manager']),
   }
+}
+
+async function getAppointmentDetail(
+  req: PayloadRequest,
+  user: TypedUser,
+  appointment: Appointment,
+) {
+  const history = await getAppointmentHistory({ appointmentId: appointment.id, req, user })
+  return toAppointmentDetail(appointment, {
+    capabilities: getCapabilities(user),
+    history,
+  })
 }
 
 const getCalendarEndpoint: Endpoint = {
@@ -131,7 +153,7 @@ const updateCalendarStatusEndpoint: Endpoint = {
         },
       })
       return Response.json({
-        appointment: toAppointmentDetail(result.appointment, getCapabilities(user)),
+        appointment: await getAppointmentDetail(req, user, result.appointment),
         warning: result.warning,
       })
     } catch (error) {
@@ -151,7 +173,7 @@ const createCalendarAppointmentEndpoint: Endpoint = {
       const input = createAdminAppointmentSchema.parse(await getJSONBody(req))
       const appointment = await createAdminAppointment({ payload: req.payload, user, input })
       return Response.json(
-        { appointment: toAppointmentDetail(appointment, getCapabilities(user)) },
+        { appointment: await getAppointmentDetail(req, user, appointment) },
         { status: 201 },
       )
     } catch (error) {
@@ -169,8 +191,9 @@ const getCalendarAppointmentDetailEndpoint: Endpoint = {
     const id = getRouteID(req)
     if (!id) return Response.json({ message: 'Appointment not found.' }, { status: 404 })
 
+    let appointment: Appointment
     try {
-      const appointment = await req.payload.findByID({
+      appointment = await req.payload.findByID({
         collection: 'appointments',
         id,
         depth: 1,
@@ -178,9 +201,14 @@ const getCalendarAppointmentDetailEndpoint: Endpoint = {
         overrideAccess: false,
         user,
       })
-      return Response.json({ appointment: toAppointmentDetail(appointment, getCapabilities(user)) })
     } catch {
       return Response.json({ message: 'Appointment not found.' }, { status: 404 })
+    }
+
+    try {
+      return Response.json({ appointment: await getAppointmentDetail(req, user, appointment) })
+    } catch (error) {
+      return errorResponse(error)
     }
   },
 }
@@ -197,7 +225,45 @@ const paidConflictActionEndpoint: Endpoint = {
     try {
       const input = paidConflictActionSchema.parse(await getJSONBody(req))
       const appointment = await applyPaidConflictAction({ id, input, req, user })
-      return Response.json({ appointment: toAppointmentDetail(appointment, getCapabilities(user)) })
+      return Response.json({ appointment: await getAppointmentDetail(req, user, appointment) })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
+const rescheduleAppointmentEndpoint: Endpoint = {
+  path: '/calendar/:id/reschedule',
+  method: 'post',
+  handler: async (req) => {
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
+    const id = getRouteID(req)
+    if (!id) return Response.json({ message: 'Appointment not found.' }, { status: 404 })
+
+    try {
+      const input = rescheduleAppointmentSchema.parse(await getJSONBody(req))
+      const appointment = await rescheduleAppointment({ id, input, req, user })
+      return Response.json({ appointment: await getAppointmentDetail(req, user, appointment) })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
+const updateAppointmentNotesEndpoint: Endpoint = {
+  path: '/calendar/:id/notes',
+  method: 'post',
+  handler: async (req) => {
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
+    const id = getRouteID(req)
+    if (!id) return Response.json({ message: 'Appointment not found.' }, { status: 404 })
+
+    try {
+      const input = updateAppointmentNotesSchema.parse(await getJSONBody(req))
+      const appointment = await updateAppointmentNotes({ id, input, req, user })
+      return Response.json({ appointment: await getAppointmentDetail(req, user, appointment) })
     } catch (error) {
       return errorResponse(error)
     }
@@ -251,5 +317,7 @@ export const appointmentCalendarEndpoints: Endpoint[] = [
   createCalendarAppointmentEndpoint,
   getCalendarAppointmentDetailEndpoint,
   paidConflictActionEndpoint,
+  rescheduleAppointmentEndpoint,
+  updateAppointmentNotesEndpoint,
   resendConfirmationEndpoint,
 ]

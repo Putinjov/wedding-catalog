@@ -46,6 +46,7 @@ export const writeAppointmentAudit: CollectionAfterChangeHook<Appointment> = asy
         noticeRulesOverridden: bookingRulesContext?.allowNoticeOverride ?? false,
         needsAdminReview: doc.needsAdminReview ?? false,
         paymentStatus: doc.paymentStatus,
+        previousPaymentStatus: previousDoc?.paymentStatus ?? null,
         source: doc.source,
         ...(auditContext?.metadata ?? {}),
       },

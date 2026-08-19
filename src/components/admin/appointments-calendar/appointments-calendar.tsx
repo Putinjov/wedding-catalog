@@ -200,6 +200,7 @@ export function AppointmentsCalendar({
       {selectedID ? (
         <AppointmentDrawer
           appointmentId={selectedID}
+          key={selectedID}
           onChanged={() => loadAppointments()}
           onClose={() => setSelectedID(null)}
           settings={settings}
