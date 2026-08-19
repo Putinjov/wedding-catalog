@@ -198,4 +198,18 @@ describe('booking focus management', () => {
       expect(mocks.push).toHaveBeenCalledWith(`/book-a-fitting/pending/fit_${'a'.repeat(32)}`)
     })
   })
+
+  it('replaces the review action before rendering the submit control', async () => {
+    renderFlow()
+    await goToDetailsStep()
+    completeCustomerDetails()
+
+    const reviewButton = screen.getByRole('button', { name: /continue to review/i })
+    fireEvent.click(reviewButton)
+
+    await screen.findByRole('heading', { name: 'Review your request' })
+    const paymentButton = screen.getByRole('button', { name: /continue to payment/i })
+    expect(paymentButton).not.toBe(reviewButton)
+    expect(mocks.createPendingAppointment).not.toHaveBeenCalled()
+  })
 })

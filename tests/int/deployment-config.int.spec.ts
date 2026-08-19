@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import { getAllowedDevOrigins } from '@/config/dev-origins'
 import { getServerEnvironment } from '@/config/env'
 import { findPendingMigrationNames, isMigrationGateRequired } from '@/config/migration-gate'
 import {
@@ -13,6 +14,22 @@ import {
 } from '@/config/site-url'
 
 describe('deployment configuration', () => {
+  it('allows explicitly configured LAN hosts only in development', () => {
+    expect(
+      getAllowedDevOrigins({
+        ALLOWED_DEV_ORIGINS: '192.168.1.12, http://Bridal-Test.local:3000, 192.168.1.12',
+        NODE_ENV: 'development',
+      } as NodeJS.ProcessEnv),
+    ).toEqual(['192.168.1.12', 'bridal-test.local'])
+
+    expect(
+      getAllowedDevOrigins({
+        ALLOWED_DEV_ORIGINS: '192.168.1.12',
+        NODE_ENV: 'production',
+      } as NodeJS.ProcessEnv),
+    ).toBeUndefined()
+  })
+
   it('uses the Vercel deployment URL for previews', () => {
     const origin = getServerSideOrigin({
       VERCEL_ENV: 'preview',

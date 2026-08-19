@@ -461,7 +461,7 @@ export function BookingFlow({
               .map((option) => (
                 <button
                   aria-pressed={purpose === option.value}
-                  className="flex min-h-36 flex-col items-start justify-between border border-brand-warm-border bg-background p-5 text-left outline-none transition-colors hover:border-brand-deep-lavender focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 data-[selected=true]:border-brand-deep-lavender data-[selected=true]:bg-brand-soft-lavender/55"
+                  className="group flex min-h-36 flex-col items-start justify-between border border-brand-warm-border bg-background p-5 text-left outline-none transition-colors hover:border-brand-deep-lavender focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 data-[selected=true]:border-brand-deep-lavender data-[selected=true]:bg-brand-soft-lavender/55"
                   data-selected={purpose === option.value}
                   key={option.value}
                   onClick={() => {
@@ -470,12 +470,12 @@ export function BookingFlow({
                   }}
                   type="button"
                 >
-                  <span className="text-xs uppercase tracking-[0.22em] text-brand-deep-lavender">
+                  <span className="text-xs uppercase tracking-[0.22em] text-brand-deep-lavender group-data-[selected=true]:text-foreground">
                     {option.label}
                   </span>
                   <span>
                     <span className="block font-serif text-2xl text-foreground">{option.label}</span>
-                    <span className="mt-2 block text-sm leading-6 text-muted-foreground">
+                    <span className="mt-2 block text-sm leading-6 text-muted-foreground group-data-[selected=true]:text-foreground">
                       {option.description}
                     </span>
                   </span>
@@ -656,7 +656,7 @@ export function BookingFlow({
                 aria-describedby={getFieldError('customerName') ? 'customer-name-error' : undefined}
                 aria-invalid={Boolean(getFieldError('customerName'))}
                 autoComplete="name"
-                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
+                className="mt-2 min-h-11 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-name"
                 name="name"
                 onChange={(event) => {
@@ -689,7 +689,7 @@ export function BookingFlow({
                 aria-describedby={getFieldError('email') ? 'customer-email-error' : undefined}
                 aria-invalid={Boolean(getFieldError('email'))}
                 autoComplete="email"
-                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
+                className="mt-2 min-h-11 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-email"
                 inputMode="email"
                 name="email"
@@ -724,7 +724,7 @@ export function BookingFlow({
                 aria-describedby={getFieldError('phone') ? 'customer-phone-error' : undefined}
                 aria-invalid={Boolean(getFieldError('phone'))}
                 autoComplete="tel"
-                className="mt-2 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
+                className="mt-2 min-h-11 scroll-mb-[calc(7.5rem+env(safe-area-inset-bottom))] rounded-sm bg-background lg:scroll-mb-0"
                 id="customer-phone"
                 inputMode="tel"
                 name="tel"
@@ -900,6 +900,7 @@ export function BookingFlow({
         {step < 4 ? (
           <Button
             className={`${step === 1 ? 'col-span-2' : ''} w-full rounded-sm lg:ml-auto lg:w-auto`}
+            key={`continue-step-${step}`}
             onClick={handleNext}
             size="lg"
             type="button"
@@ -910,6 +911,7 @@ export function BookingFlow({
           <Button
             className="w-full rounded-sm lg:ml-auto lg:w-auto"
             disabled={submitState.status === 'submitting'}
+            key="submit-booking"
             size="lg"
             type="submit"
           >
