@@ -7,14 +7,14 @@ type BookingSettingsFixture = {
   _task25SeededVisitAddress?: boolean
   _task25SeededVisitMapUrl?: boolean
   globalType: string
-  visitDetails?: {
-    address?: null | string
-    mapUrl?: null | string
-  }
+  visitDetails?: unknown
 }
 
-function migrationArgs(existing: BookingSettingsFixture | null) {
-  const updateOne = vi.fn(async () => ({ matchedCount: 1 }))
+function migrationArgs(existing: BookingSettingsFixture | null, updateError?: Error) {
+  const updateOne = vi.fn(async () => {
+    if (updateError) throw updateError
+    return { matchedCount: 1 }
+  })
   const findOne = vi.fn(async () => existing)
   const logger = { info: vi.fn() }
   const session = { marker: 'task-25-migration-session' }
@@ -35,7 +35,7 @@ function migrationArgs(existing: BookingSettingsFixture | null) {
 }
 
 describe('Task 25 booking visit details migration', () => {
-  it('seeds the verified address and map link into empty booking settings', async () => {
+  it('creates the visit-details group atomically when it is missing', async () => {
     const fixture = migrationArgs({ globalType: 'booking-settings' })
 
     await up(fixture.args)
@@ -46,11 +46,80 @@ describe('Task 25 booking visit details migration', () => {
         $set: {
           '_task25SeededVisitAddress': true,
           '_task25SeededVisitMapUrl': true,
+          visitDetails: {
+            address: verifiedBookingVisitDetails.address,
+            mapUrl: verifiedBookingVisitDetails.mapUrl,
+          },
+        },
+      },
+      { session: fixture.session },
+    )
+  })
+
+  it('creates the visit-details group atomically when Payload stored it as null', async () => {
+    const fixture = migrationArgs({
+      globalType: 'booking-settings',
+      visitDetails: null,
+    })
+
+    await up(fixture.args)
+
+    expect(fixture.updateOne).toHaveBeenCalledWith(
+      { globalType: 'booking-settings' },
+      {
+        $set: {
+          _task25SeededVisitAddress: true,
+          _task25SeededVisitMapUrl: true,
+          visitDetails: {
+            address: verifiedBookingVisitDetails.address,
+            mapUrl: verifiedBookingVisitDetails.mapUrl,
+          },
+        },
+      },
+      { session: fixture.session },
+    )
+  })
+
+  it('preserves existing visit guidance while filling missing verified fields', async () => {
+    const fixture = migrationArgs({
+      globalType: 'booking-settings',
+      visitDetails: { arrivalInstructions: 'Existing verified guidance' },
+    })
+
+    await up(fixture.args)
+
+    expect(fixture.updateOne).toHaveBeenCalledWith(
+      { globalType: 'booking-settings' },
+      {
+        $set: {
+          _task25SeededVisitAddress: true,
+          _task25SeededVisitMapUrl: true,
           'visitDetails.address': verifiedBookingVisitDetails.address,
           'visitDetails.mapUrl': verifiedBookingVisitDetails.mapUrl,
         },
       },
       { session: fixture.session },
+    )
+  })
+
+  it('fails closed when visit details have an unexpected shape', async () => {
+    const fixture = migrationArgs({
+      globalType: 'booking-settings',
+      visitDetails: [],
+    })
+
+    await expect(up(fixture.args)).rejects.toThrow(/unexpected data shape/i)
+    expect(fixture.updateOne).not.toHaveBeenCalled()
+  })
+
+  it('reports database failures without exposing the raw driver message', async () => {
+    const fixture = migrationArgs(
+      { globalType: 'booking-settings', visitDetails: null },
+      new Error('raw database details must remain private'),
+    )
+
+    await expect(up(fixture.args)).rejects.toThrow(
+      /^\[migration-gate\] Task 25 database update failed \(Error\); no visit details were recorded\.$/,
     )
   })
 
