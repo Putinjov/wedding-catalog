@@ -22,6 +22,21 @@ export type BookingBlockedInterval = BookingHours & {
   date: string
 }
 
+export type BookingVisitDetails = {
+  address: null | string
+  arrivalInstructions: null | string
+  mapUrl: null | string
+  whatToBring: string[]
+}
+
+export const verifiedBookingVisitDetails: BookingVisitDetails = {
+  address: "JOHN'S PLACE\nBIRR\nCO. OFFALY\nR42 YX50",
+  arrivalInstructions: null,
+  mapUrl:
+    'https://www.google.com/maps/search/?api=1&query=JOHN%27S%20PLACE%2C%20BIRR%2C%20CO.%20OFFALY%2C%20R42%20YX50',
+  whatToBring: [],
+}
+
 export type ResolvedBookingSettings = {
   blockedIntervals: BookingBlockedInterval[]
   bookingWindowDays: number
@@ -37,6 +52,7 @@ export type ResolvedBookingSettings = {
   nextDayCutoffTime: null | string
   saturdayHours: BookingHours & { enabled: boolean }
   timezone: typeof BOOKING_TIMEZONE
+  visitDetails: BookingVisitDetails
   weekdayHours: BookingHours
 }
 
@@ -59,6 +75,12 @@ export const defaultBookingSettings: ResolvedBookingSettings = {
     start: '10:00',
   },
   timezone: BOOKING_TIMEZONE,
+  visitDetails: {
+    address: null,
+    arrivalInstructions: null,
+    mapUrl: null,
+    whatToBring: [],
+  },
   weekdayHours: {
     end: '17:00',
     start: '10:00',

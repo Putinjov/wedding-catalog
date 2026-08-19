@@ -149,7 +149,7 @@ function renderCustomerHtml({
             <tr>
               <td align="center" style="padding: 24px 16px 0;">
                 <p style="margin: 0; color: ${brand.muted}; font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 19px;">Questions? Reply to this email or contact <a href="mailto:${escapeHtml(contactAddress)}" style="color: ${brand.deepLavender}; text-decoration: none;">${escapeHtml(contactAddress)}</a>.</p>
-                <p style="margin: 8px 0 0; color: ${brand.muted}; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 18px;">${escapeHtml(siteConfig.name)} · Tullamore, Co. Offaly</p>
+                <p style="margin: 8px 0 0; color: ${brand.muted}; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 18px;">${escapeHtml(siteConfig.name)}</p>
               </td>
             </tr>
           </table>

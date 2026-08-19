@@ -204,6 +204,13 @@ describe('private booking indexation', () => {
   it('adds HTTP noindex and no-store protection to private booking routes', async () => {
     expect(getPrivateBookingHeaderRules()).toEqual([
       {
+        source: '/book-a-fitting/calendar/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+        ],
+      },
+      {
         source: '/book-a-fitting/pending/:path*',
         headers: [
           { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
