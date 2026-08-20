@@ -8,6 +8,7 @@ import { NewsletterSection } from '@/components/boutique/newsletter-section'
 import { ServiceHighlights } from '@/components/boutique/service-highlights'
 import { LocalBusinessJsonLd } from '@/components/seo/local-business-json-ld'
 import { siteConfig } from '@/config/site'
+import { getBookingSettings } from '@/lib/booking/settings'
 import { getFeaturedDresses } from '@/lib/getFeaturedDresses'
 import type { Media } from '@/payload-types'
 
@@ -26,18 +27,21 @@ function getHeroImage(dresses: Awaited<ReturnType<typeof getFeaturedDresses>>): 
 }
 
 export default async function HomePage() {
-  const featuredDresses = await getFeaturedDresses()
+  const [featuredDresses, settings] = await Promise.all([
+    getFeaturedDresses(),
+    getBookingSettings(),
+  ])
   const heroImage = getHeroImage(featuredDresses)
 
   return (
     <>
-      <LocalBusinessJsonLd />
+      <LocalBusinessJsonLd settings={settings} />
       <main>
         <HeroSection image={heroImage} />
         <JourneySplit />
         <ServiceHighlights />
         <FeaturedDresses dresses={featuredDresses} />
-        <FittingCallout />
+        <FittingCallout settings={settings} />
         <NewsletterSection />
       </main>
     </>

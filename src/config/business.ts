@@ -17,6 +17,14 @@ export const publicBusinessAddressText = publicBusinessAddressLines.join('\n')
 
 export const publicBusinessLogoPath = '/brand/cait-bridal-logo.jpeg'
 
+export const publicBusinessGeo = {
+  latitude: 53.095985,
+  longitude: -7.90994,
+} as const
+
+export const publicBusinessPhone = '+353833315515'
+export const publicBusinessPhoneDisplay = '+353 83 331 5515'
+
 export const publicBusinessMapUrl =
   'https://www.google.com/maps/search/?api=1&query=JOHN%27S%20PLACE%2C%20BIRR%2C%20CO.%20OFFALY%2C%20R42%20YX50'
 

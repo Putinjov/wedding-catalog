@@ -1,12 +1,11 @@
 import { BookingDialog } from '@/components/booking/booking-dialog'
 import { FittingFeeOffer } from '@/components/booking/fitting-fee-offer'
 import { buttonVariants } from '@/components/ui/button'
+import type { ResolvedBookingSettings } from '@/config/booking'
 import { getBookingDateBounds } from '@/lib/booking/date'
 import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
-import { getBookingSettings } from '@/lib/booking/settings'
 
-export async function FittingCallout() {
-  const settings = await getBookingSettings()
+export function FittingCallout({ settings }: { settings: ResolvedBookingSettings }) {
   const bounds = getBookingDateBounds(settings)
 
   return (
@@ -14,7 +13,9 @@ export async function FittingCallout() {
       <div className="container">
         <div className="grid gap-8 border-y border-border py-12 md:grid-cols-[1fr_auto] md:items-center">
           <div className="max-w-3xl">
-            <p className="text-xs uppercase tracking-[0.28em] text-brand-deep-lavender">Private appointments</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-brand-deep-lavender">
+              Private appointments
+            </p>
             <h2 className="mt-3 font-serif text-4xl text-foreground md:text-5xl">
               Book your private fitting
             </h2>

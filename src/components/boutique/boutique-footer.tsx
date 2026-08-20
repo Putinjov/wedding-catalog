@@ -5,6 +5,8 @@ import { Separator } from '@/components/ui/separator'
 import {
   publicBusinessAddressLines,
   publicBusinessMapUrl,
+  publicBusinessPhone,
+  publicBusinessPhoneDisplay,
   publicBusinessSocialProfiles,
 } from '@/config/business'
 import { privacyContactEmail } from '@/config/privacy'
@@ -82,6 +84,12 @@ export function BoutiqueFooter() {
                   href={`mailto:${privacyContactEmail}`}
                 >
                   {privacyContactEmail}
+                </a>
+                <a
+                  className="flex min-h-11 items-center underline underline-offset-4 outline-none transition-colors hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  href={`tel:${publicBusinessPhone}`}
+                >
+                  {publicBusinessPhoneDisplay}
                 </a>
               </address>
               <nav aria-label="Social media" className="mt-5">
