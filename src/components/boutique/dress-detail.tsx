@@ -3,6 +3,7 @@ import { DressBreadcrumbs } from '@/components/boutique/dress-breadcrumbs'
 import { DressGallery } from '@/components/boutique/dress-gallery'
 import { DressModeSelector } from '@/components/boutique/dress-mode-selector'
 import { DressPricePanel } from '@/components/boutique/dress-price-panel'
+import { DressProductJsonLd } from '@/components/boutique/dress-product-json-ld'
 import { RelatedDresses } from '@/components/boutique/related-dresses'
 import type { DressMode } from '@/lib/catalogue'
 import {
@@ -39,6 +40,7 @@ export function DressDetail({
         mode={initialMode}
         returnTo={returnTo}
       />
+      <DressProductJsonLd dress={dress} />
       <main className="container pb-28 pt-8 md:py-12 lg:pb-16">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)] lg:gap-16">
           <DressGallery images={dress.media.gallery} name={dress.name} videoUrl={dress.videoUrl} />

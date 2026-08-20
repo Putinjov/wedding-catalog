@@ -9,6 +9,7 @@ import {
   getAvailabilityLabel,
   isDressAvailableForMode,
   isUnavailableForMode,
+  supportsDressMode,
 } from '@/lib/dress-utils'
 import type { Dress } from '@/payload-types'
 
@@ -18,7 +19,7 @@ function fittingHref(dress: Dress, mode: DressMode): string {
 
 function PriceDetails({ dress, mode }: { dress: Dress; mode: DressMode }) {
   if (mode === 'buy') {
-    const salePrice = isDressAvailableForMode(dress, 'buy') ? dress.salePrice : null
+    const salePrice = supportsDressMode(dress, 'buy') ? dress.salePrice : null
     const previousSalePrice = dress.previousSalePrice
     const hasPreviousPrice =
       salePrice != null && previousSalePrice != null && previousSalePrice > salePrice
@@ -37,11 +38,12 @@ function PriceDetails({ dress, mode }: { dress: Dress; mode: DressMode }) {
               </del>
             ) : null}
           </div>
-        ) : dress.salePriceOnRequest && isDressAvailableForMode(dress, 'buy') ? (
+        ) : dress.salePriceOnRequest && supportsDressMode(dress, 'buy') ? (
           <p className="mt-2 font-serif text-3xl text-brand-deep-lavender">Price on request</p>
         ) : null}
         <p className="mt-4 text-sm leading-6 text-muted-foreground">
-          The final alteration scope and collection arrangements are agreed during your private fitting.
+          The final alteration scope and collection arrangements are agreed during your private
+          fitting.
         </p>
       </div>
     )
@@ -70,7 +72,8 @@ function PriceDetails({ dress, mode }: { dress: Dress; mode: DressMode }) {
         </div>
       </dl>
       <p className="mt-4 text-sm leading-6 text-muted-foreground">
-        Final availability, alterations, collection and return arrangements are confirmed during booking.
+        Final availability, alterations, collection and return arrangements are confirmed during
+        booking.
       </p>
     </div>
   )
