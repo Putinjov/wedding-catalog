@@ -112,9 +112,16 @@ describe('public booking dress availability', () => {
     expect(mocks.getAvailableDressBySlug).not.toHaveBeenCalled()
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ dress: 'dress-1', purpose: 'undecided' }),
+        data: expect.objectContaining({
+          dress: 'dress-1',
+          fittingFee: 0,
+          paymentStatus: 'unpaid',
+          purpose: 'undecided',
+          status: 'confirmed',
+        }),
       }),
     )
+    expect(create.mock.calls[0]?.[0].data).not.toHaveProperty('holdExpiresAt')
     expect(result).toEqual(expect.objectContaining({ success: true }))
   })
 })

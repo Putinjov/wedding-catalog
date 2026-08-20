@@ -2,10 +2,15 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { HoldCountdown } from '@/components/booking/hold-countdown'
+import { FittingFeeOffer } from '@/components/booking/fitting-fee-offer'
 import { PaymentButton } from '@/components/booking/payment-button'
 import { privatePageRobots } from '@/config/indexation'
 import { formatCurrency } from '@/config/site'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
+import {
+  isFittingFeeWaived,
+  requiresFittingFeePayment,
+} from '@/lib/booking/fittingFee'
 import { isAppointmentHoldActive } from '@/lib/booking/appointmentHold'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import { getBookingPurposeCustomerLabel } from '@/lib/booking/purpose'
@@ -43,6 +48,7 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
       : null
   const isPaid = appointment.paymentStatus === 'paid'
   const isConfirmed = appointment.status === 'confirmed'
+  const fittingFeeWaived = isFittingFeeWaived(appointment.fittingFee)
   const now = new Date()
   const serverNow = now.toISOString()
   const holdExpiresAt = appointment.holdExpiresAt
@@ -56,6 +62,7 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
   const isConflict = appointment.status === 'payment_received_conflict'
   const canPay =
     (appointment.status === 'pending_payment' || appointment.status === 'payment_failed') &&
+    requiresFittingFeePayment(appointment.fittingFee) &&
     !isPaid &&
     holdActive
   const durationMinutes = Math.round(
@@ -85,7 +92,9 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
           {isConfirmed
             ? isPaid
               ? 'Your fitting fee has been verified. We look forward to welcoming you.'
-              : 'Our team has confirmed this manual appointment. Its payment state is tracked separately.'
+              : fittingFeeWaived
+                ? 'Your private fitting is confirmed. The usual fitting fee is temporarily waived as part of our welcome offer.'
+                : 'Our team has confirmed this manual appointment. Its payment state is tracked separately.'
             : isConflict || isPaid
               ? 'Your fitting fee has been verified. Our team will review the appointment details before confirming the slot.'
               : isExpired
@@ -123,8 +132,8 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
             </div>
             <div className="grid gap-2 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
               <dt className="text-sm text-muted-foreground">Fitting fee</dt>
-              <dd className="font-serif text-2xl text-brand-deep-lavender">
-                {formatCurrency(appointment.fittingFee, { maximumFractionDigits: 0 })}
+              <dd>
+                <FittingFeeOffer amount={appointment.fittingFee} size="medium" />
               </dd>
             </div>
           </dl>
@@ -143,7 +152,9 @@ export default async function PendingAppointmentPage({ params: paramsPromise }: 
                 : isProcessing
                 ? 'Payment verification is in progress. Refresh this private page later to see the latest status.'
                 : isConfirmed || isConflict || isPaid
-                  ? 'Online payment covers the private fitting fee only. Any dress purchase or rental is arranged in store.'
+                  ? fittingFeeWaived
+                    ? 'No fitting fee payment is due for this appointment. Any dress purchase or rental is arranged in store.'
+                    : 'Online payment covers the private fitting fee only. Any dress purchase or rental is arranged in store.'
                   : 'No further online payment is available for this appointment.'}
             </p>
           </div>

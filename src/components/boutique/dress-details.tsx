@@ -1,5 +1,5 @@
 import RichText from '@/components/RichText'
-import { formatFittingFee } from '@/config/site'
+import { FittingFeeOffer } from '@/components/booking/fitting-fee-offer'
 import {
   getConditionLabel,
   getRelationshipLabel,
@@ -97,7 +97,9 @@ function CareSection({ dress }: { dress: Dress }) {
           <p>Alteration limitations: {dress.alterationLimitations}</p>
         ) : null}
         <p>Your private fitting gives us time to understand your ceremony plans and agree the appropriate alterations for this individual dress.</p>
-        <p>The fitting booking fee is {formatFittingFee()}.</p>
+        <p className="flex flex-wrap items-baseline gap-2">
+          <span>Fitting booking:</span> <FittingFeeOffer size="compact" />
+        </p>
         <p>
           Final alterations, cleaning, collection and return policies will be confirmed separately.
         </p>

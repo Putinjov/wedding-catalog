@@ -26,8 +26,9 @@ Run the focused suite with:
 npm run test:a11y
 ```
 
-The automated booking test intentionally does not activate `Continue to payment`. It must not create
-appointments, reserve slots, send email or create Stripe sessions.
+The automated booking test intentionally does not activate `Confirm free appointment`. It must not
+create appointments, reserve slots or send email. While the welcome offer is active, website bookings
+do not create Stripe sessions.
 
 ## Manual assistive-technology checks
 
@@ -40,7 +41,7 @@ Windows headless-browser simulation.
 | VoiceOver on iPhone or macOS | Pending confirmation | Navigate purpose, date, time, details, privacy acknowledgement and review; confirm labels, required/optional state, errors, step announcements and focus order. Do not submit payment. |
 | TalkBack on Android | Pending confirmation | Repeat the same non-submitting booking flow and confirm the fixed action bar does not obscure the focused field when the keyboard opens. |
 | Physical-phone client interactions | Passed by user confirmation | After a full tab restart on a real phone, the mobile menu opens and `Continue to date and time` advances the booking flow through the LAN URL. Device and browser details were not recorded. |
-| Keyboard-only full flow | Pending confirmation | Reach `Continue to payment` using Tab, Shift+Tab, arrows, Space and Enter only; do not activate the payment button. |
+| Keyboard-only full flow | Pending confirmation | Reach `Confirm free appointment` using Tab, Shift+Tab, arrows, Space and Enter only; do not activate the button. |
 
 Do not enter real customer information during smoke testing. Use non-sensitive synthetic values and
-stop at the enabled `Continue to payment` button so that no appointment or Stripe session is created.
+stop at the enabled `Confirm free appointment` button so that no appointment or email delivery is created.

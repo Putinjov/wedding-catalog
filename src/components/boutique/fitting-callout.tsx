@@ -1,7 +1,8 @@
 import { BookingDialog } from '@/components/booking/booking-dialog'
+import { FittingFeeOffer } from '@/components/booking/fitting-fee-offer'
 import { buttonVariants } from '@/components/ui/button'
-import { formatFittingFee } from '@/config/site'
 import { getBookingDateBounds } from '@/lib/booking/date'
+import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
 import { getBookingSettings } from '@/lib/booking/settings'
 
 export async function FittingCallout() {
@@ -17,11 +18,13 @@ export async function FittingCallout() {
             <h2 className="mt-3 font-serif text-4xl text-foreground md:text-5xl">
               Book your private fitting
             </h2>
-            <p className="mt-4 font-serif text-3xl text-brand-deep-lavender">{formatFittingFee()}</p>
+            <FittingFeeOffer className="mt-4" />
             <p className="mt-5 text-lg leading-8 text-muted-foreground">
               A private appointment to explore shape, fabric and whether buying or renting is right
-              for you. The booking fee is required to confirm your appointment; refund and purchase
-              or rental credit details will be shared with the booking policy.
+              for you.{' '}
+              {isFittingFeeWaived()
+                ? 'During our welcome offer, the usual booking fee is waived and your appointment is confirmed without online payment.'
+                : 'The booking fee is required to confirm your appointment; refund and purchase or rental credit details will be shared with the booking policy.'}
             </p>
           </div>
           <BookingDialog

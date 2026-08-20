@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import type { BookingPurpose } from '@/config/booking'
 import { getBookingPurposeCustomerLabel } from '@/lib/booking/purpose'
 
@@ -12,7 +14,7 @@ export function BookingSummary({
   date: string
   dressName?: string | null
   duration?: string
-  fee?: string
+  fee?: ReactNode
   purpose: BookingPurpose
   time: string
 }) {

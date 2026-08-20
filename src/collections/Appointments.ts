@@ -24,6 +24,11 @@ import {
 } from '@/lib/booking/appointmentLifecycle'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { createAppointmentHoldExpiry } from '@/lib/booking/appointmentHold'
+import {
+  getWebsiteBookingInitialPaymentState,
+  isWaivedPublicBookingCreate,
+  requiresFittingFeePayment,
+} from '@/lib/booking/fittingFee'
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { assertAppointmentScheduleRules } from '@/lib/booking/appointmentBookingRules'
 import {
@@ -80,19 +85,28 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
 
   const paymentContext = getAppointmentPaymentContext(context)
   if (operation === 'create' && nextStatus !== 'pending_payment') {
-    if (paymentContext?.origin !== 'admin-create') {
+    const isFreeWebsiteBooking = isWaivedPublicBookingCreate({
+      fittingFee: data.fittingFee,
+      paymentOrigin: paymentContext?.origin,
+      paymentStatus: nextPaymentStatus,
+      source: data.source,
+      status: nextStatus,
+    })
+    if (!isFreeWebsiteBooking && paymentContext?.origin !== 'admin-create') {
       throw new APIError('Appointments must begin pending payment.', 400)
     }
-    assertAppointmentStatusTransition({
-      appointment: {
-        endAt: data.endAt ?? new Date().toISOString(),
-        paymentStatus: data.paymentStatus ?? 'unpaid',
-        source: data.source ?? 'website',
-        status: 'pending_payment',
-      },
-      nextStatus,
-      options,
-    })
+    if (!isFreeWebsiteBooking) {
+      assertAppointmentStatusTransition({
+        appointment: {
+          endAt: data.endAt ?? new Date().toISOString(),
+          paymentStatus: data.paymentStatus ?? 'unpaid',
+          source: data.source ?? 'website',
+          status: 'pending_payment',
+        },
+        nextStatus,
+        options,
+      })
+    }
   } else if (
     operation === 'update' &&
     originalDoc &&
@@ -214,20 +228,24 @@ export const Appointments: CollectionConfig = {
             : data.endAt
 
         const source = data.source ?? 'website'
+        const fittingFee = data.fittingFee ?? siteConfig.fittingFee
+        const websitePaymentState = getWebsiteBookingInitialPaymentState(fittingFee)
         return {
           ...data,
           currency: data.currency ?? siteConfig.currency,
           endAt,
-          fittingFee: data.fittingFee ?? siteConfig.fittingFee,
+          fittingFee,
           holdExpiresAt:
             data.holdExpiresAt ??
-            (source === 'website'
+            (source === 'website' && requiresFittingFeePayment(fittingFee)
               ? createAppointmentHoldExpiry(settings.holdMinutes).iso
               : undefined),
           paymentStatus: data.paymentStatus ?? 'unpaid',
           publicReference: data.publicReference ?? createPublicReference(),
           source,
-          status: data.status ?? 'pending_payment',
+          status:
+            data.status ??
+            (source === 'website' ? websitePaymentState.status : 'pending_payment'),
         }
       },
     ],

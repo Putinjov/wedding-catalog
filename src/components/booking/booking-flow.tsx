@@ -7,13 +7,13 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { BookingProgress } from '@/components/booking/booking-progress'
 import { BookingSummary } from '@/components/booking/booking-summary'
 import { BookingCalendar } from '@/components/booking/booking-calendar'
+import { FittingFeeOffer } from '@/components/booking/fitting-fee-offer'
 import { SelectedDressSummary } from '@/components/booking/selected-dress-summary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { AvailableSlot, BookingPurpose, ResolvedBookingSettings } from '@/config/booking'
 import { currentPrivacyPolicy } from '@/config/privacy'
-import { formatFittingFee } from '@/config/site'
 import {
   getBookingScheduleLabel,
   getBookingWindowLabel,
@@ -23,6 +23,7 @@ import {
 import { createPendingAppointment, type BookingActionResult } from '@/lib/booking/createAppointment'
 import { getAvailableSlots } from '@/lib/booking/getAvailableSlots'
 import { getFullyBookedDates } from '@/lib/booking/getFullyBookedDates'
+import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
 import { getBookingNoticeLabel } from '@/lib/booking/noticeRules'
 import { getAvailableBookingPurposes } from '@/lib/booking/purpose'
 import {
@@ -143,6 +144,7 @@ export function BookingFlow({
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
   const availablePurposes = getAvailableBookingPurposes(selectedDress)
   const bookingNoticeLabel = getBookingNoticeLabel(settings)
+  const fittingFeeWaived = isFittingFeeWaived()
 
   const clearValidationState = useCallback(() => {
     setFieldErrors({})
@@ -869,13 +871,15 @@ export function BookingFlow({
               date={summaryDate}
               dressName={selectedDress?.name}
               duration={`${settings.durationMinutes} minutes`}
-              fee={formatFittingFee()}
+              fee={<FittingFeeOffer size="compact" />}
               purpose={purpose}
               time={summaryTime}
             />
           </div>
           <p className="mt-6 border-l-2 border-brand-antique-gold pl-4 text-sm leading-6 text-muted-foreground">
-            Payment will be required to confirm this appointment.
+            {fittingFeeWaived
+              ? 'No payment is required. Your appointment is confirmed immediately under our welcome offer.'
+              : 'Payment will be required to confirm this appointment.'}
           </p>
         </section>
       ) : null}
@@ -916,8 +920,12 @@ export function BookingFlow({
             type="submit"
           >
             {submitState.status === 'submitting'
-              ? 'Holding your appointment…'
-              : 'Continue to payment'}
+              ? fittingFeeWaived
+                ? 'Confirming your appointment…'
+                : 'Holding your appointment…'
+              : fittingFeeWaived
+                ? 'Confirm free appointment'
+                : 'Continue to payment'}
           </Button>
         )}
       </div>

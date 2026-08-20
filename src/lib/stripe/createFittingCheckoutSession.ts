@@ -8,6 +8,7 @@ import {
   isAppointmentHoldActive,
 } from '@/lib/booking/appointmentHold'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
+import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import { getBookingSettings } from '@/lib/booking/settings'
@@ -45,6 +46,13 @@ export async function createFittingCheckoutSession(
 
   if (appointment.paymentStatus === 'paid') {
     return { status: 'paid' }
+  }
+
+  if (isFittingFeeWaived(appointment.fittingFee)) {
+    return {
+      message: 'No fitting fee payment is due for this appointment.',
+      status: 'unavailable',
+    }
   }
 
   if (
