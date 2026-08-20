@@ -1,3 +1,5 @@
+import { publicBusinessAddressText, publicBusinessMapUrl } from '@/config/business'
+
 export const BOOKING_TIMEZONE = 'Europe/Dublin' as const
 export const STRIPE_CHECKOUT_MINIMUM_HOLD_MINUTES = 30
 export const MAXIMUM_BOOKING_HOLD_MINUTES = 120
@@ -30,10 +32,9 @@ export type BookingVisitDetails = {
 }
 
 export const verifiedBookingVisitDetails: BookingVisitDetails = {
-  address: "JOHN'S PLACE\nBIRR\nCO. OFFALY\nR42 YX50",
+  address: publicBusinessAddressText,
   arrivalInstructions: null,
-  mapUrl:
-    'https://www.google.com/maps/search/?api=1&query=JOHN%27S%20PLACE%2C%20BIRR%2C%20CO.%20OFFALY%2C%20R42%20YX50',
+  mapUrl: publicBusinessMapUrl,
   whatToBring: [],
 }
 

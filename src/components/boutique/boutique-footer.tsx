@@ -2,6 +2,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { Separator } from '@/components/ui/separator'
+import {
+  publicBusinessAddressLines,
+  publicBusinessMapUrl,
+  publicBusinessSocialProfiles,
+} from '@/config/business'
+import { privacyContactEmail } from '@/config/privacy'
 import { siteConfig } from '@/config/site'
 
 const footerGroups = [
@@ -50,12 +56,50 @@ export function BoutiqueFooter() {
               />
             </div>
             <div>
-              <Link className="font-serif text-2xl tracking-[0.04em] outline-none focus-visible:ring-2 focus-visible:ring-ring" href="/">
+              <Link
+                className="font-serif text-2xl tracking-[0.04em] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                href="/"
+              >
                 {siteConfig.name}
               </Link>
               <p className="mt-3 max-w-sm text-sm leading-7 text-primary-foreground/75">
                 {siteConfig.tagline}. Handpicked gowns available to buy or rent.
               </p>
+              <address className="mt-5 text-sm not-italic leading-6 text-primary-foreground/75">
+                <a
+                  aria-label={`View ${siteConfig.name} address on Google Maps`}
+                  className="inline-block outline-none transition-colors hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  href={publicBusinessMapUrl}
+                >
+                  {publicBusinessAddressLines.map((line) => (
+                    <span className="block" key={line}>
+                      {line}
+                    </span>
+                  ))}
+                </a>
+                <a
+                  className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4 outline-none transition-colors hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  href={`mailto:${privacyContactEmail}`}
+                >
+                  {privacyContactEmail}
+                </a>
+              </address>
+              <nav aria-label="Social media" className="mt-5">
+                <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                  {publicBusinessSocialProfiles.map((profile) => (
+                    <li key={profile.label}>
+                      <a
+                        aria-label={`Visit ${siteConfig.name} on ${profile.label}`}
+                        className="inline-flex min-h-11 items-center text-sm underline underline-offset-4 outline-none transition-colors hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                        href={profile.url}
+                        rel="me"
+                      >
+                        {profile.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
             </div>
           </div>
 
