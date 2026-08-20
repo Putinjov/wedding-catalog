@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
+import { FittingFeeOffer } from '@/components/booking/fitting-fee-offer'
 import { BookingFlow } from '@/components/booking/booking-flow'
-import { formatFittingFee } from '@/config/site'
 import { getBookingDateBounds } from '@/lib/booking/date'
 import { getInitialBookingPurpose } from '@/lib/booking/purpose'
 import { getBookingSettings } from '@/lib/booking/settings'
@@ -72,7 +72,7 @@ export default async function BookAFittingPage({ searchParams }: Args) {
             <p className="text-sm uppercase tracking-[0.22em] text-muted-foreground">
               Booking fee
             </p>
-            <p className="mt-2 font-serif text-4xl text-brand-deep-lavender">{formatFittingFee()}</p>
+            <FittingFeeOffer className="mt-2" />
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import { formatCurrency, formatFittingFee } from '@/config/site'
 import { getBookingDateBounds } from '@/lib/booking/date'
 import type { ResolvedBookingSettings } from '@/config/booking'
 import type { DressMode } from '@/lib/catalogue'
+import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
 import {
   getAvailabilityLabel,
   isDressAvailableForMode,
@@ -114,7 +115,11 @@ export function DressPricePanel({
   const secondaryClassName =
     'min-h-11 text-sm font-medium text-brand-deep-lavender underline decoration-brand-antique-gold underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2'
   const primaryLabel =
-    mode === 'buy' ? `Book a fitting · ${formatFittingFee()}` : 'Check rental availability'
+    mode === 'buy'
+      ? isFittingFeeWaived()
+        ? 'Book a fitting · Free welcome offer'
+        : `Book a fitting · ${formatFittingFee()}`
+      : 'Check rental availability'
   const mobileClassName =
     'fixed inset-x-0 bottom-0 z-40 flex min-h-[calc(3.5rem+env(safe-area-inset-bottom))] w-full items-center justify-center border-t border-brand-warm-border bg-brand-deep-lavender px-6 pb-[env(safe-area-inset-bottom)] text-sm font-semibold text-white shadow-[0_-8px_24px_rgba(44,38,33,0.12)] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-antique-gold lg:hidden'
 
@@ -137,7 +142,13 @@ export function DressPricePanel({
             primaryClassName={primaryClassName}
             primaryLabel={primaryLabel}
             secondaryClassName={mode === 'rent' ? secondaryClassName : undefined}
-            secondaryLabel={mode === 'rent' ? `Book a fitting · ${formatFittingFee()}` : undefined}
+            secondaryLabel={
+              mode === 'rent'
+                ? isFittingFeeWaived()
+                  ? 'Book a fitting · Free welcome offer'
+                  : `Book a fitting · ${formatFittingFee()}`
+                : undefined
+            }
             selectedDress={selectedDress}
             settings={settings}
           />

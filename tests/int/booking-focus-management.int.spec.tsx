@@ -157,7 +157,7 @@ describe('booking focus management', () => {
     await goToDetailsStep()
     completeCustomerDetails()
     fireEvent.click(screen.getByRole('button', { name: /continue to review/i }))
-    fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }))
+    fireEvent.click(screen.getByRole('button', { name: /confirm free appointment/i }))
 
     const timeField = await screen.findByRole('group', { name: 'Fitting time' })
     await waitFor(() => expect(document.activeElement).toBe(timeField))
@@ -185,11 +185,11 @@ describe('booking focus management', () => {
     await goToDetailsStep()
     completeCustomerDetails()
     fireEvent.click(screen.getByRole('button', { name: /continue to review/i }))
-    fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }))
+    fireEvent.click(screen.getByRole('button', { name: /confirm free appointment/i }))
 
     const form = container.querySelector('form')
     await waitFor(() => expect(form?.getAttribute('aria-busy')).toBe('true'))
-    expect(screen.getByRole('button', { name: /holding your appointment/i }).hasAttribute('disabled')).toBe(
+    expect(screen.getByRole('button', { name: /confirming your appointment/i }).hasAttribute('disabled')).toBe(
       true,
     )
 
@@ -208,8 +208,8 @@ describe('booking focus management', () => {
     fireEvent.click(reviewButton)
 
     await screen.findByRole('heading', { name: 'Review your request' })
-    const paymentButton = screen.getByRole('button', { name: /continue to payment/i })
-    expect(paymentButton).not.toBe(reviewButton)
+    const confirmationButton = screen.getByRole('button', { name: /confirm free appointment/i })
+    expect(confirmationButton).not.toBe(reviewButton)
     expect(mocks.createPendingAppointment).not.toHaveBeenCalled()
   })
 })

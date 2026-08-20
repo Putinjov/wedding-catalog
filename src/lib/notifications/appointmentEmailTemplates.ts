@@ -1,6 +1,7 @@
 import { formatCurrency, siteConfig } from '@/config/site'
 import { getCanonicalOrigin } from '@/config/site-url'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
+import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
 import { getBookingPurposeCustomerLabel } from '@/lib/booking/purpose'
 import type { Appointment } from '@/payload-types'
 
@@ -175,7 +176,9 @@ function getCustomerPresentation(
     case 'confirmed':
       return {
         cta: { href: dressesLink(), label: 'Explore the collection' },
-        intro: 'Your fitting fee has been verified and your private appointment is confirmed. We look forward to welcoming you.',
+        intro: isFittingFeeWaived(appointment.fittingFee)
+          ? 'Your private appointment is confirmed. The usual fitting fee is temporarily waived as part of our welcome offer.'
+          : 'Your fitting fee has been verified and your private appointment is confirmed. We look forward to welcoming you.',
         notice: 'Every dress is individually fitted and professionally altered for the customer.',
         subject: 'Your private fitting is confirmed',
         title: 'Your fitting is confirmed',
@@ -234,7 +237,9 @@ function customerMessage(
       text = `Hello,\n\nWe received your private fitting request. It is not confirmed until the fitting fee has been paid.\n\n${summary}\n\nContinue securely: ${pendingLink(appointment)}\n\n${footer}`
       break
     case 'confirmed':
-      text = `Hello,\n\nYour fitting fee and appointment have been confirmed.\n\n${summary}\n\nEvery dress is individually fitted and professionally altered for the customer.\n\n${footer}`
+      text = isFittingFeeWaived(appointment.fittingFee)
+        ? `Hello,\n\nYour private fitting is confirmed. The usual fitting fee is temporarily waived as part of our welcome offer.\n\n${summary}\n\nEvery dress is individually fitted and professionally altered for the customer.\n\n${footer}`
+        : `Hello,\n\nYour fitting fee and appointment have been confirmed.\n\n${summary}\n\nEvery dress is individually fitted and professionally altered for the customer.\n\n${footer}`
       break
     case 'failed':
       text = `Hello,\n\nYour fitting payment was not completed, so the appointment is not confirmed. Do not send card details by email.\n\n${summary}\n\nReview the private booking: ${pendingLink(appointment)}\n\n${footer}`

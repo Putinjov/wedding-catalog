@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import type { BookingPurpose, ResolvedBookingSettings } from '@/config/booking'
+import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
 import { cn } from '@/utilities/ui'
 
 export function BookingDialog({
@@ -93,7 +94,9 @@ export function BookingDialog({
         <DialogContent closeLabel="Close booking dialog" className="max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain p-7 pt-14">
           <DialogTitle className="sr-only">Book a private fitting</DialogTitle>
           <DialogDescription className="sr-only">
-            Choose a fitting purpose, date and time, enter your details, then continue to payment.
+            {isFittingFeeWaived()
+              ? 'Choose a fitting purpose, date and time, enter your details, then confirm your free appointment.'
+              : 'Choose a fitting purpose, date and time, enter your details, then continue to payment.'}
           </DialogDescription>
           <BookingFlow
             initialDate={searchParams.get('date') ?? ''}

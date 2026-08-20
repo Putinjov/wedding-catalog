@@ -155,7 +155,7 @@ describe('booking form semantics', () => {
 
     completeRequiredDetails()
     fireEvent.click(screen.getByRole('button', { name: /continue to review/i }))
-    fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }))
+    fireEvent.click(screen.getByRole('button', { name: /confirm free appointment/i }))
 
     const email = await screen.findByLabelText('Email')
     await waitFor(() => expect(document.activeElement).toBe(email))

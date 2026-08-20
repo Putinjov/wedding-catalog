@@ -76,6 +76,19 @@ describe('appointment payment integrity', () => {
     ).toBe(true)
   })
 
+  it('keeps a confirmed unpaid welcome-offer appointment blocking without a payment hold', () => {
+    expect(
+      isAppointmentBlockingSlot(
+        appointment({
+          fittingFee: 0,
+          holdExpiresAt: null,
+          paymentStatus: 'unpaid',
+          status: 'confirmed',
+        }),
+      ),
+    ).toBe(true)
+  })
+
   it('keeps an active payment hold blocking but releases it and paid conflicts explicitly', () => {
     const processing = appointment({
       holdExpiresAt: '2030-01-01T09:30:00.000Z',

@@ -136,6 +136,25 @@ describe('Stripe Checkout hold synchronization', () => {
     expect(mocks.createStripeSession).not.toHaveBeenCalled()
   })
 
+  it('never creates Stripe Checkout for a confirmed zero-fee welcome booking', async () => {
+    mocks.getAppointmentByReference.mockResolvedValue(
+      createAppointment({
+        fittingFee: 0,
+        holdExpiresAt: null,
+        status: 'confirmed',
+      }),
+    )
+
+    await expect(
+      createFittingCheckoutSession(createAppointment().publicReference),
+    ).resolves.toEqual({
+      message: 'No fitting fee payment is due for this appointment.',
+      status: 'unavailable',
+    })
+    expect(mocks.createStripeSession).not.toHaveBeenCalled()
+    expect(mocks.payloadUpdate).not.toHaveBeenCalled()
+  })
+
   it('expires a drifting open session instead of silently reusing it', async () => {
     const appointment = createAppointment({
       checkoutExpiresAt: '2030-01-01T10:20:00.000Z',

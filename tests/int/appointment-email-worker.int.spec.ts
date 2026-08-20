@@ -103,6 +103,25 @@ describe('appointment email worker', () => {
     expect(sentMessage).not.toContain(appointment.notes)
   })
 
+  it('confirms a free welcome appointment without claiming payment was received', async () => {
+    const welcomeAppointment = {
+      ...appointment,
+      amountPaid: null,
+      fittingFee: 0,
+      paymentStatus: 'unpaid' as const,
+    }
+    const { payload, req } = fixture(delivery(), welcomeAppointment)
+
+    await expect(
+      sendAppointmentEmail({ deliveryId: 'delivery-1', req: req as never }),
+    ).resolves.toBe('sent')
+
+    const message = JSON.stringify(payload.sendEmail.mock.calls)
+    expect(message).toContain('temporarily waived as part of our welcome offer')
+    expect(message).not.toContain('fee has been verified')
+    expect(message).not.toContain('fee and appointment have been confirmed')
+  })
+
   it('stores only a sanitized category for a permanent provider failure', async () => {
     const { payload, req } = fixture()
     payload.sendEmail.mockRejectedValue(

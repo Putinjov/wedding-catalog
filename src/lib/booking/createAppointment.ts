@@ -22,6 +22,10 @@ import {
 } from '@/lib/booking/validation'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { createAppointmentHoldExpiry } from '@/lib/booking/appointmentHold'
+import {
+  getWebsiteBookingInitialPaymentState,
+  requiresFittingFeePayment,
+} from '@/lib/booking/fittingFee'
 import { getBookingSettings } from '@/lib/booking/settings'
 import { appointmentPaymentContext } from '@/lib/booking/paymentIntegrity'
 import {
@@ -157,7 +161,10 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
 
   try {
     const privacyRecordedAt = new Date().toISOString()
-    const holdExpiresAt = createAppointmentHoldExpiry(settings.holdMinutes, now).iso
+    const paymentState = getWebsiteBookingInitialPaymentState()
+    const holdExpiresAt = requiresFittingFeePayment()
+      ? createAppointmentHoldExpiry(settings.holdMinutes, now).iso
+      : null
     const appointment = await payload.create({
       collection: 'appointments',
       draft: false,
@@ -167,9 +174,9 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         email: data.email,
         endAt,
         fittingFee: siteConfig.fittingFee,
-        holdExpiresAt,
+        ...(holdExpiresAt ? { holdExpiresAt } : {}),
         notes: data.notes || undefined,
-        paymentStatus: 'unpaid',
+        paymentStatus: paymentState.paymentStatus,
         phone: data.phone,
         privacyAcknowledgedAt: privacyRecordedAt,
         privacyAcknowledgementSource: 'website',
@@ -191,7 +198,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
         purpose: data.purpose,
         source: 'website',
         startAt,
-        status: 'pending_payment',
+        status: paymentState.status,
         currency: siteConfig.currency,
       },
       context: {
