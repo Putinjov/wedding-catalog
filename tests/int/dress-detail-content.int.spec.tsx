@@ -72,7 +72,7 @@ describe('dress detail commercial content', () => {
     expect(screen.getByText('Sold')).toBeTruthy()
     expect(screen.getByText('This dress has been sold and cannot be purchased.')).toBeTruthy()
     expect(screen.queryByRole('button')).toBeNull()
-    expect(screen.queryByText('€1,800.00')).toBeNull()
+    expect(screen.getByText('€1,800.00')).toBeTruthy()
   })
 
   it('keeps unavailable modes out of the booking flow', () => {

@@ -9,6 +9,7 @@ import { getRequestedDressMode, type DressMode } from '@/lib/catalogue'
 import { getSupportedDressModes, supportsDressMode } from '@/lib/dress-utils'
 import { normalizeCatalogueReturnTo } from '@/utilities/dress-routing'
 import { getBookingSettings } from '@/lib/booking/settings'
+import { getDressProductDescription } from '@/lib/dress-product-json-ld'
 
 type Args = {
   params: Promise<{
@@ -93,8 +94,7 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   }
 
   const title = formatSiteTitle(dress.meta?.title || dress.name)
-  const description =
-    dress.meta?.description || dress.shortDescription || `${dress.name} from ${siteConfig.name}.`
+  const description = getDressProductDescription(dress)
   const image =
     typeof dress.meta?.image === 'object' && dress.meta.image?.url ? dress.meta.image.url : null
 
