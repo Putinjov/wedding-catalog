@@ -6,8 +6,12 @@ import { normalizeDressVideoUrl, type DressMediaImage } from '@/lib/dress-media'
 import type { Media as MediaType } from '@/payload-types'
 
 vi.mock('@/components/Media', () => ({
-  Media: ({ alt, priority }: { alt: string; priority?: boolean }) => (
-    <span aria-label={alt || 'decorative image'} data-priority={priority ? 'true' : 'false'} />
+  Media: ({ alt, priority, quality }: { alt: string; priority?: boolean; quality?: number }) => (
+    <span
+      aria-label={alt || 'decorative image'}
+      data-priority={priority ? 'true' : 'false'}
+      data-quality={quality}
+    />
   ),
 }))
 
@@ -31,7 +35,14 @@ describe('dress gallery', () => {
   it('opens an accessible lightbox and supports keyboard navigation, zoom and Escape', () => {
     render(<DressGallery images={[image('one'), image('two')]} name="Grace" />)
 
-    expect(screen.getByLabelText('Image one').getAttribute('data-priority')).toBe('true')
+    const mainImage = screen.getByLabelText('Image one')
+    expect(mainImage.getAttribute('data-priority')).toBe('true')
+    expect(mainImage.getAttribute('data-quality')).toBe('85')
+    expect(
+      screen
+        .getAllByLabelText('decorative image')
+        .every((thumbnail) => thumbnail.getAttribute('data-quality') === '75'),
+    ).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Open Grace image 1 full screen' }))
 
     const dialog = screen.getByRole('dialog', { name: 'Grace image gallery' })

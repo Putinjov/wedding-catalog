@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { ImageMedia } from '@/components/Media/ImageMedia'
+import { defaultImageQuality, imageQualities, mainGalleryImageQuality } from '@/config/images'
 import type { Media } from '@/payload-types'
 
 const imageMediaSource = readFileSync(
@@ -33,11 +34,18 @@ describe('ImageMedia server boundary', () => {
     }
 
     const markup = renderToStaticMarkup(
-      <ImageMedia pictureClassName="catalogue-image" resource={resource} size="25vw" />,
+      <ImageMedia fill pictureClassName="catalogue-image" resource={resource} size="25vw" />,
     )
 
     expect(markup).toContain('<picture class="catalogue-image">')
     expect(markup).toContain('alt="Grace wedding dress"')
     expect(markup).toContain('sizes="25vw"')
+    expect(markup).toContain('q=75')
+  })
+
+  it('keeps image quality defaults aligned with Next config', () => {
+    expect(imageQualities).toEqual([65, 75, 85, 90])
+    expect(defaultImageQuality).toBe(75)
+    expect(mainGalleryImageQuality).toBe(85)
   })
 })
