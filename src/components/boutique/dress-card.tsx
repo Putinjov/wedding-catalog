@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { Media } from '@/components/Media'
 import { Badge } from '@/components/ui/badge'
+import { defaultImageQuality } from '@/config/images'
 import { formatCurrency } from '@/config/site'
 import type { DressDisplayMode } from '@/lib/catalogue'
 import type { DressWithMedia } from '@/lib/dress-media'
@@ -71,6 +72,7 @@ export function DressCard({
               fill
               imgClassName="object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
               pictureClassName="relative block h-full w-full"
+              quality={defaultImageQuality}
               resource={image.card}
               size="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />

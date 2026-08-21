@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Expand, Play, ZoomIn, ZoomOut } from 'lucide
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from 'react'
 
 import { Media } from '@/components/Media'
+import { defaultImageQuality, mainGalleryImageQuality } from '@/config/images'
 import {
   Dialog,
   DialogContent,
@@ -122,6 +123,7 @@ export function DressGallery({
       imgClassName="object-cover"
       pictureClassName="relative block h-full w-full"
       priority={activeIndex === 0}
+      quality={mainGalleryImageQuality}
       resource={activeImage.full}
       size="(max-width: 1023px) 100vw, 58vw"
     />
@@ -183,6 +185,7 @@ export function DressGallery({
                       fill
                       imgClassName="object-cover"
                       pictureClassName="relative block h-full w-full"
+                      quality={defaultImageQuality}
                       resource={item.image.thumbnail}
                       size="96px"
                     />
@@ -227,6 +230,7 @@ export function DressGallery({
                 fill
                 imgClassName="object-contain"
                 pictureClassName="relative block h-full w-full"
+                quality={mainGalleryImageQuality}
                 resource={activeImage.full}
                 size="100vw"
               />

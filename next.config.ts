@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 
 import { redirects } from './redirects'
 import { getAllowedDevOrigins } from './src/config/dev-origins'
+import { imageQualities } from './src/config/images'
 import { getPrivateBookingHeaderRules } from './src/config/indexation'
 import { getServerSideOrigin, normalizePublicAssetOrigin } from './src/config/site-url'
 
@@ -55,7 +56,7 @@ const nextConfig: NextConfig = {
         pathname: '/media/**',
       },
     ],
-    qualities: [65, 75, 85, 90],
+    qualities: [...imageQualities],
     remotePatterns: remoteImageOrigins.map((origin) => {
       const url = new URL(origin)
 
