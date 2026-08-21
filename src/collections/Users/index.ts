@@ -1,11 +1,17 @@
 import type { CollectionConfig } from 'payload'
 
-import { ownerFieldOnly, ownerOnly, ownerOrFirstUser, userRoles } from '../../access/roles'
+import {
+  appointmentTeam,
+  ownerFieldOnly,
+  ownerOnly,
+  ownerOrFirstUser,
+  userRoles,
+} from '../../access/roles'
 
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
-    admin: ownerOnly,
+    admin: appointmentTeam,
     create: ownerOrFirstUser,
     delete: ownerOnly,
     read: ownerOnly,
