@@ -8,6 +8,7 @@ import { Search } from '@/search/Component'
 import PageClient from './page.client'
 import { CardPostData } from '@/components/Card'
 import { DressGrid } from '@/components/boutique/dress-grid'
+import { publicNoIndexRobots } from '@/config/indexation'
 import { searchPublicDresses } from '@/lib/searchDresses'
 
 type Args = {
@@ -90,6 +91,10 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
 
 export function generateMetadata(): Metadata {
   return {
+    alternates: {
+      canonical: '/search',
+    },
+    robots: publicNoIndexRobots,
     title: `Payload Website Template Search`,
   }
 }

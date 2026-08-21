@@ -11,6 +11,7 @@ import { metadata as dressesMetadata } from '@/app/(frontend)/dresses/page'
 import { metadata as homeMetadata } from '@/app/(frontend)/page'
 import { metadata as privacyMetadata } from '@/app/(frontend)/privacy/page'
 import { generateMetadata as generateRentMetadata } from '@/app/(frontend)/rent/page'
+import { generateMetadata as generateSearchMetadata } from '@/app/(frontend)/search/page'
 import { getPrivateBookingHeaderRules } from '@/config/indexation'
 import { getAppointmentByReference } from '@/lib/booking/getAppointment'
 import type { DressWithMedia } from '@/lib/dress-media'
@@ -127,7 +128,11 @@ describe('canonical metadata', () => {
 
   it('keeps filtered catalogues crawlable but out of the search index', async () => {
     const buyMetadata = await generateBuyMetadata({
-      searchParams: Promise.resolve({ designer: 'designer-one', priceMax: '2500' }),
+      searchParams: Promise.resolve({
+        designer: 'designer-one',
+        page: '2',
+        priceMax: '2500',
+      }),
     })
     const rentMetadata = await generateRentMetadata({
       searchParams: Promise.resolve({ featured: '1' }),
@@ -137,6 +142,42 @@ describe('canonical metadata', () => {
     expect(buyMetadata.robots).toEqual({ follow: true, index: false })
     expect(rentMetadata.alternates?.canonical).toBe('/rent')
     expect(rentMetadata.robots).toEqual({ follow: true, index: false })
+  })
+
+  it('uses a self-canonical for clean page 2 and deeper catalogue pagination', async () => {
+    const buyMetadata = await generateBuyMetadata({
+      searchParams: Promise.resolve({ page: '2' }),
+    })
+    const rentMetadata = await generateRentMetadata({
+      searchParams: Promise.resolve({ page: '12' }),
+    })
+
+    expect(buyMetadata.alternates?.canonical).toBe('/buy?page=2')
+    expect(buyMetadata.robots).toBeUndefined()
+    expect(rentMetadata.alternates?.canonical).toBe('/rent?page=12')
+    expect(rentMetadata.robots).toBeUndefined()
+  })
+
+  it.each([
+    { sort: 'newest' },
+    { page: '2', sort: 'price-asc' },
+    { utm_source: 'newsletter' },
+    { page: ['2', '3'] },
+  ])(
+    'canonicalizes non-indexable catalogue query combinations to the base route',
+    async (query) => {
+      const metadata = await generateBuyMetadata({ searchParams: Promise.resolve(query) })
+
+      expect(metadata.alternates?.canonical).toBe('/buy')
+      expect(metadata.robots).toEqual({ follow: true, index: false })
+    },
+  )
+
+  it('keeps search results crawlable but out of the search index', () => {
+    const metadata = generateSearchMetadata()
+
+    expect(metadata.alternates?.canonical).toBe('/search')
+    expect(metadata.robots).toEqual({ follow: true, index: false })
   })
 
   it('uses the authoritative dress slug without catalogue mode parameters', async () => {

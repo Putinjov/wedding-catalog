@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
 
+export const publicNoIndexRobots: NonNullable<Metadata['robots']> = {
+  follow: true,
+  index: false,
+}
+
 export const privatePageRobots: NonNullable<Metadata['robots']> = {
   follow: false,
   index: false,
