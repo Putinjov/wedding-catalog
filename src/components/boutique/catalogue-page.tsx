@@ -78,6 +78,16 @@ export async function CataloguePage({
     searchParams: normalizedSearchParams,
   })
 
+  const pageRange = (
+    <PageRange
+      className="text-sm text-muted-foreground"
+      collectionLabels={{ plural: 'dresses', singular: 'dress' }}
+      currentPage={currentPage}
+      limit={CATALOGUE_PAGE_SIZE}
+      totalDocs={dresses.totalDocs}
+    />
+  )
+
   return (
     <main className="bg-background">
       <section className="container py-16 md:py-24">
@@ -93,14 +103,22 @@ export async function CataloguePage({
           </p>
         </div>
 
-        <div className="mt-14 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <PageRange
-            className="text-sm text-muted-foreground"
-            collectionLabels={{ plural: 'dresses', singular: 'dress' }}
-            currentPage={currentPage}
-            limit={CATALOGUE_PAGE_SIZE}
-            totalDocs={dresses.totalDocs}
-          />
+        <div className="mt-14 lg:hidden">
+          <div className="flex items-center justify-between gap-4">
+            {pageRange}
+            <div className="w-[min(52vw,13rem)] shrink-0">
+              <CatalogueSortControl
+                compact
+                mode={mode}
+                searchParams={normalizedSearchParams}
+                sort={requestedSort.sort}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-14 hidden items-end justify-between gap-5 lg:flex">
+          {pageRange}
           <CatalogueSortControl
             mode={mode}
             searchParams={normalizedSearchParams}
@@ -108,7 +126,7 @@ export async function CataloguePage({
           />
         </div>
 
-        <div className="mt-6 scroll-mt-8" id="catalogue-results">
+        <div className="mt-3 scroll-mt-8 lg:mt-6" id="catalogue-results">
           <CatalogueFilters
             activeCount={requestedFilters.activeCount}
             filters={requestedFilters.filters}
