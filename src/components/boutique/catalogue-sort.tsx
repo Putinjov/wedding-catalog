@@ -1,3 +1,5 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
 import {
   catalogueSortOptions,
@@ -7,10 +9,12 @@ import {
 } from '@/lib/catalogue'
 
 export function CatalogueSortControl({
+  compact = false,
   mode,
   searchParams,
   sort,
 }: {
+  compact?: boolean
   mode: CatalogueMode
   searchParams: CatalogueSearchParams
   sort: CatalogueSort
@@ -21,20 +25,31 @@ export function CatalogueSortControl({
   })
 
   return (
-    <form action={`/${mode}#catalogue-results`} className="flex items-end gap-3" method="get">
+    <form
+      action={`/${mode}#catalogue-results`}
+      className={compact ? 'w-full' : 'flex items-end gap-3'}
+      method="get"
+    >
       {preservedParameters.map(({ name, value }, index) => (
         <input key={`${name}-${index}`} name={name} type="hidden" value={value} />
       ))}
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium" htmlFor={`${mode}-catalogue-sort`}>
+      <div className={compact ? 'w-full' : undefined}>
+        <label
+          className={compact ? 'sr-only' : 'mb-1.5 block text-sm font-medium'}
+          htmlFor={`${mode}-catalogue-sort${compact ? '-mobile' : ''}`}
+        >
           Sort by
         </label>
         <select
-          className="min-h-11 border border-input bg-background px-3 text-sm outline-none focus-visible:ring-4 focus-visible:ring-ring/10"
+          aria-label={compact ? 'Sort dresses' : undefined}
+          className={`min-h-11 border border-input bg-background px-3 text-sm outline-none focus-visible:ring-4 focus-visible:ring-ring/10 ${compact ? 'w-full' : ''}`}
           defaultValue={sort}
-          id={`${mode}-catalogue-sort`}
+          id={`${mode}-catalogue-sort${compact ? '-mobile' : ''}`}
           name="sort"
+          onChange={(event) => {
+            if (compact) event.currentTarget.form?.requestSubmit()
+          }}
         >
           {catalogueSortOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -44,9 +59,11 @@ export function CatalogueSortControl({
         </select>
       </div>
 
-      <Button className="min-h-11" type="submit" variant="outline">
-        Apply
-      </Button>
+      {!compact ? (
+        <Button className="min-h-11" type="submit" variant="outline">
+          Apply
+        </Button>
+      ) : null}
     </form>
   )
 }
