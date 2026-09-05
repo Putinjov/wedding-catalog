@@ -21,6 +21,7 @@ function appointment(overrides: Partial<Appointment> = {}): Appointment {
   return {
     amountPaid: 2000,
     createdAt: '2026-01-01T00:00:00.000Z',
+    currency: 'EUR',
     customerName: 'Private Customer',
     email: 'private@example.com',
     endAt: '2026-10-27T11:00:00.000Z',

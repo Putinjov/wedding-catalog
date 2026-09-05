@@ -175,7 +175,7 @@ describe('Stripe Checkout hold synchronization', () => {
       payment_status: 'unpaid',
       status: 'open',
       url: 'https://checkout.stripe.com/c/pay/old',
-    } as Stripe.Checkout.Session)
+    } satisfies Partial<Stripe.Checkout.Session>)
 
     await expect(createFittingCheckoutSession(appointment.publicReference)).resolves.toEqual({
       status: 'redirect',

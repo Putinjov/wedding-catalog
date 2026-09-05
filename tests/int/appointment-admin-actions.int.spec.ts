@@ -1,4 +1,4 @@
-import type { PayloadRequest, TypedUser } from 'payload'
+import type { PayloadRequest, RequestContext, TypedUser } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
 import { defaultBookingSettings } from '@/config/booking'
@@ -7,6 +7,7 @@ import {
   updateAppointmentNotes,
 } from '@/lib/admin/appointments/appointmentActions'
 import { getAppointmentHistory } from '@/lib/admin/appointments/appointmentHistory'
+import { getAppointmentAuditContext } from '@/lib/booking/appointmentAuditContext'
 import type { Appointment } from '@/payload-types'
 
 vi.mock('@/lib/booking/settings', () => ({
@@ -36,7 +37,14 @@ function appointment(overrides: Partial<Appointment> = {}): Appointment {
 }
 
 function user(role: 'manager' | 'owner' | 'staff'): TypedUser {
-  return { collection: 'users', id: `${role}-1`, role }
+  return {
+    collection: 'users',
+    createdAt: '2026-08-01T09:00:00.000Z',
+    email: `${role}@example.test`,
+    id: `${role}-1`,
+    role,
+    updatedAt: '2026-08-01T09:00:00.000Z',
+  }
 }
 
 function actionRequest({ existingAudit = false, current = appointment() } = {}) {
@@ -47,7 +55,7 @@ function actionRequest({ existingAudit = false, current = appointment() } = {}) 
       totalDocs: existingAudit ? 1 : 0,
     })),
     findByID: vi.fn(async () => stored),
-    update: vi.fn(async ({ data }: { data: Partial<Appointment> }) => {
+    update: vi.fn(async ({ data }: { data: Partial<Appointment>; context?: RequestContext }) => {
       stored = { ...stored, ...data }
       return stored
     }),
@@ -144,12 +152,13 @@ describe('appointment admin actions', () => {
 
     const update = payload.update.mock.calls[0]?.[0]
     expect(update.data).toEqual({ internalNotes: 'Call customer about alterations' })
-    expect(update.context.appointmentAudit).toMatchObject({
+    const audit = getAppointmentAuditContext(update.context)
+    expect(audit).toMatchObject({
       action: 'appointment.internal_notes_updated',
       metadata: { hadInternalNotes: true, hasInternalNotes: true },
     })
-    expect(JSON.stringify(update.context.appointmentAudit)).not.toContain('Call customer')
-    expect(JSON.stringify(update.context.appointmentAudit)).not.toContain('Previous private note')
+    expect(JSON.stringify(audit)).not.toContain('Call customer')
+    expect(JSON.stringify(audit)).not.toContain('Previous private note')
   })
 })
 

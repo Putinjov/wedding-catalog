@@ -16,6 +16,7 @@ vi.mock('next/navigation', () => ({
 function appointment(overrides: Partial<Appointment> = {}): Appointment {
   return {
     createdAt: '2026-01-01T00:00:00.000Z',
+    currency: 'EUR',
     customerName: 'Private Customer',
     email: 'private@example.com',
     endAt: '2026-03-31T10:00:00.000Z',
