@@ -2,6 +2,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
 
 import type { Dress } from '@/payload-types'
+import { revalidateCatalogueCaches } from '@/lib/dress-cache'
 import { DRESSES_SITEMAP_CACHE_TAG } from '@/utilities/sitemap'
 import { getDressPath } from '@/utilities/dress-routing'
 
@@ -26,6 +27,7 @@ export const revalidateDress: CollectionAfterChangeHook<Dress> = ({
   }
 
   if (doc._status === 'published' || previousDoc?._status === 'published') {
+    revalidateCatalogueCaches()
     revalidateTag(DRESSES_SITEMAP_CACHE_TAG, 'max')
   }
 
@@ -37,6 +39,7 @@ export const revalidateDressDelete: CollectionAfterDeleteHook<Dress> = ({
   req: { context },
 }) => {
   if (!context.disableRevalidate && doc._status === 'published') {
+    revalidateCatalogueCaches()
     revalidateTag(DRESSES_SITEMAP_CACHE_TAG, 'max')
   }
 

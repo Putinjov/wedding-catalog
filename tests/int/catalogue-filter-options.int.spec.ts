@@ -10,6 +10,12 @@ vi.mock('@payload-config', () => ({
   default: Promise.resolve({}),
 }))
 
+vi.mock('next/cache', () => ({
+  unstable_cache: <Arguments extends unknown[], Result>(
+    callback: (...args: Arguments) => Promise<Result>,
+  ) => callback,
+}))
+
 vi.mock('payload', async (importOriginal) => {
   const actual = await importOriginal<typeof import('payload')>()
 

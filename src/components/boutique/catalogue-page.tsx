@@ -13,6 +13,7 @@ import { parseCatalogueFilters } from '@/lib/catalogue-filters'
 import { getCatalogueFilterOptions } from '@/lib/getCatalogueFilterOptions'
 import { getDresses } from '@/lib/getDresses'
 import Link from 'next/link'
+import { draftMode } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { PageRange } from '@/components/PageRange'
@@ -28,9 +29,10 @@ export async function CataloguePage({
   mode: CatalogueMode
   searchParams: CatalogueSearchParams
 }) {
+  const { isEnabled: draft } = await draftMode()
   const requestedPage = parseCataloguePage(searchParams.page)
   const requestedSort = parseCatalogueSort(searchParams.sort)
-  const filterOptions = await getCatalogueFilterOptions()
+  const filterOptions = await getCatalogueFilterOptions({ draft })
   const requestedFilters = parseCatalogueFilters(searchParams, filterOptions)
   const normalizedSearchParams = normalizeCatalogueSortSearchParams(
     requestedFilters.searchParams,
@@ -52,6 +54,7 @@ export async function CataloguePage({
   }
 
   const dresses = await getDresses(mode, {
+    draft,
     filterOptions,
     filters: requestedFilters.filters,
     page: requestedPage.page,

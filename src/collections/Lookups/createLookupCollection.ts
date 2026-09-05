@@ -2,12 +2,17 @@ import type { CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 
 import { ownerOrManager } from '@/access/roles'
+import {
+  revalidateCatalogueLookup,
+  revalidateCatalogueLookupDelete,
+} from '@/collections/hooks/revalidateCatalogue'
 
 type LookupCollectionOptions = {
   slug: string
   singularLabel: string
   pluralLabel: string
   description?: string
+  invalidatesCatalogue?: boolean
 }
 
 export const createLookupCollection = ({
@@ -15,6 +20,7 @@ export const createLookupCollection = ({
   singularLabel,
   pluralLabel,
   description,
+  invalidatesCatalogue = false,
 }: LookupCollectionOptions): CollectionConfig => ({
   slug,
 
@@ -37,6 +43,13 @@ export const createLookupCollection = ({
     read: () => true,
     update: ownerOrManager,
   },
+
+  hooks: invalidatesCatalogue
+    ? {
+        afterChange: [revalidateCatalogueLookup],
+        afterDelete: [revalidateCatalogueLookupDelete],
+      }
+    : undefined,
 
   fields: [
     {

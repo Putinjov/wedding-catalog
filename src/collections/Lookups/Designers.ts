@@ -5,4 +5,5 @@ export const Designers = createLookupCollection({
   singularLabel: 'Designer',
   pluralLabel: 'Designers',
   description: 'Available designers',
+  invalidatesCatalogue: true,
 })

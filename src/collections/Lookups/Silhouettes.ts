@@ -5,4 +5,5 @@ export const Silhouettes = createLookupCollection({
   singularLabel: 'Silhouette',
   pluralLabel: 'Silhouettes',
   description: 'Available dress silhouettes',
+  invalidatesCatalogue: true,
 })
