@@ -13,34 +13,54 @@ import {
   productionSiteOrigin,
 } from '@/config/site-url'
 
+function environmentFixture(overrides: Partial<NodeJS.ProcessEnv>): NodeJS.ProcessEnv {
+  return {
+    CRON_SECRET: '',
+    DATABASE_URL: '',
+    NEXT_PUBLIC_SERVER_URL: '',
+    NODE_ENV: 'test',
+    PAYLOAD_SECRET: '',
+    PREVIEW_SECRET: '',
+    R2_ACCESS_KEY_ID: '',
+    R2_BUCKET: '',
+    R2_ENDPOINT: '',
+    R2_PUBLIC_URL: '',
+    R2_SECRET_ACCESS_KEY: '',
+    STRIPE_SECRET_KEY: '',
+    STRIPE_WEBHOOK_SECRET: '',
+    VERCEL_PROJECT_PRODUCTION_URL: '',
+    ...overrides,
+  }
+}
+
 describe('deployment configuration', () => {
   it('allows explicitly configured LAN hosts only in development', () => {
     expect(
-      getAllowedDevOrigins({
+      getAllowedDevOrigins(environmentFixture({
         ALLOWED_DEV_ORIGINS: '192.168.1.12, http://Bridal-Test.local:3000, 192.168.1.12',
         NODE_ENV: 'development',
-      } as NodeJS.ProcessEnv),
+      })),
     ).toEqual(['192.168.1.12', 'bridal-test.local'])
 
     expect(
-      getAllowedDevOrigins({
+      getAllowedDevOrigins(environmentFixture({
         ALLOWED_DEV_ORIGINS: '192.168.1.12',
         NODE_ENV: 'production',
-      } as NodeJS.ProcessEnv),
+      })),
     ).toBeUndefined()
   })
 
   it('uses the Vercel deployment URL for previews', () => {
-    const origin = getServerSideOrigin({
+    const origin = getServerSideOrigin(environmentFixture({
       VERCEL_ENV: 'preview',
       VERCEL_URL: 'wedding-catalog-git-feature.vercel.app',
-    } as NodeJS.ProcessEnv)
+    }))
 
     expect(origin).toBe('https://wedding-catalog-git-feature.vercel.app')
   })
 
   it('uses the CAIT Bridal canonical origin in production', () => {
-    const origin = getCanonicalOrigin({ NODE_ENV: 'production' } as NodeJS.ProcessEnv)
+    const origin = getCanonicalOrigin(environmentFixture({ NODE_ENV: 'production' }))
 
     expect(origin).toBe(productionSiteOrigin)
   })
@@ -54,17 +74,17 @@ describe('deployment configuration', () => {
   it('fails fast with the exact missing production variable names', () => {
     expect(() =>
       getServerEnvironment({
-        source: {
+        source: environmentFixture({
           DATABASE_URL: 'mongodb://127.0.0.1/wedding-catalog',
           NODE_ENV: 'production',
-        } as NodeJS.ProcessEnv,
+        }),
       }),
     ).toThrow(/EMAIL_FROM.*SMTP_PASSWORD.*STRIPE_SECRET_KEY/)
   })
 
   it('supports a verified Google Workspace sender alias', () => {
     const environment = getServerEnvironment({
-      source: {
+      source: environmentFixture({
         BOOKING_ADMIN_EMAIL: 'bookings@caitbridal.ie',
         CRON_SECRET: 'cron-secret-at-least-24-characters',
         DATABASE_URL: 'mongodb://127.0.0.1/wedding-catalog',
@@ -83,7 +103,7 @@ describe('deployment configuration', () => {
         SMTP_USER: 'sales@caitbridal.ie',
         STRIPE_SECRET_KEY: 'sk_test_placeholder',
         STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',
-      } as NodeJS.ProcessEnv,
+      }),
     })
 
     expect(environment.SMTP_USER).toBe('sales@caitbridal.ie')
@@ -93,7 +113,7 @@ describe('deployment configuration', () => {
   it('rejects an unapproved Google Workspace sender alias', () => {
     expect(() =>
       getServerEnvironment({
-        source: {
+        source: environmentFixture({
           BOOKING_ADMIN_EMAIL: 'bookings@caitbridal.ie',
           CRON_SECRET: 'cron-secret-at-least-24-characters',
           DATABASE_URL: 'mongodb://127.0.0.1/wedding-catalog',
@@ -112,7 +132,7 @@ describe('deployment configuration', () => {
           SMTP_USER: 'sales@caitbridal.ie',
           STRIPE_SECRET_KEY: 'sk_test_placeholder',
           STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',
-        } as NodeJS.ProcessEnv,
+        }),
       }),
     ).toThrow('EMAIL_FROM must be the verified Google Workspace alias noreply@caitbridal.ie')
   })

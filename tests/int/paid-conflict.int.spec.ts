@@ -1,8 +1,9 @@
 import type Stripe from 'stripe'
-import type { PayloadRequest, TypedUser } from 'payload'
+import type { PayloadRequest, RequestContext, TypedUser } from 'payload'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Appointment } from '@/payload-types'
+import { getAppointmentAuditContext } from '@/lib/booking/appointmentAuditContext'
 
 const stripeMocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -44,7 +45,14 @@ function appointment(overrides: Partial<Appointment> = {}): Appointment {
 }
 
 function user(role: 'manager' | 'owner' | 'staff'): TypedUser {
-  return { collection: 'users', email: `${role}@example.com`, id: `${role}-1`, role }
+  return {
+    collection: 'users',
+    createdAt: '2026-08-09T10:00:00.000Z',
+    email: `${role}@example.com`,
+    id: `${role}-1`,
+    role,
+    updatedAt: '2026-08-09T10:00:00.000Z',
+  }
 }
 
 function requestFixture(existingAudit = false) {
@@ -57,7 +65,7 @@ function requestFixture(existingAudit = false) {
     ),
     findByID: vi.fn(async () => current),
     logger: { error: vi.fn(), warn: vi.fn() },
-    update: vi.fn(async ({ data }: { data: Partial<Appointment> }) => {
+    update: vi.fn(async ({ data }: { data: Partial<Appointment>; context?: RequestContext }) => {
       current = { ...current, ...data }
       return current
     }),
@@ -167,11 +175,12 @@ describe('paid conflict workflow', () => {
     })
 
     const context = payload.update.mock.calls[0]?.[0]?.context
-    expect(context.appointmentAudit.metadata).toEqual(
+    const audit = getAppointmentAuditContext(context)
+    expect(audit?.metadata).toEqual(
       expect.objectContaining({ contactMethod: 'email' }),
     )
-    expect(JSON.stringify(context.appointmentAudit.metadata)).not.toContain('customer@example.com')
-    expect(JSON.stringify(context.appointmentAudit.metadata)).not.toContain('+353')
+    expect(JSON.stringify(audit?.metadata)).not.toContain('customer@example.com')
+    expect(JSON.stringify(audit?.metadata)).not.toContain('+353')
   })
 
   it('keeps a pending refund visible without prematurely changing paid state', async () => {
