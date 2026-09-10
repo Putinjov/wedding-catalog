@@ -333,6 +333,8 @@ async function loadBookingSettings(): Promise<ResolvedBookingSettings> {
   return resolveBookingSettings(settings)
 }
 
-export const getBookingSettings = unstable_cache(loadBookingSettings, ['booking-settings'], {
-  tags: ['global_booking-settings'],
-})
+export const getBookingSettings = unstable_cache(
+  loadBookingSettings,
+  ['booking-settings', 'schedule-20260909'],
+  { tags: ['global_booking-settings'] },
+)
