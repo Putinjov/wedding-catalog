@@ -125,6 +125,7 @@ describe('dress sitemap', () => {
     const body = await response.text()
 
     expect(body).toContain('<loc>https://catalogue.example/buy</loc>')
+    expect(body).toContain('<loc>https://catalogue.example/terms-and-conditions</loc>')
     expect(body).toContain('<loc>https://catalogue.example/rent</loc>')
     expect(body).toContain('<loc>https://catalogue.example/book-a-fitting</loc>')
     expect(body).toContain('<loc>https://catalogue.example/posts</loc>')

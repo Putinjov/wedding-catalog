@@ -1,3 +1,9 @@
+import {
+  publicBusinessAddressLines,
+  publicBusinessMapUrl,
+  publicBusinessPhone,
+  publicBusinessPhoneDisplay,
+} from '@/config/business'
 import { formatCurrency, siteConfig } from '@/config/site'
 import { getCanonicalOrigin } from '@/config/site-url'
 import { formatDateTimeForCustomer } from '@/lib/booking/date'
@@ -22,19 +28,20 @@ type CustomerEmailPresentation = {
   cta?: { href: string; label: string }
   intro: string
   notice?: string
+  nextSteps?: string
   subject: string
   title: string
 }
 
 const brand = {
-  antiqueGold: '#c9a45c',
-  blush: '#e8c9d1',
+  antiqueGold: '#c8b79a',
+  blush: '#c8b79a',
   card: '#fffdfb',
-  charcoal: '#332c2f',
-  deepLavender: '#8e6fa0',
-  ivory: '#fbf6ee',
-  muted: '#6f6468',
-  warmBorder: '#e5d8cb',
+  charcoal: '#2c2621',
+  deepLavender: '#2c2621',
+  ivory: '#faf8f6',
+  muted: '#625c55',
+  warmBorder: '#e6e1d9',
 } as const
 
 function escapeHtml(value: string): string {
@@ -47,22 +54,18 @@ function escapeHtml(value: string): string {
 }
 
 function customerFooter(contactAddress: string): string {
-  return `Questions? Contact ${contactAddress}.\n\n${siteConfig.name}`
-}
-
-function appointmentSummary(appointment: Appointment): string {
-  return [
-    `Date and time: ${formatDateTimeForCustomer(appointment.startAt)}`,
-    `Purpose: ${getBookingPurposeCustomerLabel(appointment.purpose)}`,
-    `Reference: ${appointment.publicReference}`,
-  ].join('\n')
+  return `Questions or need to change your appointment? Reply to this email or contact ${contactAddress}.\nCall: ${publicBusinessPhoneDisplay}\n\n${siteConfig.name}\n${publicBusinessAddressLines.join(', ')}\nDirections: ${publicBusinessMapUrl}`
 }
 
 function appointmentSummaryRows(appointment: Appointment): SummaryRow[] {
+  const duration = (Date.parse(appointment.endAt) - Date.parse(appointment.startAt)) / 60_000
   return [
     { label: 'Date & time', value: formatDateTimeForCustomer(appointment.startAt) },
+    { label: 'Time zone', value: 'Ireland local time (Europe/Dublin)' },
+    ...(Number.isInteger(duration) && duration > 0
+      ? [{ label: 'Duration', value: `${duration} minutes` }]
+      : []),
     { label: 'Purpose', value: getBookingPurposeCustomerLabel(appointment.purpose) },
-    { label: 'Reference', value: appointment.publicReference },
   ]
 }
 
@@ -113,6 +116,9 @@ function renderCustomerHtml({
   const notice = presentation.notice
     ? `<p style="margin: 24px 0 0; padding-top: 20px; border-top: 1px solid ${brand.warmBorder}; color: ${brand.muted}; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 21px;">${escapeHtml(presentation.notice)}</p>`
     : ''
+  const nextSteps = presentation.nextSteps
+    ? `<h2 style="margin: 28px 0 8px; font-family: Georgia, 'Times New Roman', serif; font-size: 23px; font-weight: 400;">Your next steps</h2><p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 26px;">${escapeHtml(presentation.nextSteps)}</p>`
+    : ''
 
   return `<!doctype html>
 <html lang="en">
@@ -120,20 +126,21 @@ function renderCustomerHtml({
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>${escapeHtml(presentation.subject)}</title>
+    <style>@media screen and (max-width: 480px) { .email-card { padding: 28px 20px !important; } h1 { font-size: 30px !important; line-height: 36px !important; } }</style>
   </head>
   <body style="margin: 0; padding: 0; background: ${brand.ivory}; color: ${brand.charcoal};">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${brand.ivory}" style="width: 100%; background: ${brand.ivory};">
       <tr>
-        <td align="center" style="padding: 36px 16px;">
+        <td role="main" align="center" style="padding: 36px 16px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width: 100%; max-width: 620px;">
             <tr>
               <td align="center" style="padding: 0 0 24px;">
-                <div style="color: ${brand.deepLavender}; font-family: Georgia, 'Times New Roman', serif; font-size: 27px; line-height: 32px; letter-spacing: 4px;">CAIT</div>
+                <div style="color: ${brand.deepLavender}; font-family: Georgia, 'Times New Roman', serif; font-size: 27px; line-height: 32px; letter-spacing: 4px;">CÁIT</div>
                 <div style="margin-top: 3px; color: ${brand.charcoal}; font-family: Arial, Helvetica, sans-serif; font-size: 10px; line-height: 14px; letter-spacing: 4px; text-transform: uppercase;">Bridal</div>
               </td>
             </tr>
             <tr>
-              <td bgcolor="${brand.card}" style="background: ${brand.card}; border: 1px solid ${brand.warmBorder}; padding: 42px 42px 38px;">
+              <td class="email-card" bgcolor="${brand.card}" style="background: ${brand.card}; border: 1px solid ${brand.warmBorder}; padding: 42px 28px 38px;">
                 <p style="margin: 0 0 12px; color: ${brand.deepLavender}; font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 700; line-height: 16px; letter-spacing: 2.4px; text-transform: uppercase;">Private fitting</p>
                 <h1 style="margin: 0; color: ${brand.charcoal}; font-family: Georgia, 'Times New Roman', serif; font-size: 38px; font-weight: 400; line-height: 44px;">${escapeHtml(presentation.title)}</h1>
                 <div style="width: 42px; height: 2px; margin: 22px 0; background: ${brand.antiqueGold}; font-size: 0; line-height: 0;">&nbsp;</div>
@@ -143,13 +150,17 @@ function renderCustomerHtml({
                   ${renderSummaryRows(summaryRows)}
                 </table>
 
+                ${nextSteps}
                 ${notice}
                 ${cta}
+                <h2 style="margin: 28px 0 8px; font-family: Georgia, 'Times New Roman', serif; font-size: 23px; font-weight: 400;">Find the boutique</h2>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 24px;">${publicBusinessAddressLines.map(escapeHtml).join('<br>')}</p>
+                <a href="${escapeHtml(publicBusinessMapUrl)}" style="display: inline-block; padding: 14px 0; color: ${brand.charcoal}; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 20px; text-decoration: underline;">Get directions</a>
               </td>
             </tr>
             <tr>
               <td align="center" style="padding: 24px 16px 0;">
-                <p style="margin: 0; color: ${brand.muted}; font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 19px;">Questions? Reply to this email or contact <a href="mailto:${escapeHtml(contactAddress)}" style="color: ${brand.deepLavender}; text-decoration: none;">${escapeHtml(contactAddress)}</a>.</p>
+                <p style="margin: 0; color: ${brand.muted}; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 22px;">Questions or need to change your appointment? Reply to this email or contact<br><a href="mailto:${escapeHtml(contactAddress)}" style="display: inline-block; padding: 11px 0; color: ${brand.charcoal}; overflow-wrap: anywhere; text-decoration: underline;">${escapeHtml(contactAddress)}</a><br><a href="tel:${publicBusinessPhone}" style="display: inline-block; padding: 11px 0; color: ${brand.charcoal}; text-decoration: underline;">${publicBusinessPhoneDisplay}</a></p>
                 <p style="margin: 8px 0 0; color: ${brand.muted}; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 18px;">${escapeHtml(siteConfig.name)}</p>
               </td>
             </tr>
@@ -178,7 +189,9 @@ function getCustomerPresentation(
         cta: { href: dressesLink(), label: 'Explore the collection' },
         intro: isFittingFeeWaived(appointment.fittingFee)
           ? 'Your private appointment is confirmed. The usual fitting fee is temporarily waived as part of our welcome offer.'
-          : 'Your fitting fee has been verified and your private appointment is confirmed. We look forward to welcoming you.',
+          : 'Your private appointment is confirmed. We look forward to welcoming you.',
+        nextSteps:
+          'We look forward to helping you find your dress. You can explore the collection before your visit. If your plans change, reply to this email so we can help.',
         notice: 'Every dress is individually fitted and professionally altered for the customer.',
         subject: 'Your private fitting is confirmed',
         title: 'Your fitting is confirmed',
@@ -194,13 +207,17 @@ function getCustomerPresentation(
     case 'expired':
       return {
         cta: { href: bookingLink(), label: 'Choose another time' },
-        intro: 'The unpaid hold for this fitting time has expired and the appointment time is no longer reserved.',
+        intro:
+          'The unpaid hold for this fitting time has expired and the appointment time is no longer reserved.',
         subject: 'Your fitting hold has expired',
         title: 'Your fitting hold has expired',
       }
     case 'rescheduled':
       return {
-        intro: 'Your confirmed private fitting has been rescheduled. The updated appointment details are below.',
+        intro:
+          'Your confirmed private fitting has been rescheduled. The updated appointment details are below.',
+        nextSteps:
+          'Please use the date and time shown above instead of your previous appointment details. If this time no longer suits you, reply to this email.',
         subject: 'Your private fitting has been rescheduled',
         title: 'Your fitting has been rescheduled',
       }
@@ -214,7 +231,8 @@ function getCustomerPresentation(
       }
     case 'refund':
       return {
-        intro: 'Your fitting fee refund has been recorded. Your bank may take additional time to display the refund.',
+        intro:
+          'Your fitting fee refund has been recorded. Your bank may take additional time to display the refund.',
         subject: 'Your fitting fee refund',
         title: 'Your refund has been recorded',
       }
@@ -226,49 +244,40 @@ function customerMessage(
   appointment: Appointment,
   contactAddress: string,
 ): AppointmentEmailMessage {
-  const summary = appointmentSummary(appointment)
-  const footer = customerFooter(contactAddress)
   const presentation = getCustomerPresentation(event, appointment)
-  let text: string
-  let summaryRows = appointmentSummaryRows(appointment)
+  const summaryRows = appointmentSummaryRows(appointment)
 
-  switch (event) {
-    case 'pending':
-      text = `Hello,\n\nWe received your private fitting request. It is not confirmed until the fitting fee has been paid.\n\n${summary}\n\nContinue securely: ${pendingLink(appointment)}\n\n${footer}`
-      break
-    case 'confirmed':
-      text = isFittingFeeWaived(appointment.fittingFee)
-        ? `Hello,\n\nYour private fitting is confirmed. The usual fitting fee is temporarily waived as part of our welcome offer.\n\n${summary}\n\nEvery dress is individually fitted and professionally altered for the customer.\n\n${footer}`
-        : `Hello,\n\nYour fitting fee and appointment have been confirmed.\n\n${summary}\n\nEvery dress is individually fitted and professionally altered for the customer.\n\n${footer}`
-      break
-    case 'failed':
-      text = `Hello,\n\nYour fitting payment was not completed, so the appointment is not confirmed. Do not send card details by email.\n\n${summary}\n\nReview the private booking: ${pendingLink(appointment)}\n\n${footer}`
-      break
-    case 'expired':
-      text = `Hello,\n\nThe unpaid hold for this fitting time has expired and the time is no longer reserved.\n\n${summary}\n\nChoose from current availability: ${bookingLink()}\n\n${footer}`
-      break
-    case 'rescheduled':
-      text = `Hello,\n\nYour confirmed private fitting has been rescheduled.\n\n${summary}\n\n${footer}`
-      break
-    case 'cancelled':
-      text = `Hello,\n\nYour private fitting has been cancelled. This message does not state that any payment was refunded.\n\n${summary}\n\n${footer}`
-      break
-    case 'refund': {
-      const amount = appointment.refundAmount
-      const amountLine =
-        Number.isInteger(amount) && (amount ?? 0) > 0
-          ? `Refund amount: ${formatCurrency((amount ?? 0) / 100)}`
-          : 'The fitting fee refund has been recorded.'
-      text = `Hello,\n\n${amountLine}\n\nReference: ${appointment.publicReference}\n\nYour bank may take additional time to display the refund.\n\n${footer}`
-      summaryRows = [
-        ...(Number.isInteger(amount) && (amount ?? 0) > 0
-          ? [{ label: 'Refund amount', value: formatCurrency((amount ?? 0) / 100) }]
-          : []),
-        { label: 'Reference', value: appointment.publicReference },
-      ]
-      break
-    }
+  if (event === 'confirmed' || event === 'rescheduled') {
+    summaryRows.push({
+      label: 'Fitting fee',
+      value: isFittingFeeWaived(appointment.fittingFee)
+        ? 'Free — welcome offer (€0)'
+        : `${formatCurrency(appointment.fittingFee)}${appointment.paymentStatus === 'paid' ? ' — paid' : ''}`,
+    })
   }
+  if (
+    event === 'refund' &&
+    Number.isInteger(appointment.refundAmount) &&
+    (appointment.refundAmount ?? 0) > 0
+  ) {
+    summaryRows.push({
+      label: 'Refund amount',
+      value: formatCurrency((appointment.refundAmount ?? 0) / 100),
+    })
+  }
+
+  // Keep HTML and plain-text content aligned. Private tokens belong only in actionable URLs.
+  const text = [
+    'Hello,',
+    presentation.intro,
+    summaryRows.map(({ label, value }) => `${label}: ${value}`).join('\n'),
+    presentation.nextSteps,
+    presentation.notice,
+    presentation.cta ? `${presentation.cta.label}: ${presentation.cta.href}` : undefined,
+    customerFooter(contactAddress),
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   return {
     html: renderCustomerHtml({ contactAddress, presentation, summaryRows }),
