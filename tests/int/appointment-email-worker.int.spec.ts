@@ -90,14 +90,15 @@ describe('appointment email worker', () => {
       expect.objectContaining({
         html: expect.stringContaining('Your fitting is confirmed'),
         subject: 'Your private fitting is confirmed',
-        text: expect.stringContaining('Your fitting fee and appointment have been confirmed.'),
+        text: expect.stringContaining('Your private appointment is confirmed.'),
         to: appointment.email,
       }),
     )
     const sentMessage = JSON.stringify(payload.sendEmail.mock.calls[0])
-    expect(sentMessage).toContain('#fbf6ee')
-    expect(sentMessage).toContain('#8e6fa0')
-    expect(sentMessage).toContain('CAIT')
+    expect(sentMessage).toContain('#faf8f6')
+    expect(sentMessage).toContain('#2c2621')
+    expect(sentMessage).toContain('CÁIT')
+    expect(sentMessage).not.toContain(appointment.publicReference)
     expect(sentMessage).not.toContain('Tullamore')
     expect(sentMessage).not.toContain(appointment.phone)
     expect(sentMessage).not.toContain(appointment.notes)

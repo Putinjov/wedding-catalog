@@ -30,6 +30,9 @@ const getPagesSitemap = unstable_cache(
 
     const defaultSitemap = [
       {
+        loc: `${SITE_URL}/terms-and-conditions`,
+      },
+      {
         loc: `${SITE_URL}/buy`,
       },
       {
