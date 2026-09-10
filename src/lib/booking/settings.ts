@@ -206,7 +206,6 @@ function assertBreaksFitOpeningHours(settings: ResolvedBookingSettings): void {
       const hours = weekday === 6 ? settings.saturdayHours : settings.weekdayHours
       if (
         settings.closedWeekdays.includes(weekday) ||
-        weekday === 0 ||
         (weekday === 6 && !settings.saturdayHours.enabled)
       ) {
         throw new Error(`lunchBreaks.${index} cannot target a closed weekday.`)
@@ -294,9 +293,6 @@ export function resolveBookingSettings(value: unknown): ResolvedBookingSettings 
 
   if (settings.saturdayHours.enabled && settings.closedWeekdays.includes(6)) {
     throw new Error('Saturday cannot be both enabled and included in closedWeekdays.')
-  }
-  if (!settings.closedWeekdays.includes(0)) {
-    throw new Error('Sunday must remain closed because no Sunday opening hours are configured.')
   }
   if (new Set(settings.holidays).size !== settings.holidays.length) {
     throw new Error('holidays cannot contain duplicate dates.')

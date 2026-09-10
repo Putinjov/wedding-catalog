@@ -42,7 +42,70 @@ describe('booking settings', () => {
         saturdayHours: { enabled: true, end: '17:00', start: '10:00' },
       }),
     ).toMatch(/Saturday cannot be both enabled/i)
-    expect(validateBookingSettings({ closedWeekdays: ['1'] })).toMatch(/Sunday must remain closed/i)
+    expect(validateBookingSettings({ closedWeekdays: ['2', '4'] })).toBe(true)
+  })
+
+  it('keeps the existing 60-minute schedule and closed Sunday unchanged by default', () => {
+    const settings = resolveBookingSettings(null)
+    expect(settings.durationMinutes).toBe(60)
+    expect(settings.closedWeekdays).toEqual([0, 1])
+    expect(getConfiguredSlotTimes(settings, '2026-09-13')).toEqual([])
+    expect(getConfiguredSlotTimes(settings, '2026-09-15')).toEqual([
+      '10:00',
+      '11:00',
+      '12:00',
+      '13:00',
+      '14:00',
+      '15:00',
+      '16:00',
+    ])
+  })
+
+  it('uses configured standard hours for an explicitly opened Sunday and Monday', () => {
+    const settings = resolveBookingSettings({
+      closedWeekdays: ['2', '4'],
+      durationMinutes: 90,
+      weekdayHours: { start: '10:00', end: '17:00' },
+    })
+    for (const date of ['2026-09-13', '2026-09-14']) {
+      expect(getConfiguredSlotTimes(settings, date)).toEqual(['10:00', '11:30', '13:00', '14:30'])
+    }
+    for (const date of ['2026-09-15', '2026-09-17']) {
+      expect(getConfiguredSlotTimes(settings, date)).toEqual([])
+    }
+  })
+
+  it('validates Sunday breaks using the same open-day rules as other weekdays', () => {
+    const sundayBreak = { end: '13:00', start: '12:00', weekdays: ['0'] }
+    expect(validateBookingSettings({ lunchBreaks: [sundayBreak] })).toMatch(/closed weekday/i)
+    const settings = resolveBookingSettings({
+      closedWeekdays: ['1'],
+      lunchBreaks: [sundayBreak],
+      weekdayHours: { start: '11:00', end: '15:00' },
+    })
+    expect(getConfiguredSlotTimes(settings, '2026-09-13')).toEqual(['11:00', '13:00', '14:00'])
+    expect(
+      validateBookingSettings({
+        closedWeekdays: ['1'],
+        lunchBreaks: [{ ...sundayBreak, start: '09:00' }],
+      }),
+    ).toMatch(/within opening hours/i)
+    expect(
+      validateBookingSettings({
+        closedWeekdays: ['1'],
+        lunchBreaks: [sundayBreak, { start: '12:30', end: '13:30', weekdays: ['0'] }],
+      }),
+    ).toMatch(/cannot overlap/i)
+  })
+
+  it.each([
+    ['2026-03-29', '2026-03-29T09:00:00.000Z'],
+    ['2026-10-25', '2026-10-25T10:00:00.000Z'],
+  ])('preserves Dublin DST for an opened Sunday on %s', (date, expectedStart) => {
+    const settings = resolveBookingSettings({ closedWeekdays: ['2', '4'], durationMinutes: 90 })
+    const slot = getSlotDateTimes(date, '10:00', settings)
+    expect(slot?.startAt.toISOString()).toBe(expectedStart)
+    expect(slot && slot.endAt.getTime() - slot.startAt.getTime()).toBe(90 * 60_000)
   })
 
   it('accepts only verified-shape visit guidance and safe public map URLs', () => {
