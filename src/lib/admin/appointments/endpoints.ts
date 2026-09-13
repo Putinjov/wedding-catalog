@@ -28,6 +28,8 @@ import {
 } from './getCalendarAppointments'
 import { updateAppointmentStatus } from './updateAppointmentStatus'
 import { applyPaidConflictAction, paidConflictActionSchema } from './paidConflict'
+import { getAvailableAppointmentSlots } from './getAvailableAppointmentSlots'
+import { getClientDirectory, getClientProfile } from './clientDirectory'
 
 const statusUpdateSchema = z.object({
   status: z.enum(appointmentStatuses as [AppointmentStatus, ...AppointmentStatus[]]),
@@ -124,6 +126,69 @@ const getCalendarEndpoint: Endpoint = {
       const { from, to } = parseCalendarRange(url.searchParams.get('from'), url.searchParams.get('to'))
       const appointments = await getCalendarAppointments({ payload: req.payload, user, from, to })
       return Response.json({ appointments })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
+const getAvailableSlotsEndpoint: Endpoint = {
+  path: '/calendar/slots',
+  method: 'get',
+  handler: async (req) => {
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
+
+    try {
+      if (!req.url) throw new AdminAppointmentError('Choose a valid fitting date.')
+      const url = new URL(req.url)
+      const date = url.searchParams.get('date') ?? ''
+      const excludeId = url.searchParams.get('excludeId') || undefined
+      const result = await getAvailableAppointmentSlots({
+        allowNoticeOverride: url.searchParams.get('allowNoticeOverride') === 'true',
+        date,
+        excludeId,
+        req,
+      })
+      return Response.json(result)
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
+const getClientsEndpoint: Endpoint = {
+  path: '/clients',
+  method: 'get',
+  handler: async (req) => {
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
+
+    try {
+      const url = new URL(req.url ?? 'http://localhost')
+      const search = (url.searchParams.get('search') ?? '').slice(0, 80)
+      const requestedLimit = Number(url.searchParams.get('limit') ?? 100)
+      const limit = Number.isInteger(requestedLimit)
+        ? Math.min(100, Math.max(1, requestedLimit))
+        : 100
+      return Response.json({ clients: await getClientDirectory({ limit, req, search, user }) })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
+const getClientProfileEndpoint: Endpoint = {
+  path: '/clients/:id',
+  method: 'get',
+  handler: async (req) => {
+    const user = getAppointmentUser(req)
+    if (user instanceof Response) return user
+    const id = getRouteID(req)
+    if (!id) return Response.json({ message: 'Client not found.' }, { status: 404 })
+
+    try {
+      return Response.json({ client: await getClientProfile({ appointmentId: id, req, user }) })
     } catch (error) {
       return errorResponse(error)
     }
@@ -313,6 +378,9 @@ const resendConfirmationEndpoint: Endpoint = {
 
 export const appointmentCalendarEndpoints: Endpoint[] = [
   getCalendarEndpoint,
+  getAvailableSlotsEndpoint,
+  getClientsEndpoint,
+  getClientProfileEndpoint,
   updateCalendarStatusEndpoint,
   createCalendarAppointmentEndpoint,
   getCalendarAppointmentDetailEndpoint,
