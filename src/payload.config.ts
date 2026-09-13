@@ -25,6 +25,7 @@ import { Sizes } from './collections/Lookups/Sizes'
 import { Trains } from './collections/Lookups/Trains'
 import { Waistlines } from './collections/Lookups/Waistlines'
 import { Media } from './collections/Media'
+import { MobileDevices } from './collections/MobileDevices'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { ProcessedStripeEvents } from './collections/ProcessedStripeEvents'
@@ -141,6 +142,7 @@ export default buildConfig({
     Embellishments,
     Dresses,
     Appointments,
+    MobileDevices,
     EmailDeliveries,
     AppointmentAudits,
     AppointmentSlotLocks,

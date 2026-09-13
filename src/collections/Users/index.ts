@@ -23,7 +23,10 @@ export const Users: CollectionConfig = {
     group: 'Administration',
     useAsTitle: 'name',
   },
-  auth: true,
+  auth: {
+    // The manager app refreshes this token on launch. A device unused for a week must sign in again.
+    tokenExpiration: 60 * 60 * 24 * 7,
+  },
   fields: [
     {
       name: 'name',

@@ -85,6 +85,7 @@ export interface Config {
     embellishments: Embellishment;
     dresses: Dress;
     appointments: Appointment;
+    'mobile-devices': MobileDevice;
     'email-deliveries': EmailDelivery;
     'appointment-audits': AppointmentAudit;
     'appointment-slot-locks': AppointmentSlotLock;
@@ -124,6 +125,7 @@ export interface Config {
     embellishments: EmbellishmentsSelect<false> | EmbellishmentsSelect<true>;
     dresses: DressesSelect<false> | DressesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
+    'mobile-devices': MobileDevicesSelect<false> | MobileDevicesSelect<true>;
     'email-deliveries': EmailDeliveriesSelect<false> | EmailDeliveriesSelect<true>;
     'appointment-audits': AppointmentAuditsSelect<false> | AppointmentAuditsSelect<true>;
     'appointment-slot-locks': AppointmentSlotLocksSelect<false> | AppointmentSlotLocksSelect<true>;
@@ -1349,6 +1351,23 @@ export interface AppointmentSlotLock {
   createdAt: string;
 }
 /**
+ * Manager app installations registered for privacy-minimised push alerts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mobile-devices".
+ */
+export interface MobileDevice {
+  id: string;
+  user: string | User;
+  expoPushToken: string;
+  platform: 'ios' | 'android';
+  deviceName?: string | null;
+  notificationsEnabled: boolean;
+  lastSeenAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Privacy-minimised appointment email delivery state. Message bodies are never stored.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1698,6 +1717,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'appointments';
         value: string | Appointment;
+      } | null)
+    | ({
+        relationTo: 'mobile-devices';
+        value: string | MobileDevice;
       } | null)
     | ({
         relationTo: 'email-deliveries';
@@ -2371,6 +2394,20 @@ export interface AppointmentsSelect<T extends boolean = true> {
   refundedAt?: T;
   refundFailureReason?: T;
   internalNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mobile-devices_select".
+ */
+export interface MobileDevicesSelect<T extends boolean = true> {
+  user?: T;
+  expoPushToken?: T;
+  platform?: T;
+  deviceName?: T;
+  notificationsEnabled?: T;
+  lastSeenAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

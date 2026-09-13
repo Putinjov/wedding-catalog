@@ -1,5 +1,7 @@
 import type { Payload, TypedUser } from 'payload'
 
+import { zonedDateTimeToDate } from '@/lib/booking/date'
+
 import { toCalendarAppointment, type CalendarAppointment } from './calendarTypes'
 
 const MAX_RANGE_MILLISECONDS = 43 * 24 * 60 * 60 * 1000
@@ -15,8 +17,16 @@ export class AdminAppointmentError extends Error {
 }
 
 export function parseCalendarRange(fromValue: string | null, toValue: string | null) {
-  const from = fromValue ? new Date(fromValue) : null
-  const to = toValue ? new Date(toValue) : null
+  const from = fromValue
+    ? /^\d{4}-\d{2}-\d{2}$/.test(fromValue)
+      ? zonedDateTimeToDate(fromValue, '00:00')
+      : new Date(fromValue)
+    : null
+  const to = toValue
+    ? /^\d{4}-\d{2}-\d{2}$/.test(toValue)
+      ? zonedDateTimeToDate(toValue, '00:00')
+      : new Date(toValue)
+    : null
 
   if (!from || !to || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
     throw new AdminAppointmentError('A valid visible date range is required.')

@@ -23,6 +23,7 @@ const serverEnvironmentSchema = z.object({
   BOOKING_ADMIN_EMAIL: optionalEmail,
   EMAIL_FROM: optionalEmail,
   EMAIL_REPLY_TO: optionalEmail,
+  EXPO_ACCESS_TOKEN: optionalValue,
   NEXT_PUBLIC_SERVER_URL: optionalValue,
   PAYLOAD_SECRET: optionalValue,
   PREVIEW_SECRET: optionalValue,

@@ -9,6 +9,8 @@ import {
 } from '@/config/booking'
 import { validateBookingSettings } from '@/lib/booking/settings'
 
+import { changeClosuresEndpoint } from './closures'
+
 import { revalidateBookingSettings } from './hooks/revalidateBookingSettings'
 
 const weekdayOptions = [
@@ -67,6 +69,7 @@ function validateMapUrl(value: null | string | undefined): true | string {
 export const BookingSettings: GlobalConfig = {
   slug: 'booking-settings',
   label: 'Booking settings',
+  endpoints: [changeClosuresEndpoint],
   access: {
     read: () => true,
     update: ownerOrManager,
@@ -144,8 +147,14 @@ export const BookingSettings: GlobalConfig = {
       name: 'weekdayHours',
       type: 'group',
       fields: [
-        { ...timeField('start', 'Opening time'), defaultValue: defaultBookingSettings.weekdayHours.start },
-        { ...timeField('end', 'Closing time'), defaultValue: defaultBookingSettings.weekdayHours.end },
+        {
+          ...timeField('start', 'Opening time'),
+          defaultValue: defaultBookingSettings.weekdayHours.start,
+        },
+        {
+          ...timeField('end', 'Closing time'),
+          defaultValue: defaultBookingSettings.weekdayHours.end,
+        },
       ],
     },
     {
@@ -153,8 +162,14 @@ export const BookingSettings: GlobalConfig = {
       type: 'group',
       fields: [
         { name: 'enabled', type: 'checkbox', defaultValue: true, required: true },
-        { ...timeField('start', 'Opening time'), defaultValue: defaultBookingSettings.saturdayHours.start },
-        { ...timeField('end', 'Closing time'), defaultValue: defaultBookingSettings.saturdayHours.end },
+        {
+          ...timeField('start', 'Opening time'),
+          defaultValue: defaultBookingSettings.saturdayHours.start,
+        },
+        {
+          ...timeField('end', 'Closing time'),
+          defaultValue: defaultBookingSettings.saturdayHours.end,
+        },
       ],
     },
     {
@@ -162,7 +177,13 @@ export const BookingSettings: GlobalConfig = {
       type: 'array',
       maxRows: 20,
       fields: [
-        { name: 'weekdays', type: 'select', hasMany: true, options: weekdayOptions, required: true },
+        {
+          name: 'weekdays',
+          type: 'select',
+          hasMany: true,
+          options: weekdayOptions,
+          required: true,
+        },
         timeField('start', 'Start'),
         timeField('end', 'End'),
       ],
@@ -217,7 +238,9 @@ export const BookingSettings: GlobalConfig = {
         {
           name: 'address',
           type: 'textarea',
-          admin: { description: 'Full public fitting address, exactly as customers should see it.' },
+          admin: {
+            description: 'Full public fitting address, exactly as customers should see it.',
+          },
           maxLength: 500,
         },
         {

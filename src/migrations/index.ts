@@ -11,6 +11,7 @@ import * as migration_20260809_234500_add_paid_conflict_workflow from './2026080
 import * as migration_20260810_003000_add_email_delivery_queue from './20260810_003000_add_email_delivery_queue'
 import * as migration_20260819_193000_add_booking_visit_address from './20260819_193000_add_booking_visit_address'
 import * as migration_20260909_213000_update_fitting_schedule from './20260909_213000_update_fitting_schedule'
+import * as migration_20260912_220000_add_mobile_devices from './20260912_220000_add_mobile_devices'
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20260909_213000_update_fitting_schedule.up,
     down: migration_20260909_213000_update_fitting_schedule.down,
     name: '20260909_213000_update_fitting_schedule',
+  },
+  {
+    up: migration_20260912_220000_add_mobile_devices.up,
+    down: migration_20260912_220000_add_mobile_devices.down,
+    name: '20260912_220000_add_mobile_devices',
   },
 ]
