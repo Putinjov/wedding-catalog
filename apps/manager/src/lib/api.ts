@@ -56,14 +56,12 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
   try {
     body = await response.json()
   } catch {
-    if (!response.ok) throw new ApiError('The server returned an unexpected response.', response.status)
+    if (!response.ok)
+      throw new ApiError('The server returned an unexpected response.', response.status)
   }
   if (!response.ok) {
     const message =
-      body &&
-      typeof body === 'object' &&
-      'message' in body &&
-      typeof body.message === 'string'
+      body && typeof body === 'object' && 'message' in body && typeof body.message === 'string'
         ? body.message
         : 'The request could not be completed.'
     throw new ApiError(message, response.status)
@@ -87,9 +85,12 @@ function isManagerUser(value: unknown): value is ManagerUser {
   )
 }
 
-function requireSession(
-  result: { exp?: number; refreshedToken?: string; token?: string; user?: unknown },
-): AuthSession {
+function requireSession(result: {
+  exp?: number
+  refreshedToken?: string
+  token?: string
+  user?: unknown
+}): AuthSession {
   const token = result.token ?? result.refreshedToken
   if (!token || !isManagerUser(result.user)) {
     throw new ApiError('The server did not return a usable staff session.', 500)
@@ -135,10 +136,7 @@ export async function getCalendar(
   return result.appointments
 }
 
-export async function getAppointment(
-  token: string,
-  id: string,
-): Promise<AppointmentDetail> {
+export async function getAppointment(token: string, id: string): Promise<AppointmentDetail> {
   const result = await apiRequest<{ appointment: AppointmentDetail }>(
     `/api/appointments/calendar/${encodeURIComponent(id)}`,
     { token },
@@ -237,10 +235,7 @@ export async function getBookingSettings(token: string): Promise<BookingSettings
   return apiRequest('/api/globals/booking-settings?depth=0', { token })
 }
 
-export async function getClients(
-  token: string,
-  search: string,
-): Promise<ClientDirectoryEntry[]> {
+export async function getClients(token: string, search: string): Promise<ClientDirectoryEntry[]> {
   const query = new URLSearchParams({ limit: '100' })
   if (search.trim()) query.set('search', search.trim())
   const result = await apiRequest<{ clients: ClientDirectoryEntry[] }>(
@@ -283,5 +278,18 @@ export async function unregisterDevice(
     body: JSON.stringify(registration),
     method: 'POST',
     token: authToken,
+  })
+}
+
+export async function changeBookingClosures(
+  token: string,
+  startDate: string,
+  endDate: string,
+  closed: boolean,
+): Promise<void> {
+  await apiRequest('/api/globals/booking-settings/closures', {
+    token,
+    method: 'POST',
+    body: JSON.stringify({ startDate, endDate, closed }),
   })
 }

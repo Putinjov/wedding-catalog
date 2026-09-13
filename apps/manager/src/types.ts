@@ -26,12 +26,7 @@ export type AppointmentStatus =
   | 'refunded'
 
 export type PaymentStatus =
-  | 'failed'
-  | 'paid'
-  | 'partially_refunded'
-  | 'processing'
-  | 'refunded'
-  | 'unpaid'
+  'failed' | 'paid' | 'partially_refunded' | 'processing' | 'refunded' | 'unpaid'
 
 export type CalendarDress = {
   id: EntityId
@@ -109,6 +104,10 @@ export type AvailableSlot = {
 }
 
 export type BookingSettings = {
+  closures?: { startDate: string; endDate: string }[] | null
+  holidays?: { date: string }[] | null
+  closedWeekdays?: string[] | null
+  saturdayHours?: { enabled?: boolean | null } | null
   bookingWindowDays: number
   durationMinutes: number
   timezone: 'Europe/Dublin'
