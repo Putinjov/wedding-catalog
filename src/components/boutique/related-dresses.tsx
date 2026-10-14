@@ -1,5 +1,5 @@
 import type { DressMode } from '@/lib/catalogue'
-import type { DressWithMedia } from '@/lib/dress-media'
+import type { DressCardWithMedia } from '@/lib/dress-media'
 
 import { DressGrid } from './dress-grid'
 
@@ -8,7 +8,7 @@ export function RelatedDresses({
   mode,
   returnTo,
 }: {
-  dresses: DressWithMedia[]
+  dresses: DressCardWithMedia[]
   mode: DressMode
   returnTo: string
 }) {

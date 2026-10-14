@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 
-import type { Dress, Media } from '@/payload-types'
+import type { Dress, Media, MediaSelect } from '@/payload-types'
+import type { DressCardRecord } from '@/lib/dress-card-query'
 
 type MediaSize = NonNullable<Media['sizes']>[keyof NonNullable<Media['sizes']>]
 
@@ -19,6 +20,11 @@ export type DressMediaViewModel = {
 export type DressWithMedia = Dress & {
   media: DressMediaViewModel
 }
+
+export type DressMediaSource = Pick<Dress, 'id' | 'name' | 'mainImage'> &
+  Partial<Pick<Dress, 'gallery'>>
+
+export type DressCardWithMedia = DressCardRecord & { media: DressMediaViewModel }
 
 export type DressVideo = {
   kind: 'hosted' | 'vimeo' | 'youtube'
@@ -117,7 +123,7 @@ function toViewImage(resource: Media, alt: string): DressMediaImage {
 }
 
 export function normalizeDressMedia(
-  dress: Dress,
+  dress: DressMediaSource,
   mediaByID: MediaLookup = new Map(),
 ): DressMediaViewModel {
   const gallery: DressMediaImage[] = []
@@ -141,7 +147,7 @@ export function normalizeDressMedia(
   return { gallery, main }
 }
 
-function getUnresolvedMediaIDs(dresses: readonly Dress[]): string[] {
+function getUnresolvedMediaIDs(dresses: readonly DressMediaSource[]): string[] {
   const ids = new Set<string>()
 
   for (const dress of dresses) {
@@ -155,10 +161,11 @@ function getUnresolvedMediaIDs(dresses: readonly Dress[]): string[] {
   return [...ids]
 }
 
-export async function attachDressMedia(
-  dresses: readonly Dress[],
+export async function attachDressMedia<T extends DressMediaSource>(
+  dresses: readonly T[],
   payload: Payload,
-): Promise<DressWithMedia[]> {
+  { mediaSelect }: { mediaSelect?: MediaSelect } = {},
+): Promise<(T & { media: DressMediaViewModel })[]> {
   const unresolvedIDs = getUnresolvedMediaIDs(dresses)
   const mediaByID = new Map<string, Media>()
 
@@ -169,6 +176,7 @@ export async function attachDressMedia(
       limit: unresolvedIDs.length,
       overrideAccess: false,
       pagination: false,
+      ...(mediaSelect ? { select: mediaSelect } : {}),
       where: { id: { in: unresolvedIDs } },
     })
 

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAvailableDressBySlug, getRelatedDresses } from '@/lib/getDress'
 import { getDresses } from '@/lib/getDresses'
 import { getFeaturedDresses } from '@/lib/getFeaturedDresses'
+import { attachDressMedia } from '@/lib/dress-media'
 import { CATALOGUE_PAGE_SIZE, getCatalogueDressSort } from '@/lib/catalogue'
 import {
   buildCatalogueFilterConditions,
@@ -182,6 +183,7 @@ describe('public dress query consumers', () => {
   beforeEach(() => {
     mocks.find.mockReset()
     mocks.find.mockResolvedValue({ docs: [], totalDocs: 0 })
+    vi.mocked(attachDressMedia).mockClear()
   })
 
   it.each(['buy', 'rent'] as const)('uses the available %s filter for catalogue results', async (mode) => {
@@ -193,9 +195,19 @@ describe('public dress query consumers', () => {
         limit: CATALOGUE_PAGE_SIZE,
         overrideAccess: false,
         page: 1,
+        depth: 1,
+        select: expect.objectContaining({ mainImage: true, saleStatus: true, rentalStatus: true }),
+        populate: expect.objectContaining({ media: expect.objectContaining({ sizes: expect.any(Object) }) }),
         where: buildPublicDressWhere({ availability: 'available', mode }),
       }),
     )
+
+    const query = mocks.find.mock.lastCall?.[0]
+    expect(query.select).not.toHaveProperty('sku')
+    expect(query.select).not.toHaveProperty('gallery')
+    expect(query.select).not.toHaveProperty('description')
+    expect(query.populate.media).not.toHaveProperty('caption')
+    expect(query.populate.media.prefix).toBe(true)
   })
 
   it('passes the requested catalogue page to Payload pagination', async () => {
@@ -266,10 +278,51 @@ describe('public dress query consumers', () => {
     expect(mocks.find).toHaveBeenCalledWith(
       expect.objectContaining({
         limit: 100,
+        depth: 0,
+        page: 1,
+        select: expect.objectContaining({ category: true, createdAt: true, displayOrder: true }),
         overrideAccess: false,
         where: expectedBase,
       }),
     )
+    expect(mocks.find.mock.lastCall?.[0].select).not.toHaveProperty('mainImage')
+    expect(mocks.find.mock.lastCall?.[0]).not.toHaveProperty('populate')
+  })
+
+  it('hydrates only the four ranked related cards and preserves their rank order', async () => {
+    const candidates = [
+      dress({ id: 'candidate-1', salePrice: 1000 }),
+      dress({ id: 'candidate-2', salePrice: 1100 }),
+      dress({ id: 'candidate-3', salePrice: 1200 }),
+      dress({ id: 'candidate-4', salePrice: 1300 }),
+      dress({ id: 'candidate-5', salePrice: 1400 }),
+    ]
+    mocks.find.mockReset()
+    mocks.find.mockResolvedValueOnce({ docs: candidates })
+    mocks.find.mockResolvedValueOnce({ docs: [candidates[3], candidates[1], candidates[0]] })
+
+    await getRelatedDresses({ dress: dress({ id: 'reference', salePrice: 1000 }), mode: 'buy' })
+
+    expect(mocks.find).toHaveBeenCalledTimes(2)
+    expect(mocks.find.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({
+        collection: 'dresses',
+        depth: 1,
+        limit: 4,
+        overrideAccess: false,
+        pagination: false,
+        select: expect.objectContaining({ mainImage: true, name: true, saleStatus: true }),
+        where: buildPublicDressWhere(
+          { availability: 'available', mode: 'buy' },
+          [{ id: { in: ['candidate-1', 'candidate-2', 'candidate-3', 'candidate-4'] } }],
+        ),
+      }),
+    )
+    expect(vi.mocked(attachDressMedia).mock.lastCall?.[0].map(({ id }) => id)).toEqual([
+      'candidate-1',
+      'candidate-2',
+      'candidate-4',
+    ])
   })
 
   it('uses supported public rules for featured dresses', async () => {

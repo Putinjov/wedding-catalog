@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { DressCard } from '@/components/boutique/dress-card'
-import type { DressWithMedia } from '@/lib/dress-media'
+import type { DressCardWithMedia } from '@/lib/dress-media'
 
 vi.mock('@/components/Media', () => ({
   Media: ({ alt }: { alt: string }) => <span aria-label={alt} />,
@@ -12,12 +12,10 @@ afterEach(() => {
   cleanup()
 })
 
-function dress(overrides: Partial<DressWithMedia> = {}): DressWithMedia {
+function dress(overrides: Partial<DressCardWithMedia> = {}): DressCardWithMedia {
   return {
     id: 'dress-1',
-    category: 'category-1',
     condition: 'new',
-    createdAt: '2026-01-01T00:00:00.000Z',
     designer: {
       id: 'designer-1',
       createdAt: '2026-01-01T00:00:00.000Z',
@@ -25,13 +23,11 @@ function dress(overrides: Partial<DressWithMedia> = {}): DressWithMedia {
       slug: 'atelier-one',
       updatedAt: '2026-01-01T00:00:00.000Z',
     },
-    displayOrder: 0,
     featured: true,
     mainImage: 'media-1',
     media: { gallery: [], main: null },
     name: 'Grace',
     previousSalePrice: 2200,
-    publicVisibility: 'public',
     rentalPrice: 500,
     rentalStatus: 'available',
     salePrice: 1800,
@@ -43,9 +39,7 @@ function dress(overrides: Partial<DressWithMedia> = {}): DressWithMedia {
       slug: 'a-line',
       updatedAt: '2026-01-01T00:00:00.000Z',
     },
-    sku: 'INTERNAL-SKU',
     slug: 'grace',
-    updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   }
 }
@@ -61,7 +55,7 @@ describe('dress card content', () => {
     expect(screen.getByText('€1,800.00')).toBeTruthy()
     expect(screen.getByText('€2,200.00')).toBeTruthy()
     expect(screen.getByText('View dress')).toBeTruthy()
-    expect(screen.queryByText('INTERNAL-SKU')).toBeNull()
+    expect(screen.queryByText(/SKU/i)).toBeNull()
     expect(screen.queryByText(/Rent from/)).toBeNull()
   })
 

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { defaultImageQuality } from '@/config/images'
 import { formatCurrency } from '@/config/site'
 import type { DressDisplayMode } from '@/lib/catalogue'
-import type { DressWithMedia } from '@/lib/dress-media'
+import type { DressCardWithMedia } from '@/lib/dress-media'
 import {
   getAvailabilityLabel,
   getRelationshipLabel,
@@ -20,7 +20,7 @@ export function DressCard({
   returnTo,
   source,
 }: {
-  dress: DressWithMedia
+  dress: DressCardWithMedia
   mode?: DressDisplayMode
   returnTo?: string | null
   source?: 'related' | null

@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import type { Payload } from 'payload'
+import { describe, expect, it, vi } from 'vitest'
 
-import { normalizeDressMedia } from '@/lib/dress-media'
+import { dressCardMediaSelect } from '@/lib/dress-card-query'
+import { attachDressMedia, normalizeDressMedia } from '@/lib/dress-media'
 import type { Dress, Media } from '@/payload-types'
 
 function media(id: string, url: string): Media {
@@ -63,5 +65,25 @@ describe('dress media normalization', () => {
 
     expect(result.main).toBeNull()
     expect(result.gallery).toEqual([])
+  })
+
+  it('uses the card media projection when a main image needs a fallback lookup', async () => {
+    const find = vi.fn().mockResolvedValue({ docs: [media('media-1', '/api/media/file/media-1.webp')] })
+    const payload = { find } as unknown as Payload
+
+    const result = await attachDressMedia(
+      [{ id: 'dress-1', mainImage: 'media-1', name: 'Grace' }],
+      payload,
+      { mediaSelect: dressCardMediaSelect },
+    )
+
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'media',
+        depth: 0,
+        select: expect.objectContaining({ prefix: true }),
+      }),
+    )
+    expect(result[0]?.media.main?.card.url).toBe('/api/media/file/media-1-medium.webp')
   })
 })

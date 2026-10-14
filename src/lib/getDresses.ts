@@ -2,7 +2,6 @@ import configPromise from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload, type PaginatedDocs, type Where } from 'payload'
 
-import type { Dress } from '@/payload-types'
 import {
   CATALOGUE_PAGE_SIZE,
   DEFAULT_CATALOGUE_SORT,
@@ -16,7 +15,8 @@ import {
   type CatalogueFilterOptions,
   type CatalogueFilterValues,
 } from '@/lib/catalogue-filters'
-import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
+import { dressCardMediaSelect, dressCardPopulate, dressCardSelect, type DressCardRecord } from '@/lib/dress-card-query'
+import { attachDressMedia, type DressCardWithMedia } from '@/lib/dress-media'
 import { getCatalogueCacheTags } from '@/lib/dress-cache'
 import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
@@ -34,38 +34,42 @@ type CatalogueQuery = {
 async function queryDresses(
   mode: CatalogueMode,
   { filterConditions, page, sort }: CatalogueQuery,
-): Promise<PaginatedDocs<DressWithMedia>> {
+): Promise<PaginatedDocs<DressCardWithMedia>> {
   const payload = await getPayload({
     config: configPromise,
   })
 
   const result = await payload.find({
     collection: 'dresses',
-    depth: 2,
+    depth: 1,
     draft: false,
     limit: CATALOGUE_PAGE_SIZE,
     overrideAccess: false,
     page,
+    populate: dressCardPopulate,
+    select: dressCardSelect,
     sort: getCatalogueDressSort(mode, sort),
     where: buildPublicDressWhere({ availability: 'available', mode }, filterConditions),
   })
 
-  const docs = await attachDressMedia(result.docs as Dress[], payload)
+  const docs = await attachDressMedia(result.docs as DressCardRecord[], payload, {
+    mediaSelect: dressCardMediaSelect,
+  })
 
   return { ...result, docs }
 }
 
 const cachedCatalogueQueries: Record<
   CatalogueMode,
-  (query: CatalogueQuery) => Promise<PaginatedDocs<DressWithMedia>>
+  (query: CatalogueQuery) => Promise<PaginatedDocs<DressCardWithMedia>>
 > = {
-  buy: unstable_cache((query: CatalogueQuery) => queryDresses('buy', query), ['catalogue', 'buy'], {
+  buy: unstable_cache((query: CatalogueQuery) => queryDresses('buy', query), ['catalogue-v2', 'buy'], {
     revalidate: 300,
     tags: getCatalogueCacheTags('buy'),
   }),
   rent: unstable_cache(
     (query: CatalogueQuery) => queryDresses('rent', query),
-    ['catalogue', 'rent'],
+    ['catalogue-v2', 'rent'],
     {
       revalidate: 300,
       tags: getCatalogueCacheTags('rent'),
@@ -113,7 +117,7 @@ export async function getDresses(
     page?: number
     sort?: CatalogueSort
   } = {},
-): Promise<PaginatedDocs<DressWithMedia>> {
+): Promise<PaginatedDocs<DressCardWithMedia>> {
   const filterConditions =
     filters && filterOptions ? buildCatalogueFilterConditions(mode, filters, filterOptions) : []
   const query = {
