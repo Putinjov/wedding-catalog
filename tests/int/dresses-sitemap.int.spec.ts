@@ -158,7 +158,9 @@ describe('dress sitemap revalidation', () => {
       req: { context: {} },
     } as Parameters<typeof revalidateDress>[0])
 
-    expect(mocks.revalidateTag).toHaveBeenCalledTimes(3)
+    expect(
+      mocks.revalidateTag.mock.calls.filter(([tag]) => tag === 'dresses-sitemap'),
+    ).toHaveLength(3)
     expect(mocks.revalidateTag).toHaveBeenCalledWith('dresses-sitemap', 'max')
     expect(mocks.revalidatePath).toHaveBeenCalledWith('/dresses/grace')
   })

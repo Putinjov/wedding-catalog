@@ -10,6 +10,10 @@ import { fileURLToPath } from 'url'
 
 import { anyone } from '../access/anyone'
 import { ownerOrManager } from '../access/roles'
+import {
+  revalidateCatalogueMedia,
+  revalidateCatalogueMediaDelete,
+} from './hooks/revalidateCatalogue'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -28,6 +32,10 @@ export const Media: CollectionConfig = {
     delete: ownerOrManager,
     read: anyone,
     update: ownerOrManager,
+  },
+  hooks: {
+    afterChange: [revalidateCatalogueMedia],
+    afterDelete: [revalidateCatalogueMediaDelete],
   },
   fields: [
     {

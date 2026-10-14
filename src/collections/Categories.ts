@@ -4,6 +4,11 @@ import { anyone } from '../access/anyone'
 import { ownerOrManager } from '../access/roles'
 import { slugField } from 'payload'
 
+import {
+  revalidateCatalogueLookup,
+  revalidateCatalogueLookupDelete,
+} from './hooks/revalidateCatalogue'
+
 export const Categories: CollectionConfig = {
   slug: 'categories',
   access: {
@@ -17,6 +22,10 @@ export const Categories: CollectionConfig = {
     description: 'Catalogue categories used to organise dresses.',
     group: 'Dresses',
     useAsTitle: 'title',
+  },
+  hooks: {
+    afterChange: [revalidateCatalogueLookup],
+    afterDelete: [revalidateCatalogueLookupDelete],
   },
   fields: [
     {

@@ -5,4 +5,5 @@ export const Colors = createLookupCollection({
   singularLabel: 'Color',
   pluralLabel: 'Colors',
   description: 'Available colors',
+  invalidatesCatalogue: true,
 })

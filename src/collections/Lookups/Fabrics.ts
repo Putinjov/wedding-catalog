@@ -5,4 +5,5 @@ export const Fabrics = createLookupCollection({
   singularLabel: 'Fabric',
   pluralLabel: 'Fabrics',
   description: 'Available fabrics',
+  invalidatesCatalogue: true,
 })

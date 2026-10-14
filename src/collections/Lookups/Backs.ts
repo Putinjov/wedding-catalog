@@ -5,4 +5,5 @@ export const Backs = createLookupCollection({
   singularLabel: 'Back style',
   pluralLabel: 'Back styles',
   description: 'Dress back attributes',
+  invalidatesCatalogue: true,
 })

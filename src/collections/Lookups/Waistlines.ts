@@ -5,4 +5,5 @@ export const Waistlines = createLookupCollection({
   singularLabel: 'Waistline',
   pluralLabel: 'Waistlines',
   description: 'Dress waistline attributes',
+  invalidatesCatalogue: true,
 })

@@ -5,4 +5,5 @@ export const Sleeves = createLookupCollection({
   singularLabel: 'Sleeve style',
   pluralLabel: 'Sleeve styles',
   description: 'Dress sleeve attributes',
+  invalidatesCatalogue: true,
 })
