@@ -12,7 +12,7 @@ import {
   getRelationshipLabel,
   getSupportedDressModes,
 } from '@/lib/dress-utils'
-import type { DressWithMedia } from '@/lib/dress-media'
+import type { DressCardWithMedia, DressWithMedia } from '@/lib/dress-media'
 import type { ResolvedBookingSettings } from '@/config/booking'
 
 export function DressDetail({
@@ -24,7 +24,7 @@ export function DressDetail({
 }: {
   dress: DressWithMedia
   initialMode: DressMode
-  relatedDresses: DressWithMedia[]
+  relatedDresses: DressCardWithMedia[]
   returnTo: string
   settings: ResolvedBookingSettings
 }) {

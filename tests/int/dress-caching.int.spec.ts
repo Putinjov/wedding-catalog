@@ -253,7 +253,7 @@ describe('related dress caching', () => {
     expect(mocks.find).toHaveBeenCalledOnce()
     await getRelatedDresses({ dress: reference, mode: 'rent' })
     await getRelatedDresses({ dress: dress({ id: 'another' }), mode: 'buy' })
-    expect(mocks.find).toHaveBeenCalledTimes(3)
+    expect(mocks.find).toHaveBeenCalledTimes(4)
   })
 
   it('refreshes candidates after another dress changes availability', async () => {
@@ -263,7 +263,7 @@ describe('related dress caching', () => {
     mocks.find.mockResolvedValue({ docs: [] })
     await changeDress({ ...candidate, saleStatus: 'sold' }, candidate)
     await expect(getRelatedDresses({ dress: dress(), mode: 'buy' })).resolves.toEqual([])
-    expect(mocks.find).toHaveBeenCalledTimes(2)
+    expect(mocks.find).toHaveBeenCalledTimes(3)
   })
 
   it('includes authoritative ranking attributes in the key', async () => {

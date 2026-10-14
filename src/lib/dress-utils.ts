@@ -60,13 +60,15 @@ const rentalStatusLabels: Record<Dress['rentalStatus'], string> = {
   repair: 'Temporarily unavailable for rental',
 }
 
-export function getAvailabilityLabel(dress: Dress, mode: DressMode): string {
+type DressAvailability = Pick<Dress, 'saleStatus' | 'rentalStatus'>
+
+export function getAvailabilityLabel(dress: DressAvailability, mode: DressMode): string {
   return mode === 'buy'
     ? saleStatusLabels[dress.saleStatus]
     : rentalStatusLabels[dress.rentalStatus]
 }
 
-export function isDressAvailableForMode(dress: Dress, mode: DressMode): boolean {
+export function isDressAvailableForMode(dress: DressAvailability, mode: DressMode): boolean {
   return mode === 'buy'
     ? dress.saleStatus === 'available'
     : dress.rentalStatus === 'available'
@@ -76,20 +78,20 @@ export function isDressPublic(dress: Dress): boolean {
   return dress.publicVisibility === 'public'
 }
 
-export function supportsDressMode(dress: Dress, mode: DressMode): boolean {
+export function supportsDressMode(dress: DressAvailability, mode: DressMode): boolean {
   return mode === 'buy'
     ? dress.saleStatus !== 'not-for-sale'
     : dress.rentalStatus !== 'not-for-rent'
 }
 
-export function getSupportedDressModes(dress: Dress): DressMode[] {
+export function getSupportedDressModes(dress: DressAvailability): DressMode[] {
   return [
     ...(supportsDressMode(dress, 'buy') ? (['buy'] as const) : []),
     ...(supportsDressMode(dress, 'rent') ? (['rent'] as const) : []),
   ]
 }
 
-export function isUnavailableForMode(dress: Dress, mode: DressMode): boolean {
+export function isUnavailableForMode(dress: DressAvailability, mode: DressMode): boolean {
   return !isDressAvailableForMode(dress, mode)
 }
 

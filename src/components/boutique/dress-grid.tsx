@@ -1,5 +1,5 @@
 import type { DressDisplayMode } from '@/lib/catalogue'
-import type { DressWithMedia } from '@/lib/dress-media'
+import type { DressCardWithMedia } from '@/lib/dress-media'
 
 import { DressCard } from './dress-card'
 
@@ -9,7 +9,7 @@ export function DressGrid({
   returnTo,
   source,
 }: {
-  dresses: DressWithMedia[]
+  dresses: DressCardWithMedia[]
   mode?: DressDisplayMode
   returnTo?: string | null
   source?: 'related' | null

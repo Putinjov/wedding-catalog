@@ -6,7 +6,15 @@ import { cache } from 'react'
 
 import type { DressMode } from '@/lib/catalogue'
 import type { Dress } from '@/payload-types'
-import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
+import {
+  dressCardMediaSelect,
+  dressCardPopulate,
+  dressCardSelect,
+  relatedRankSelect,
+  type DressCardRecord,
+  type RelatedRankRecord,
+} from '@/lib/dress-card-query'
+import { attachDressMedia, type DressCardWithMedia, type DressWithMedia } from '@/lib/dress-media'
 import { DRESSES_CACHE_TAG, getDressSlugCacheTag, getRelatedDressCacheTag } from '@/lib/dress-cache'
 import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
@@ -98,17 +106,17 @@ type RelatedDressReference = {
   silhouetteId: string | null
 }
 
-function getModePrice(dress: Dress, mode: DressMode): number | null {
+function getModePrice(dress: Pick<Dress, 'salePrice' | 'rentalPrice'>, mode: DressMode): number | null {
   const price = mode === 'buy' ? dress.salePrice : dress.rentalPrice
   return typeof price === 'number' ? price : null
 }
 
-export function rankRelatedDresses(
-  candidates: readonly Dress[],
+export function rankRelatedDresses<T extends RelatedRankRecord>(
+  candidates: readonly T[],
   reference: RelatedDressReference,
   limit = 4,
-): Dress[] {
-  function tier(candidate: Dress): number {
+): T[] {
+  function tier(candidate: T): number {
     const sameCategory =
       reference.categoryId !== null && getRelationshipId(candidate.category) === reference.categoryId
     const sameSilhouette =
@@ -125,7 +133,7 @@ export function rankRelatedDresses(
     return 5
   }
 
-  function priceDifference(candidate: Dress): number {
+  function priceDifference(candidate: T): number {
     const candidatePrice = getModePrice(candidate, reference.mode)
     return reference.price === null || candidatePrice === null
       ? Number.POSITIVE_INFINITY
@@ -163,23 +171,25 @@ async function loadRelatedDresses(
   silhouetteId: string | null,
   designerId: string | null,
   price: number | null,
-): Promise<DressWithMedia[]> {
+): Promise<DressCardWithMedia[]> {
   const payload = await getPayload({
     config: configPromise,
   })
   const result = await payload.find({
     collection: 'dresses',
-    depth: 2,
+    depth: 0,
     draft: false,
     limit: 100,
     overrideAccess: false,
+    page: 1,
+    select: relatedRankSelect,
     sort: ['-featured', 'displayOrder', '-createdAt', 'id'],
     where: buildPublicDressWhere(
       { availability: 'available', mode },
       [{ id: { not_equals: dressId } }],
     ),
   })
-  const ranked = rankRelatedDresses(result.docs, {
+  const ranked = rankRelatedDresses(result.docs as RelatedRankRecord[], {
     categoryId,
     designerId,
     id: dressId,
@@ -188,7 +198,31 @@ async function loadRelatedDresses(
     silhouetteId,
   })
 
-  return attachDressMedia(ranked, payload)
+  if (ranked.length === 0) return []
+
+  // Recheck availability when hydrating the four visible cards; it may have changed
+  // between the candidate and card queries.
+  const cards = await payload.find({
+    collection: 'dresses',
+    depth: 1,
+    draft: false,
+    limit: ranked.length,
+    overrideAccess: false,
+    pagination: false,
+    populate: dressCardPopulate,
+    select: dressCardSelect,
+    where: buildPublicDressWhere(
+      { availability: 'available', mode },
+      [{ id: { in: ranked.map(({ id }) => id) } }],
+    ),
+  })
+  const cardsByID = new Map((cards.docs as DressCardRecord[]).map((card) => [card.id, card]))
+  const orderedCards = ranked.flatMap(({ id }) => {
+    const card = cardsByID.get(id)
+    return card ? [card] : []
+  })
+
+  return attachDressMedia(orderedCards, payload, { mediaSelect: dressCardMediaSelect })
 }
 
 const queryRelatedDresses = cache(
@@ -199,11 +233,11 @@ const queryRelatedDresses = cache(
     silhouetteId: string | null,
     designerId: string | null,
     price: number | null,
-  ): Promise<DressWithMedia[]> => {
+  ): Promise<DressCardWithMedia[]> => {
     const { isEnabled: draft } = await draftMode()
     const query = draft
       ? loadRelatedDresses
-      : unstable_cache(loadRelatedDresses, ['related-dresses-v1'], {
+      : unstable_cache(loadRelatedDresses, ['related-dresses-v2'], {
           revalidate: 300,
           tags: [DRESSES_CACHE_TAG, getRelatedDressCacheTag(dressId, mode)],
         })
@@ -218,7 +252,7 @@ export function getRelatedDresses({
 }: {
   dress: Dress
   mode: DressMode
-}): Promise<DressWithMedia[]> {
+}): Promise<DressCardWithMedia[]> {
   return queryRelatedDresses(
     dress.id,
     mode,
