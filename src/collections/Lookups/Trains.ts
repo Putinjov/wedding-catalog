@@ -5,4 +5,5 @@ export const Trains = createLookupCollection({
   singularLabel: 'Train style',
   pluralLabel: 'Train styles',
   description: 'Dress train attributes',
+  invalidatesCatalogue: true,
 })

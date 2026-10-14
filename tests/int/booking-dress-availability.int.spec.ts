@@ -108,7 +108,7 @@ describe('public booking dress availability', () => {
       time: '10:00',
     })
 
-    expect(mocks.getDressBySlug).toHaveBeenCalledWith('grace')
+    expect(mocks.getDressBySlug).toHaveBeenCalledWith('grace', { fresh: true })
     expect(mocks.getAvailableDressBySlug).not.toHaveBeenCalled()
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({

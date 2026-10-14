@@ -5,4 +5,5 @@ export const Embellishments = createLookupCollection({
   singularLabel: 'Embellishment',
   pluralLabel: 'Embellishments',
   description: 'Dress embellishment attributes',
+  invalidatesCatalogue: true,
 })

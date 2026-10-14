@@ -28,6 +28,10 @@ vi.mock('next/cache', () => ({
   ) => callback,
 }))
 
+vi.mock('next/headers', () => ({
+  draftMode: vi.fn(async () => ({ isEnabled: false })),
+}))
+
 vi.mock('payload', async (importOriginal) => {
   const actual = await importOriginal<typeof import('payload')>()
 

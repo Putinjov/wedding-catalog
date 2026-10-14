@@ -5,4 +5,5 @@ export const Necklines = createLookupCollection({
   singularLabel: 'Neckline',
   pluralLabel: 'Necklines',
   description: 'Dress neckline attributes',
+  invalidatesCatalogue: true,
 })

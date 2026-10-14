@@ -319,9 +319,12 @@ describe('catalogue cache invalidation', () => {
   })
 
   it('honours explicit revalidation suppression', async () => {
+    const context: Parameters<typeof revalidateCatalogueLookup>[0]['req']['context'] = {
+      disableRevalidate: true,
+    }
     await revalidateCatalogueLookup({
       doc: { id: 'designer-a' },
-      req: { context: { disableRevalidate: true } },
+      req: { context },
     } as Parameters<typeof revalidateCatalogueLookup>[0])
 
     expect(mocks.revalidateTag).not.toHaveBeenCalled()

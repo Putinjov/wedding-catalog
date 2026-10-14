@@ -136,7 +136,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   const dress = dressSlug
     ? dressMode
       ? await getAvailableDressBySlug(dressSlug, dressMode)
-      : await getDressBySlug(dressSlug)
+      : await getDressBySlug(dressSlug, { fresh: true })
     : null
   if (dressSlug && !dress) {
     return invalidBooking(

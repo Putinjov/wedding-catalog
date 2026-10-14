@@ -1,10 +1,13 @@
 import configPromise from '@payload-config'
+import { unstable_cache } from 'next/cache'
+import { draftMode } from 'next/headers'
 import { getPayload } from 'payload'
 import { cache } from 'react'
 
 import type { DressMode } from '@/lib/catalogue'
 import type { Dress } from '@/payload-types'
 import { attachDressMedia, type DressWithMedia } from '@/lib/dress-media'
+import { DRESSES_CACHE_TAG, getDressSlugCacheTag, getRelatedDressCacheTag } from '@/lib/dress-cache'
 import { buildPublicDressWhere } from '@/lib/public-dress-filters'
 
 export function getRelationshipId(value: unknown): string | null {
@@ -20,10 +23,10 @@ export function getRelationshipId(value: unknown): string | null {
   return null
 }
 
-const queryPublicDressBySlug = cache(async (
+async function queryPublicDressBySlug(
   slug: string,
   mode: DressMode | null,
-): Promise<DressWithMedia | null> => {
+): Promise<DressWithMedia | null> {
   const payload = await getPayload({
     config: configPromise,
   })
@@ -35,6 +38,7 @@ const queryPublicDressBySlug = cache(async (
   const result = await payload.find({
     collection: 'dresses',
     depth: 2,
+    draft: false,
     limit: 1,
     overrideAccess: false,
     where: buildPublicDressWhere(filterOptions, [{ slug: { equals: slug } }]),
@@ -43,10 +47,39 @@ const queryPublicDressBySlug = cache(async (
   const dress = result.docs[0]
   if (!dress) return null
   return (await attachDressMedia([dress], payload))[0] ?? null
+}
+
+class UncacheableDressResult extends Error {}
+
+const queryDressDetail = cache(async (slug: string): Promise<DressWithMedia | null> => {
+  const { isEnabled: draft } = await draftMode()
+  if (draft) return queryPublicDressBySlug(slug, null)
+
+  const getCachedDress = unstable_cache(
+    async () => {
+      const dress = await queryPublicDressBySlug(slug, null)
+      // Rejected callbacks are not persisted. Unknown/hidden URLs must not fill the cache,
+      // and a newly published dress must not inherit a cached null result.
+      if (!dress) throw new UncacheableDressResult('Public dress unavailable.')
+      return dress
+    },
+    ['dress-detail-v1', slug],
+    { revalidate: 300, tags: [DRESSES_CACHE_TAG, getDressSlugCacheTag(slug)] },
+  )
+
+  try {
+    return await getCachedDress()
+  } catch (error) {
+    if (error instanceof UncacheableDressResult) return null
+    throw error
+  }
 })
 
-export function getDressBySlug(slug: string): Promise<DressWithMedia | null> {
-  return queryPublicDressBySlug(slug, null)
+export function getDressBySlug(
+  slug: string,
+  { fresh = false }: { fresh?: boolean } = {},
+): Promise<DressWithMedia | null> {
+  return fresh ? queryPublicDressBySlug(slug, null) : queryDressDetail(slug)
 }
 
 export function getAvailableDressBySlug(
@@ -123,20 +156,21 @@ export function rankRelatedDresses(
     .slice(0, limit)
 }
 
-const queryRelatedDresses = cache(async (
+async function loadRelatedDresses(
   dressId: string,
   mode: DressMode,
   categoryId: string | null,
   silhouetteId: string | null,
   designerId: string | null,
   price: number | null,
-): Promise<DressWithMedia[]> => {
+): Promise<DressWithMedia[]> {
   const payload = await getPayload({
     config: configPromise,
   })
   const result = await payload.find({
     collection: 'dresses',
     depth: 2,
+    draft: false,
     limit: 100,
     overrideAccess: false,
     sort: ['-featured', 'displayOrder', '-createdAt', 'id'],
@@ -155,7 +189,28 @@ const queryRelatedDresses = cache(async (
   })
 
   return attachDressMedia(ranked, payload)
-})
+}
+
+const queryRelatedDresses = cache(
+  async (
+    dressId: string,
+    mode: DressMode,
+    categoryId: string | null,
+    silhouetteId: string | null,
+    designerId: string | null,
+    price: number | null,
+  ): Promise<DressWithMedia[]> => {
+    const { isEnabled: draft } = await draftMode()
+    const query = draft
+      ? loadRelatedDresses
+      : unstable_cache(loadRelatedDresses, ['related-dresses-v1'], {
+          revalidate: 300,
+          tags: [DRESSES_CACHE_TAG, getRelatedDressCacheTag(dressId, mode)],
+        })
+
+    return query(dressId, mode, categoryId, silhouetteId, designerId, price)
+  },
+)
 
 export function getRelatedDresses({
   dress,
