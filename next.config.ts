@@ -45,6 +45,8 @@ const nextConfig: NextConfig = {
     loadPaths: ['./node_modules/@payloadcms/ui/dist/scss/'],
   },
   images: {
+    // Payload generates responsive image sizes in R2; avoid billable Vercel transformations.
+    unoptimized: true,
     localPatterns: [
       {
         pathname: '/api/media/file/**',
