@@ -15,6 +15,18 @@ export const privacyPolicySnapshots = [
     policyPath: privacyPolicyPath,
     version: '2026-08-09',
   },
+  {
+    acknowledgementText:
+      'I confirm that I have read the Privacy Policy and understand how my personal data will be used to manage my booking.',
+    lastUpdated: '2026-10-24',
+    lastUpdatedLabel: '24 October 2026',
+    marketingEmailOptInText:
+      'Yes, I would like to receive occasional news and offers by email. I can unsubscribe at any time.',
+    noticeText:
+      'We use the information you provide to manage your booking and private customer profile, track your dress order, process payment, send essential booking messages, prevent fraud, and comply with legal and accounting obligations. Payments are processed by Stripe. For more information, see our Privacy Policy.',
+    policyPath: privacyPolicyPath,
+    version: '2026-10-24',
+  },
 ] as const
 
 export const currentPrivacyPolicy = privacyPolicySnapshots.at(-1)!

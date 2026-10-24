@@ -34,6 +34,11 @@ export default function PrivacyPage() {
             details, dress preference and optional notes. Please do not provide medical or other
             sensitive personal information in the notes field.
           </p>
+          <p>
+            Our staff may maintain a private customer profile to link verified visits and record
+            whether a dress order is awaiting a deposit, awaiting the dress, ready for collection,
+            or fulfilled. This profile is not a public account.
+          </p>
 
           <h2>Our reasons for processing</h2>
           <p>
@@ -71,6 +76,12 @@ export default function PrivacyPage() {
             <li>
               Full operational records for completed appointments: up to{' '}
               {privacyRetention.completedOperationalMonths} months after the appointment.
+            </li>
+            <li>
+              Private profile details used for follow-up and repeat-visit eligibility: normally up
+              to {privacyRetention.completedOperationalMonths} months after the most recent
+              completed visit, unless an active dress order or a substantiated legal or accounting
+              need requires a longer period.
             </li>
             <li>
               Minimal contract, claim, payment and accounting records: up to{' '}

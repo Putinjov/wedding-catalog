@@ -1,6 +1,7 @@
 import type { PayloadRequest, TypedUser } from 'payload'
 
 import type { Appointment } from '@/payload-types'
+import { normalizeCustomerEmail } from '@/lib/customers/email'
 
 import { toCalendarAppointment, type CalendarAppointment } from './calendarTypes'
 import { AdminAppointmentError } from './getCalendarAppointments'
@@ -28,10 +29,6 @@ export type ClientDirectoryEntry = {
 
 export type ClientProfile = ClientDirectoryEntry & {
   appointments: CalendarAppointment[]
-}
-
-function normalizeEmail(value: string): string {
-  return value.trim().toLocaleLowerCase('en-IE')
 }
 
 function timestamp(value: string | null): number {
@@ -93,7 +90,7 @@ export async function getClientDirectory({
   const appointments = await getAppointments(req, user)
   const grouped = new Map<string, Appointment[]>()
   for (const appointment of appointments) {
-    const key = normalizeEmail(appointment.email)
+    const key = normalizeCustomerEmail(appointment.email)
     const group = grouped.get(key) ?? []
     group.push(appointment)
     grouped.set(key, group)
@@ -144,9 +141,9 @@ export async function getClientProfile({
     throw new AdminAppointmentError('Client not found.', 404)
   }
 
-  const key = normalizeEmail(seed.email)
+  const key = normalizeCustomerEmail(seed.email)
   const appointments = (await getAppointments(req, user)).filter(
-    (appointment) => normalizeEmail(appointment.email) === key,
+    (appointment) => normalizeCustomerEmail(appointment.email) === key,
   )
   if (!appointments.some((appointment) => String(appointment.id) === String(seed.id))) {
     appointments.push(seed)
