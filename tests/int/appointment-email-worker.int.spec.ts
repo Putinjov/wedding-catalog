@@ -157,6 +157,48 @@ describe('appointment email worker', () => {
     )
   })
 
+  it('sends a current day-before reminder without exposing private booking details', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2030-06-09T10:00:00.000Z'))
+    const { payload, req } = fixture(
+      delivery({
+        event: 'reminder',
+        idempotencyKey: 'appointment-email:appointment-1:reminder:2030-06-10T10:00:00.000Z',
+      }),
+    )
+
+    await expect(
+      sendAppointmentEmail({ deliveryId: 'delivery-1', req: req as never }),
+    ).resolves.toBe('sent')
+
+    const message = JSON.stringify(payload.sendEmail.mock.calls)
+    expect(message).toContain('Your private fitting is tomorrow')
+    expect(message).not.toContain(appointment.publicReference)
+    expect(message).not.toContain(appointment.phone)
+    expect(message).not.toContain(appointment.notes)
+  })
+
+  it.each([
+    ['cancelled', { status: 'cancelled' as const }, '2030-06-09T10:00:00.000Z'],
+    ['rescheduled', { startAt: '2030-06-11T10:00:00.000Z' }, '2030-06-09T10:00:00.000Z'],
+    ['delivery delayed until the visit day', {}, '2030-06-10T03:00:00.000Z'],
+  ])('skips a %s reminder before contacting SMTP', async (_scenario, changes, now) => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(now))
+    const { payload, req } = fixture(
+      delivery({
+        event: 'reminder',
+        idempotencyKey: 'appointment-email:appointment-1:reminder:2030-06-10T10:00:00.000Z',
+      }),
+      { ...appointment, ...changes },
+    )
+
+    await expect(
+      sendAppointmentEmail({ deliveryId: 'delivery-1', req: req as never }),
+    ).resolves.toBe('skipped')
+    expect(payload.sendEmail).not.toHaveBeenCalled()
+  })
+
   it('omits customer contact details, notes, and private references from admin alerts', async () => {
     const conflict = {
       ...appointment,

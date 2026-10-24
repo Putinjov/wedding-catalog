@@ -1376,7 +1376,16 @@ export interface MobileDevice {
 export interface EmailDelivery {
   id: string;
   appointment: string | Appointment;
-  event: 'pending' | 'confirmed' | 'failed' | 'expired' | 'rescheduled' | 'cancelled' | 'refund' | 'admin_alert';
+  event:
+    | 'pending'
+    | 'confirmed'
+    | 'reminder'
+    | 'failed'
+    | 'expired'
+    | 'rescheduled'
+    | 'cancelled'
+    | 'refund'
+    | 'admin_alert';
   status: 'queued' | 'sending' | 'sent' | 'failed' | 'skipped';
   idempotencyKey: string;
   trigger: 'automatic' | 'manual';

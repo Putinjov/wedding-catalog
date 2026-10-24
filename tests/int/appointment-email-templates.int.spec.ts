@@ -32,6 +32,7 @@ describe('customer appointment email presentation', () => {
   it.each([
     'pending',
     'confirmed',
+    'reminder',
     'failed',
     'expired',
     'rescheduled',
@@ -97,6 +98,16 @@ describe('customer appointment email presentation', () => {
     expect(message('refund', { refundAmount: 1000 }).text).toContain('Refund amount: €10.00')
     expect(message('refund').text).not.toContain('Refund amount:')
     expect(message('cancelled').text).toContain('does not state that any payment has been refunded')
+  })
+
+  it('reminds the customer without implying a new charge or including private references', () => {
+    const result = message('reminder')
+    expect(result.subject).toBe('Your private fitting is tomorrow')
+    expect(result.text).toContain('Date & time:')
+    expect(result.text).toContain('Directions:')
+    expect(result.text).toContain('please reply to this email or call us')
+    expect(result.text).not.toContain('€20')
+    expect(result.text).not.toContain(appointment.publicReference)
   })
 
   it('escapes dynamic HTML without changing the text fallback', () => {

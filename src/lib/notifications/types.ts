@@ -1,6 +1,7 @@
 export const appointmentEmailEventValues = [
   'pending',
   'confirmed',
+  'reminder',
   'failed',
   'expired',
   'rescheduled',
