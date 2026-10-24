@@ -141,7 +141,7 @@ describe('booking privacy and consent', () => {
 
     const markup = renderToStaticMarkup(<PrivacyPage />)
     expect(markup).toContain('Privacy Policy')
-    expect(markup).toContain('Last updated: 9 August 2026')
+    expect(markup).toContain(`Last updated: ${currentPrivacyPolicy.lastUpdatedLabel}`)
     expect(markup).toContain('href="/contact"')
     expect(markup).toContain(privacyContactEmail)
   })

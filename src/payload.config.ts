@@ -10,6 +10,7 @@ import { AppointmentAudits } from './collections/AppointmentAudits'
 import { AppointmentSlotLocks } from './collections/AppointmentSlotLocks'
 import { Appointments } from './collections/Appointments'
 import { Categories } from './collections/Categories'
+import { Customers } from './collections/Customers'
 import { Dresses } from './collections/Dresses'
 import { EmailDeliveries } from './collections/EmailDeliveries'
 import { Backs } from './collections/Lookups/Backs'
@@ -141,6 +142,7 @@ export default buildConfig({
     Waistlines,
     Embellishments,
     Dresses,
+    Customers,
     Appointments,
     MobileDevices,
     EmailDeliveries,

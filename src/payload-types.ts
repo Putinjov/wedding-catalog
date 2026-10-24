@@ -84,6 +84,7 @@ export interface Config {
     waistlines: Waistline;
     embellishments: Embellishment;
     dresses: Dress;
+    customers: Customer;
     appointments: Appointment;
     'mobile-devices': MobileDevice;
     'email-deliveries': EmailDelivery;
@@ -124,6 +125,7 @@ export interface Config {
     waistlines: WaistlinesSelect<false> | WaistlinesSelect<true>;
     embellishments: EmbellishmentsSelect<false> | EmbellishmentsSelect<true>;
     dresses: DressesSelect<false> | DressesSelect<true>;
+    customers: CustomersSelect<false> | CustomersSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     'mobile-devices': MobileDevicesSelect<false> | MobileDevicesSelect<true>;
     'email-deliveries': EmailDeliveriesSelect<false> | EmailDeliveriesSelect<true>;
@@ -1207,6 +1209,35 @@ export interface Dress {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Private staff-only profiles. Historical appointments are not linked automatically.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: string;
+  /**
+   * Stable private identity key; changes require a reviewed account-linking workflow.
+   */
+  email: string;
+  name: string;
+  phone?: string | null;
+  /**
+   * Internal manual order progress; this field alone does not change booking fees.
+   */
+  orderStatus: 'none' | 'awaiting_deposit' | 'awaiting_dress' | 'ready_for_collection' | 'fulfilled';
+  /**
+   * Staff record this only after the order is confirmed and the deposit is received. No booking rule uses this field yet.
+   */
+  purchaseConfirmedAt?: string | null;
+  /**
+   * Optional internal order reference. Never shown to customers.
+   */
+  orderReference?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments".
  */
@@ -1219,6 +1250,10 @@ export interface Appointment {
   slotLock?: (string | null) | AppointmentSlotLock;
   purpose: 'buy' | 'rent' | 'undecided';
   dress?: (string | null) | Dress;
+  /**
+   * Verified internal profile; legacy appointments are not linked automatically.
+   */
+  customer?: (string | null) | Customer;
   customerName: string;
   email: string;
   phone: string;
@@ -1722,6 +1757,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'dresses';
         value: string | Dress;
+      } | null)
+    | ({
+        relationTo: 'customers';
+        value: string | Customer;
       } | null)
     | ({
         relationTo: 'appointments';
@@ -2352,6 +2391,20 @@ export interface DressesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers_select".
+ */
+export interface CustomersSelect<T extends boolean = true> {
+  email?: T;
+  name?: T;
+  phone?: T;
+  orderStatus?: T;
+  purchaseConfirmedAt?: T;
+  orderReference?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments_select".
  */
 export interface AppointmentsSelect<T extends boolean = true> {
@@ -2359,6 +2412,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   slotLock?: T;
   purpose?: T;
   dress?: T;
+  customer?: T;
   customerName?: T;
   email?: T;
   phone?: T;

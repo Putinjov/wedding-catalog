@@ -53,6 +53,7 @@ import { writeAppointmentAudit } from '@/lib/booking/writeAppointmentAudit'
 import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
 import { queueAppointmentEmails } from '@/lib/notifications/queueAppointmentEmailsHook'
 import { queueAppointmentPush } from '@/lib/notifications/appointmentPush'
+import { validateAppointmentCustomer } from '@/lib/customers/appointmentCustomer'
 
 const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   context,
@@ -219,7 +220,7 @@ export const Appointments: CollectionConfig = {
       queueAppointmentPush,
     ],
     afterError: [releaseDateMutexAfterError],
-    beforeChange: [validateStatusChange],
+    beforeChange: [validateAppointmentCustomer, validateStatusChange],
     beforeValidate: [
       async ({ data, operation, req }) => {
         if (operation !== 'create' || !data) {
@@ -299,6 +300,15 @@ export const Appointments: CollectionConfig = {
       name: 'dress',
       type: 'relationship',
       relationTo: 'dresses',
+    },
+    {
+      name: 'customer',
+      type: 'relationship',
+      relationTo: 'customers',
+      index: true,
+      admin: {
+        description: 'Verified internal profile; legacy appointments are not linked automatically.',
+      },
     },
     {
       name: 'customerName',
