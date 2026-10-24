@@ -6,7 +6,7 @@ import { down, up } from '@/migrations/20260809_234500_add_paid_conflict_workflo
 function model(indexes: Array<Record<string, unknown>> = [], duplicates: unknown[] = []) {
   return {
     collection: {
-      aggregate: vi.fn(() => ({ toArray: vi.fn(async () => duplicates) })),
+      aggregate: vi.fn((_pipeline: unknown[]) => ({ toArray: vi.fn(async () => duplicates) })),
       createIndex: vi.fn(async (_key, options: { name: string }) => options.name),
       dropIndex: vi.fn(async () => undefined),
       indexes: vi.fn(async () => indexes),
@@ -59,6 +59,22 @@ describe('paid conflict migration', () => {
       /duplicate stripePaymentIntentId/i,
     )
     expect(fixture.appointments.collection.createIndex).not.toHaveBeenCalled()
+  })
+
+  it('runs duplicate checks outside the migration transaction before index DDL', async () => {
+    const fixture = migrationArgs()
+
+    await up({ payload: fixture.payload, session: {} } as unknown as MigrateUpArgs)
+
+    for (const aggregate of [
+      fixture.appointments.collection.aggregate,
+      fixture.audits.collection.aggregate,
+    ]) {
+      expect(aggregate).toHaveBeenCalled()
+      for (const call of aggregate.mock.calls) {
+        expect(call).toHaveLength(1)
+      }
+    }
   })
 
   it('drops only Task 23 indexes during rollback', async () => {

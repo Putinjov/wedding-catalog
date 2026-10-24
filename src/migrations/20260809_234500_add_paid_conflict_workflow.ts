@@ -40,18 +40,15 @@ async function getIndexes(
 async function assertNoDuplicates(
   model: ReturnType<typeof getModels>['appointments'],
   field: string,
-  session: MigrateUpArgs['session'],
 ): Promise<void> {
+  // Index DDL runs outside Payload's migration transaction, so its preflight must too.
   const duplicates = await model.collection
-    .aggregate(
-      [
-        { $match: { [field]: { $exists: true, $nin: [null, ''] } } },
-        { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-        { $match: { count: { $gt: 1 } } },
-        { $limit: 1 },
-      ],
-      { session },
-    )
+    .aggregate([
+      { $match: { [field]: { $exists: true, $nin: [null, ''] } } },
+      { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+      { $limit: 1 },
+    ])
     .toArray()
   if (duplicates.length > 0) {
     throw new Error(`Task 23 migration aborted: duplicate ${field} values require manual review.`)
@@ -79,13 +76,13 @@ async function ensureSparseUniqueIndex(
   )
 }
 
-export async function up({ payload, session }: MigrateUpArgs): Promise<void> {
+export async function up({ payload }: MigrateUpArgs): Promise<void> {
   const { appointments, audits } = getModels(payload)
   for (const index of appointmentIndexes) {
-    await assertNoDuplicates(appointments, index.field, session)
+    await assertNoDuplicates(appointments, index.field)
     await ensureSparseUniqueIndex(appointments, index.field, index.name)
   }
-  await assertNoDuplicates(audits, auditIndex.field, session)
+  await assertNoDuplicates(audits, auditIndex.field)
   await ensureSparseUniqueIndex(audits, auditIndex.field, auditIndex.name)
 
   payload.logger.info({
