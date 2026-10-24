@@ -12,6 +12,7 @@ import * as migration_20260810_003000_add_email_delivery_queue from './20260810_
 import * as migration_20260819_193000_add_booking_visit_address from './20260819_193000_add_booking_visit_address'
 import * as migration_20260909_213000_update_fitting_schedule from './20260909_213000_update_fitting_schedule'
 import * as migration_20260912_220000_add_mobile_devices from './20260912_220000_add_mobile_devices'
+import * as migration_20261024_100000_add_appointment_reminder_index from './20261024_100000_add_appointment_reminder_index'
 
 export const migrations = [
   {
@@ -83,5 +84,10 @@ export const migrations = [
     up: migration_20260912_220000_add_mobile_devices.up,
     down: migration_20260912_220000_add_mobile_devices.down,
     name: '20260912_220000_add_mobile_devices',
+  },
+  {
+    up: migration_20261024_100000_add_appointment_reminder_index.up,
+    down: migration_20261024_100000_add_appointment_reminder_index.down,
+    name: '20261024_100000_add_appointment_reminder_index',
   },
 ]

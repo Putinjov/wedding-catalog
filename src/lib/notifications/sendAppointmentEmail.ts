@@ -3,6 +3,7 @@ import type { Payload, PayloadRequest } from 'payload'
 import { getEmailAddresses } from '@/config/email'
 import { getServerEnvironment } from '@/config/env'
 import { shouldDeliverAppointmentEmail } from '@/lib/notifications/appointmentEmailEvents'
+import { getAppointmentReminderKey } from '@/lib/notifications/appointmentReminder'
 import { buildAppointmentEmail } from '@/lib/notifications/appointmentEmailTemplates'
 import type { Appointment, EmailDelivery } from '@/payload-types'
 
@@ -98,7 +99,10 @@ export async function sendAppointmentEmail({
     req,
   }) as Appointment
 
-  if (!shouldDeliverAppointmentEmail(delivery.event, appointment)) {
+  const reminderIsCurrent =
+    delivery.event !== 'reminder' ||
+    delivery.idempotencyKey === getAppointmentReminderKey(appointment)
+  if (!reminderIsCurrent || !shouldDeliverAppointmentEmail(delivery.event, appointment)) {
     await updateDelivery(req, delivery.id, {
       lastFailureReason: null,
       status: 'skipped',

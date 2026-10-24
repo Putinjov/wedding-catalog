@@ -1,4 +1,5 @@
 import type { Appointment, Dress } from '@/payload-types'
+import type { AppointmentEmailEvent } from '@/lib/notifications/types'
 import { isBookingPurpose } from '@/lib/booking/purpose'
 import {
   appointmentPaymentStatusValues,
@@ -48,15 +49,7 @@ export type AppointmentEmailHistoryEntry = {
   id: string
   attempts: number
   createdAt: string
-  event:
-    | 'admin_alert'
-    | 'cancelled'
-    | 'confirmed'
-    | 'expired'
-    | 'failed'
-    | 'pending'
-    | 'refund'
-    | 'rescheduled'
+  event: AppointmentEmailEvent
   failureCategory?: string | null
   sentAt?: string | null
   status: 'failed' | 'queued' | 'sending' | 'sent' | 'skipped'

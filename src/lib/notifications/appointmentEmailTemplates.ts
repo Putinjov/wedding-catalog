@@ -196,6 +196,14 @@ function getCustomerPresentation(
         subject: 'Your private fitting is confirmed',
         title: 'Your fitting is confirmed',
       }
+    case 'reminder':
+      return {
+        intro: 'We look forward to welcoming you to your private fitting tomorrow.',
+        nextSteps:
+          'Your appointment details and directions are below. If you cannot attend, please reply to this email or call us as soon as possible.',
+        subject: 'Your private fitting is tomorrow',
+        title: 'A reminder for tomorrow',
+      }
     case 'failed':
       return {
         cta: { href: pendingLink(appointment), label: 'Review your booking' },

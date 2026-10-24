@@ -118,4 +118,19 @@ describe('appointment email event mapping', () => {
       ),
     ).toBe(true)
   })
+
+  it('delivers reminders only on the day before a confirmed Dublin appointment', () => {
+    const now = new Date('2030-06-09T10:00:00.000Z')
+    const appointment = state({
+      startAt: '2030-06-10T10:00:00.000Z',
+      status: 'confirmed',
+    })
+    expect(shouldDeliverAppointmentEmail('reminder', appointment, now)).toBe(true)
+    expect(
+      shouldDeliverAppointmentEmail('reminder', state({ ...appointment, status: 'cancelled' }), now),
+    ).toBe(false)
+    expect(
+      shouldDeliverAppointmentEmail('reminder', appointment, new Date('2030-06-10T03:00:00Z')),
+    ).toBe(false)
+  })
 })

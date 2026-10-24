@@ -1,6 +1,7 @@
 import type { Appointment } from '@/payload-types'
 
 import type { AppointmentEmailEvent } from './types'
+import { isDayBeforeReminderDue } from './appointmentReminder'
 
 type AppointmentEmailState = Pick<
   Appointment,
@@ -81,6 +82,7 @@ export function getAppointmentEmailEvents({
 export function shouldDeliverAppointmentEmail(
   event: AppointmentEmailEvent,
   appointment: AppointmentEmailState,
+  now: Date = new Date(),
 ): boolean {
   switch (event) {
     case 'pending':
@@ -90,6 +92,8 @@ export function shouldDeliverAppointmentEmail(
     case 'confirmed':
     case 'rescheduled':
       return appointment.status === 'confirmed'
+    case 'reminder':
+      return isDayBeforeReminderDue(appointment, now)
     case 'failed':
       return appointment.status === 'payment_failed' && appointment.paymentStatus === 'failed'
     case 'expired':

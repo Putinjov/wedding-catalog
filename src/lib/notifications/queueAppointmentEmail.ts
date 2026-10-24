@@ -67,7 +67,7 @@ export async function queueAppointmentEmail({
   requestedBy,
   trigger,
 }: {
-  appointment: Appointment
+  appointment: Pick<Appointment, 'id'>
   event: AppointmentEmailEvent
   idempotencyKey: string
   req: PayloadRequest
