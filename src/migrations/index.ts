@@ -14,6 +14,7 @@ import * as migration_20260909_213000_update_fitting_schedule from './20260909_2
 import * as migration_20260912_220000_add_mobile_devices from './20260912_220000_add_mobile_devices'
 import * as migration_20261024_100000_add_appointment_reminder_index from './20261024_100000_add_appointment_reminder_index'
 import * as migration_20261024_120000_add_customer_profiles from './20261024_120000_add_customer_profiles'
+import * as migration_20261025_180000_add_customer_verification_claims from './20261025_180000_add_customer_verification_claims'
 
 export const migrations = [
   {
@@ -95,5 +96,10 @@ export const migrations = [
     up: migration_20261024_120000_add_customer_profiles.up,
     down: migration_20261024_120000_add_customer_profiles.down,
     name: '20261024_120000_add_customer_profiles',
+  },
+  {
+    up: migration_20261025_180000_add_customer_verification_claims.up,
+    down: migration_20261025_180000_add_customer_verification_claims.down,
+    name: '20261025_180000_add_customer_verification_claims',
   },
 ]
