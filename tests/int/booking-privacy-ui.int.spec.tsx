@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   createPendingAppointment: vi.fn(),
   getAvailableSlots: vi.fn(),
   getFullyBookedDates: vi.fn(),
+  getBookingFeeQuote: vi.fn(),
   replace: vi.fn(),
 }))
 
@@ -30,6 +31,16 @@ vi.mock('@/lib/booking/createAppointment', () => ({
   createPendingAppointment: mocks.createPendingAppointment,
 }))
 
+vi.mock('@/lib/booking/getBookingFeeQuote', () => ({
+  getBookingFeeQuote: mocks.getBookingFeeQuote,
+}))
+
+vi.mock('@/components/booking/email-verification-control', () => ({
+  EmailVerificationControl: ({ onVerifiedChange }: { onVerifiedChange: (value: boolean) => void }) => (
+    <button onClick={() => onVerifiedChange(true)} type="button">Verify test email</button>
+  ),
+}))
+
 vi.mock('@/lib/booking/getAvailableSlots', () => ({
   getAvailableSlots: mocks.getAvailableSlots,
 }))
@@ -41,6 +52,7 @@ vi.mock('@/lib/booking/getFullyBookedDates', () => ({
 describe('booking privacy UI', () => {
   it('keeps required acknowledgement separate from optional email marketing', async () => {
     mocks.getFullyBookedDates.mockResolvedValue({ dates: [], success: true })
+    mocks.getBookingFeeQuote.mockResolvedValue({ amount: 0, kind: 'welcome', success: true })
     mocks.getAvailableSlots.mockResolvedValue({
       slots: [
         {
@@ -86,6 +98,7 @@ describe('booking privacy UI', () => {
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'customer@example.com' },
     })
+    fireEvent.click(screen.getByRole('button', { name: 'Verify test email' }))
     fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '+353100000000' } })
     fireEvent.click(screen.getByRole('button', { name: /continue to review/i }))
 

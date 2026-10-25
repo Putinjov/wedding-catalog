@@ -10,10 +10,12 @@ export function FittingFeeOffer({
   amount = siteConfig.fittingFee,
   className,
   size = 'large',
+  waiverName,
 }: {
   amount?: number
   className?: string
   size?: 'compact' | 'large' | 'medium'
+  waiverName?: string
 }) {
   if (!isFittingFeeWaived(amount)) {
     return (
@@ -31,8 +33,8 @@ export function FittingFeeOffer({
   }
 
   const promotion = siteConfig.fittingFeePromotion
-  const promotionLabel = promotion?.label ?? 'Free'
-  const promotionName = promotion?.name ?? 'Fitting fee waived'
+  const promotionName = waiverName ?? promotion?.name ?? 'Fitting fee waived'
+  const promotionLabel = waiverName ? 'Free' : promotion?.label ?? 'Free'
 
   return (
     <span

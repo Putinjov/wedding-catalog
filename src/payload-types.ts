@@ -85,6 +85,7 @@ export interface Config {
     embellishments: Embellishment;
     dresses: Dress;
     customers: Customer;
+    'customer-verification-claims': CustomerVerificationClaim;
     appointments: Appointment;
     'mobile-devices': MobileDevice;
     'email-deliveries': EmailDelivery;
@@ -126,6 +127,7 @@ export interface Config {
     embellishments: EmbellishmentsSelect<false> | EmbellishmentsSelect<true>;
     dresses: DressesSelect<false> | DressesSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
+    'customer-verification-claims': CustomerVerificationClaimsSelect<false> | CustomerVerificationClaimsSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     'mobile-devices': MobileDevicesSelect<false> | MobileDevicesSelect<true>;
     'email-deliveries': EmailDeliveriesSelect<false> | EmailDeliveriesSelect<true>;
@@ -1239,6 +1241,17 @@ export interface Customer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customer-verification-claims".
+ */
+export interface CustomerVerificationClaim {
+  id: string;
+  claimKey: string;
+  expiresAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments".
  */
 export interface Appointment {
@@ -1761,6 +1774,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'customers';
         value: string | Customer;
+      } | null)
+    | ({
+        relationTo: 'customer-verification-claims';
+        value: string | CustomerVerificationClaim;
       } | null)
     | ({
         relationTo: 'appointments';
@@ -2400,6 +2417,16 @@ export interface CustomersSelect<T extends boolean = true> {
   orderStatus?: T;
   purchaseConfirmedAt?: T;
   orderReference?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customer-verification-claims_select".
+ */
+export interface CustomerVerificationClaimsSelect<T extends boolean = true> {
+  claimKey?: T;
+  expiresAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
