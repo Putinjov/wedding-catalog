@@ -53,6 +53,8 @@ test.describe('Booking accessibility', () => {
 
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
+    await expect(dialog).toHaveCSS('animation-name', 'none')
+    await expect(dialog).toHaveCSS('opacity', '1')
     const dialogResults = await new AxeBuilder({ page })
       .include('[role="dialog"]')
       .withTags(wcagTags)
@@ -92,6 +94,9 @@ test.describe('Booking accessibility', () => {
     await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible()
 
     await page.goto(`${testBaseUrl}/book-a-fitting`)
+
+    const mobileResults = await new AxeBuilder({ page }).withTags(wcagTags).analyze()
+    expect(seriousViolations(mobileResults.violations)).toEqual([])
 
     await expectMinimumTargetSize(
       page.getByRole('button', { name: /Explore dresses available to purchase/ }),
