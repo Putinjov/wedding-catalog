@@ -1261,7 +1261,7 @@ export interface Appointment {
    */
   publicReference: string;
   slotLock?: (string | null) | AppointmentSlotLock;
-  purpose: 'buy' | 'rent' | 'undecided';
+  purpose: 'buy' | 'rent' | 'undecided' | 'follow_up';
   dress?: (string | null) | Dress;
   /**
    * Verified internal profile; legacy appointments are not linked automatically.

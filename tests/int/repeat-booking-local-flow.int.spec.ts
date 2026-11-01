@@ -88,7 +88,7 @@ describe.skipIf(process.env.LOCAL_BOOKING_FLOW_TEST !== 'true')('local repeat bo
         email, now: new Date(), payload, requestedAt: repeatStart,
       })
       expect(decision.kind).toBe('free')
-      const repeat = await createPendingAppointment({ ...baseInput, ...repeatSlot })
+      const repeat = await createPendingAppointment({ ...baseInput, ...repeatSlot, purpose: 'follow_up' })
       expect(repeat.success).toBe(true)
       if (!repeat.success) throw new Error('The repeat test appointment was not created.')
       const repeatAppointments = await payload.find({
@@ -100,6 +100,7 @@ describe.skipIf(process.env.LOCAL_BOOKING_FLOW_TEST !== 'true')('local repeat bo
       expect(repeatAppointment?.status).toBe('confirmed')
       expect(repeatAppointment?.paymentStatus).toBe('unpaid')
       expect(repeatAppointment?.fittingFee).toBe(0)
+      expect(repeatAppointment?.purpose).toBe('follow_up')
       expect(repeatAppointment?.holdExpiresAt).toBeFalsy()
       expect(repeatAppointment?.stripeCheckoutSessionId).toBeFalsy()
 

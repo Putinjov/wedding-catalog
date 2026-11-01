@@ -4,7 +4,7 @@ import { siteConfig } from '@/config/site'
 import type { Appointment } from '@/payload-types'
 
 import { normalizeCustomerEmail } from './email'
-import { resolveRepeatBookingDecision } from './repeatBooking'
+import { getFollowUpBookingError, resolveRepeatBookingDecision } from './repeatBooking'
 
 function getCustomerId(value: Appointment['customer']): string | null {
   if (!value) return null
@@ -68,6 +68,10 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
     }
     if (decision.kind === 'closed') {
       throw new APIError('Online bookings are unavailable after a confirmed purchase.', 409)
+    }
+    if (data.purpose === 'follow_up') {
+      const followUpError = getFollowUpBookingError(decision)
+      if (followUpError) throw new APIError(followUpError, 409)
     }
     const expectedFee = decision.kind === 'free' ? 0 : siteConfig.fittingFee
     if (data.fittingFee !== expectedFee) {

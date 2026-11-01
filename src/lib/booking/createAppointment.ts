@@ -36,7 +36,7 @@ import { currentPrivacyPolicy } from '@/config/privacy'
 import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
 import { normalizeCustomerEmail } from '@/lib/customers/email'
 import { readVerifiedEmailSession, verifiedEmailCookieName } from '@/lib/customers/emailVerification'
-import { resolveRepeatBookingDecision } from '@/lib/customers/repeatBooking'
+import { getFollowUpBookingError, resolveRepeatBookingDecision } from '@/lib/customers/repeatBooking'
 import { getServerEnvironment } from '@/config/env'
 import {
   getBookingNoticeMessage,
@@ -97,7 +97,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
     ? readVerifiedEmailSession(cookieStore.get(verifiedEmailCookieName)?.value, secret)
     : null
   if (verifiedEmail !== email) {
-    return invalidBooking('Please verify your email using the one-time link before booking.', {
+    return invalidBooking('Please verify your email using the six-digit code before booking.', {
       email: 'Please verify this email address before booking.',
     })
   }
@@ -182,6 +182,10 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
     payload,
     requestedAt: dateTimes.startAt,
   })
+  if (data.purpose === 'follow_up') {
+    const followUpError = getFollowUpBookingError(decision)
+    if (followUpError) return invalidBooking(followUpError)
+  }
   if (!decision.customer) {
     try {
       const customer = await payload.create({

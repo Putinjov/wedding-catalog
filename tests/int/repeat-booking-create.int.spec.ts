@@ -26,7 +26,8 @@ vi.mock('@/lib/customers/emailVerification', () => ({
   readVerifiedEmailSession: mocks.readVerifiedEmailSession,
   verifiedEmailCookieName: 'booking_verified_email',
 }))
-vi.mock('@/lib/customers/repeatBooking', () => ({
+vi.mock('@/lib/customers/repeatBooking', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/customers/repeatBooking')>()),
   resolveRepeatBookingDecision: mocks.resolveRepeatBookingDecision,
 }))
 vi.mock('@/lib/booking/settings', () => ({
@@ -57,6 +58,8 @@ vi.mock('@/lib/security/rateLimit', () => ({
 }))
 
 import { createPendingAppointment } from '@/lib/booking/createAppointment'
+import { checkFollowUpEligibility, getBookingFeeQuote } from '@/lib/booking/getBookingFeeQuote'
+import { validateAppointmentCustomer } from '@/lib/customers/appointmentCustomer'
 
 const input = {
   customerName: 'Test Customer',
@@ -122,5 +125,43 @@ describe('server-authoritative repeat booking creation', () => {
     const result = await createPendingAppointment(input)
     expect(result).toEqual(expect.objectContaining({ success: false }))
     expect(mocks.create).not.toHaveBeenCalled()
+  })
+
+  it('never silently charges an ineligible follow-up or creates a profile for it', async () => {
+    mocks.resolveRepeatBookingDecision.mockResolvedValue({ customer: null, kind: 'standard' })
+    const result = await createPendingAppointment({ ...input, purpose: 'follow_up' })
+    expect(result).toEqual(expect.objectContaining({ success: false, message: expect.stringContaining('free follow-up') }))
+    expect(mocks.create).not.toHaveBeenCalled()
+  })
+
+  it('persists an eligible follow-up as confirmed and unpaid at zero', async () => {
+    mocks.resolveRepeatBookingDecision.mockResolvedValue({ customer: { id: 'customer-1' }, kind: 'free' })
+    expect((await createPendingAppointment({ ...input, purpose: 'follow_up' })).success).toBe(true)
+    expect(mocks.create.mock.calls[0]?.[0].data).toEqual(expect.objectContaining({
+      purpose: 'follow_up', fittingFee: 0, status: 'confirmed', paymentStatus: 'unpaid',
+    }))
+  })
+
+  it('keeps eligibility private until verified and refuses a paid follow-up quote', async () => {
+    mocks.readVerifiedEmailSession.mockReturnValue(null)
+    expect((await checkFollowUpEligibility({ email: input.email })).success).toBe(false)
+    expect(mocks.resolveRepeatBookingDecision).not.toHaveBeenCalled()
+    mocks.readVerifiedEmailSession.mockReturnValue('bride@example.com')
+    mocks.resolveRepeatBookingDecision.mockResolvedValue({ customer: { id: 'customer-1' }, kind: 'standard' })
+    expect((await checkFollowUpEligibility({ email: input.email })).success).toBe(false)
+    expect((await getBookingFeeQuote({ ...input, purpose: 'follow_up' })).success).toBe(false)
+    mocks.resolveRepeatBookingDecision.mockResolvedValue({ customer: { id: 'customer-1' }, kind: 'free' })
+    expect((await checkFollowUpEligibility({ email: input.email })).success).toBe(true)
+    expect(await getBookingFeeQuote({ ...input, purpose: 'follow_up' })).toEqual({ success: true, amount: 0, kind: 'repeat' })
+  })
+
+  it('rechecks follow-up entitlement in the Payload hook even if the caller supplies the standard fee', async () => {
+    mocks.resolveRepeatBookingDecision.mockResolvedValue({ customer: { id: 'customer-1' }, kind: 'standard' })
+    const args = {
+      data: { customer: 'customer-1', email: input.email, fittingFee: 20, purpose: 'follow_up', source: 'website', startAt: '2099-01-02T10:00:00Z' },
+      operation: 'create',
+      req: { payload: { findByID: async () => ({ email: input.email }) } },
+    } as unknown as Parameters<typeof validateAppointmentCustomer>[0]
+    await expect(validateAppointmentCustomer(args)).rejects.toThrow(/free follow-up/)
   })
 })

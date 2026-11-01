@@ -6,8 +6,9 @@ The current welcome offer confirms every online fitting at €0. Once the offer 
 
 ## Implementation
 
-- Require a one-time email link for **every** online booking, including the first. This avoids revealing whether an address has a customer profile or purchase. The link is valid for 15 minutes, is consumed by a POST after a deliberate click, and yields a 30-minute HttpOnly, SameSite cookie. The link token is encrypted and placed in the URL fragment, not the HTTP request path or query.
-- Store only hashed, short-lived issuance and redemption claim keys. A unique MongoDB index makes redemption single-use even under concurrent requests; a TTL index removes claims after 24 hours. Persistent per-address and per-IP request limits supplement the existing process-local limiter.
+- Require a six-digit email code for **every** online booking, including the first. Codes are sent independently of account existence. A cryptographically random, 15-minute code is bound to an encrypted HttpOnly, SameSite=Strict browser challenge; it is never returned in JSON or placed in a URL. A successful POST yields a 30-minute HttpOnly verified-email cookie. Outstanding legacy links remain redeemable until their original expiry, but no new links are issued.
+- Offer Buy, Rent, and **Follow-up appointment** publicly. A follow-up requires email verification and a server eligibility check before the calendar; the selected date is checked again in the fee quote, appointment action and Payload hook. Ineligible follow-ups stop with guidance, never silently proceed to a paid appointment. Historical `undecided` remains unchanged and visible to staff.
+- Store only hashed, short-lived issuance, attempt and redemption claim keys. Five atomic attempt slots per challenge enforce the code-guess limit across server instances and concurrent requests. A unique MongoDB index makes redemption single-use; a TTL index removes claims after 24 hours. Persistent per-address and per-IP issuance limits supplement process-local request/redemption limits. Repeat issuance within the same 15-minute bucket does not issue another challenge or reset attempts.
 - Resolve the fee on the server from the verified normalized email, a private customer profile, and the latest **linked, completed** appointment whose end is in the past. The chosen new fitting date must fall no later than the two-year Europe/Dublin calendar anniversary of that visit. Each subsequent completed visit renews the window. A confirmed purchase closes online booking; staff arrange later visits by phone.
 - The review step requests a server-side quote, but appointment creation and its Payload hook recalculate the decision before writing payment state. Stripe Checkout also rechecks confirmed purchases. Repeat appointments start `confirmed`/`unpaid` at €0 and never enter Stripe Checkout. Standard appointments retain the configured fee and `pending_payment` lifecycle.
 - New verified bookings create and link a private customer profile if necessary. Historical appointments are **not** linked automatically; staff must review and link them before they can establish a repeat entitlement.
@@ -21,11 +22,13 @@ The focused changes are in `src/lib/customers/`, `src/lib/booking/createAppointm
 
 `20261025_180000_add_customer_verification_claims` adds a unique claim-key index and a 24-hour TTL expiry index. It does not rewrite profiles or appointments. Run the approved migration gate before deploying code that accepts verification requests. Rollback removes indexes only if there are no claim records; after requests exist, preserve records and review a rollback plan. Reverting the application without dropping data returns the previous booking flow, but the welcome offer must remain active until Stripe and the new paid flow are verified.
 
+`20261101_120000_add_follow_up_booking_purpose` validates the additive `follow_up` purpose without rewriting records. Its rollback refuses if records cannot be represented by the prior buy/rent/undecided schema. Do not relabel follow-ups as undecided to force a rollback. OTP attempts reuse the existing claim collection and indexes; no plaintext codes, addresses or code digests are added to that collection. The manager app receives the new type/display label but its build is outside the web validation suite.
+
 ## Tests and manual verification
 
 - Run `npm ci`, `npm run generate:types`, `npm run generate:importmap`, `npm run lint`, `npm run test:int`, a fresh local migration run plus mandatory migration check, and `npm run build` against a local test database.
 - Test a first verified booking, an unverified booking rejection, a linked completed repeat inside and outside the two-year window, a confirmed purchase, token expiry/replay/concurrent redemption, email send failure/retry, and Stripe bypass for €0.
-- In Preview, open the form on mobile and desktop, request a link, use it once, return to the form, and confirm the address. Check another email cannot reuse the cookie. Inspect `Cache-Control`, `X-Robots-Tag`, rendered robots metadata, keyboard flow, screen-reader status, reduced motion, and axe results.
+- In Preview, select Follow-up appointment, enter the previously used email and request a code. Enter it in the same browser (mobile and desktop); check wrong, expired, replayed and exhausted codes. Check another email cannot reuse the cookie. Confirm an eligible customer can reach the calendar and a customer without a linked completed visit cannot. Check the chosen visit date is still inside the two-year limit and a purchase closes online booking. Inspect private API headers and keyboard, screen-reader and axe behavior.
 - Screenshots: [verification desktop](repeat-booking-verification-desktop.png), [verification mobile](repeat-booking-verification-mobile.png), [booking form desktop](repeat-booking-form-desktop.png), [booking form mobile](repeat-booking-form-mobile.png).
 
 ## Security, privacy, accessibility, SEO and cache
@@ -37,9 +40,12 @@ No customer phone, notes, full email content, secret, or Stripe payload is logge
 - Legacy visits require manual profile linking. There is no automatic historical backfill or data reinterpretation.
 - The welcome offer still makes the configured public fee €0. The eventual €20 cutover and changed Stripe account need a separate reviewed release and provider smoke test.
 - Live Google Workspace delivery has not been exercised with a customer address in local tests. The existing process-local IP limiter is not shared across instances; unique database claims enforce the per-address and per-IP issuance quotas.
+- A lost challenge cookie, browser switch or lost issuance response requires waiting for the address issuance window before requesting another code. This conservative retry policy avoids resetting brute-force attempts; no code is stored in localStorage or sessionStorage.
 - The owner confirmed that a 29 February visit remains eligible through 28 February, inclusive, two years later. A requested visit on 1 March is outside the free window.
 
 ## Локальна повторна перевірка після оновлення від master — 2026-11-01
+
+**Історичний звіт нижче стосується попереднього magic-link варіанта cdad42b, а не нових OTP/follow-up змін. Поточні результати наведено в окремому звіті follow-up-email-code.md.**
 
 - Гілка містить master `a61b395` із виправленнями контрасту діалогу й очікуваного заголовка головної. Незакомічені тести збережені під час merge; production-код цього PR додатково не змінювався.
 - `npm ci --no-audit --no-fund`, генерація types/importMap і перевірка їх diff пройшли. `npm run lint` завершився без помилок із попереднім warning про `dirname` у `src/collections/Media.ts`.

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto'
 
 import { z } from 'zod'
 
@@ -19,6 +19,42 @@ const sessionSchema = z.object({
   expiresAt: z.number().int().positive(),
   purpose: z.literal('verified-booking-email'),
 })
+
+const codeChallengeSchema = tokenSchema.extend({
+  code: z.string().regex(/^\d{6}$/),
+  purpose: z.literal('booking-email-code'),
+})
+
+export const emailCodeCookieName = 'booking_email_challenge'
+export const emailCodeCookiePath = '/api/booking/email-verification'
+export const emailCodeMaxAge = verificationLifetimeMs / 1000
+export const emailCodeAttemptLimit = 5
+
+export function createEmailCodeChallenge(email: string, secret: string, now = Date.now()) {
+  const code = randomInt(0, 1_000_000).toString().padStart(6, '0')
+  const challenge = encrypt({
+    code,
+    email: normalizeCustomerEmail(email),
+    expiresAt: now + verificationLifetimeMs,
+    nonce: randomBytes(32).toString('hex'),
+    purpose: 'booking-email-code',
+  }, secret, 'email-code')
+  return { challenge, code }
+}
+
+export function readEmailCodeChallenge(challenge: string, secret: string, now = Date.now()) {
+  const result = codeChallengeSchema.safeParse(decrypt(challenge, secret, 'email-code'))
+  return result.success && result.data.expiresAt > now ? result.data : null
+}
+
+export function matchesEmailCode(expected: string, supplied: string): boolean {
+  return /^\d{6}$/.test(supplied) && /^\d{6}$/.test(expected) &&
+    timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))
+}
+
+export function codeAttemptClaimKey(nonce: string, slot: number): string {
+  return `attempt:${createHash('sha256').update(nonce).digest('hex')}:${slot}`
+}
 
 function keyFor(secret: string, purpose: string): Buffer {
   if (secret.length < 32) throw new Error('A secure booking verification secret is required.')

@@ -9,6 +9,16 @@ export type RepeatBookingDecision =
   | { kind: 'free'; customer: Customer }
   | { kind: 'standard'; customer: Customer | null }
 
+export function getFollowUpBookingError(decision: RepeatBookingDecision): string | null {
+  if (decision.kind === 'closed') {
+    return 'Online booking is unavailable after a confirmed purchase. Please call us for further appointments.'
+  }
+  if (decision.kind !== 'free') {
+    return 'We could not confirm a free follow-up for this email and date. A linked, completed visit within the previous two years is required. Please contact us to check an earlier visit, or choose Buy or Rent for a first appointment.'
+  }
+  return null
+}
+
 export function getTwoYearAnniversary(dateKey: string): string | null {
   const date = parseDateKey(dateKey)
   if (!date) return null

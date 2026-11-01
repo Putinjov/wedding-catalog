@@ -15,6 +15,7 @@ import * as migration_20260912_220000_add_mobile_devices from './20260912_220000
 import * as migration_20261024_100000_add_appointment_reminder_index from './20261024_100000_add_appointment_reminder_index'
 import * as migration_20261024_120000_add_customer_profiles from './20261024_120000_add_customer_profiles'
 import * as migration_20261025_180000_add_customer_verification_claims from './20261025_180000_add_customer_verification_claims'
+import * as migration_20261101_120000_add_follow_up_booking_purpose from './20261101_120000_add_follow_up_booking_purpose'
 
 export const migrations = [
   {
@@ -101,5 +102,10 @@ export const migrations = [
     up: migration_20261025_180000_add_customer_verification_claims.up,
     down: migration_20261025_180000_add_customer_verification_claims.down,
     name: '20261025_180000_add_customer_verification_claims',
+  },
+  {
+    up: migration_20261101_120000_add_follow_up_booking_purpose.up,
+    down: migration_20261101_120000_add_follow_up_booking_purpose.down,
+    name: '20261101_120000_add_follow_up_booking_purpose',
   },
 ]

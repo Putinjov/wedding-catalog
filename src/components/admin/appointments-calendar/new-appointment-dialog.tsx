@@ -46,7 +46,7 @@ export function NewAppointmentDialog({
   const dressOptions = useMemo(
     () =>
       dresses.filter((dress) =>
-        purpose === 'undecided' ||
+        purpose === 'undecided' || purpose === 'follow_up' ||
         (purpose === 'buy' ? dress.availableForBuy : dress.availableForRent),
       ),
     [dresses, purpose],

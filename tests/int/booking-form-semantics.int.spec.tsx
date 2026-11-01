@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   getAvailableSlots: vi.fn(),
   getFullyBookedDates: vi.fn(),
   getBookingFeeQuote: vi.fn(),
+  checkFollowUpEligibility: vi.fn(),
   push: vi.fn(),
   replace: vi.fn(),
 }))
@@ -35,6 +36,7 @@ vi.mock('@/lib/booking/createAppointment', () => ({
 
 vi.mock('@/lib/booking/getBookingFeeQuote', () => ({
   getBookingFeeQuote: mocks.getBookingFeeQuote,
+  checkFollowUpEligibility: mocks.checkFollowUpEligibility,
 }))
 
 vi.mock('@/components/booking/email-verification-control', () => ({
@@ -92,6 +94,7 @@ describe('booking form semantics', () => {
     vi.clearAllMocks()
     mocks.getFullyBookedDates.mockResolvedValue({ dates: [], success: true })
     mocks.getBookingFeeQuote.mockResolvedValue({ amount: 0, kind: 'welcome', success: true })
+    mocks.checkFollowUpEligibility.mockResolvedValue({ success: true, message: 'Eligible.' })
     mocks.getAvailableSlots.mockResolvedValue({
       slots: [
         {
@@ -102,6 +105,25 @@ describe('booking form semantics', () => {
       ],
       success: true,
     })
+  })
+
+  it('requires verified email and server eligibility before the follow-up calendar', async () => {
+    renderFlow()
+    fireEvent.click(screen.getByRole('button', { name: /Follow-up appointment/ }))
+    expect(screen.queryByRole('button', { name: /not sure yet/i })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /continue to date and time/i }))
+    expect(mocks.checkFollowUpEligibility).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(screen.getByLabelText('Email used for your previous visit'))
+    fireEvent.change(screen.getByLabelText('Email used for your previous visit'), { target: { value: 'customer@example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Verify test email' }))
+    mocks.checkFollowUpEligibility.mockResolvedValueOnce({ success: false, message: 'A completed visit is required.' })
+    fireEvent.click(screen.getByRole('button', { name: /continue to date and time/i }))
+    await screen.findByText('A completed visit is required.')
+    expect(screen.queryByRole('button', { name: /choose test date/i })).toBeNull()
+    expect(mocks.createPendingAppointment).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /continue to date and time/i }))
+    await screen.findByRole('button', { name: /choose test date/i })
+    expect(mocks.checkFollowUpEligibility).toHaveBeenLastCalledWith({ email: 'customer@example.com' })
   })
 
   it('exposes mobile autofill, required state, optional guidance, and a live notes count', async () => {

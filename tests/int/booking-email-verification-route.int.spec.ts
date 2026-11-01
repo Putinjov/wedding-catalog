@@ -52,7 +52,7 @@ describe('booking email verification routes', () => {
     expect(mocks.sendEmail).not.toHaveBeenCalled()
   })
 
-  it('sends a short-lived private link without revealing account existence in the response', async () => {
+  it('sends a short-lived private code without revealing account existence in the response', async () => {
     const response = await requestLink(post('/api/booking/email-verification', {
       email: 'Bride@Example.COM',
     }))
@@ -62,8 +62,12 @@ describe('booking email verification routes', () => {
     expect(JSON.stringify(await response.json())).not.toContain('bride@example.com')
     expect(mocks.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: 'bride@example.com',
-      text: expect.stringContaining('/book-a-fitting/verify#token='),
+      text: expect.stringMatching(/verification code is: [0-9]{6}/),
     }))
+    expect(response.headers.get('Set-Cookie')).toContain('booking_email_challenge=')
+    expect(response.headers.get('Set-Cookie')).toContain('HttpOnly')
+    expect(response.headers.get('Set-Cookie')).toContain('Secure')
+    expect(response.headers.get('Set-Cookie')).toContain('SameSite=strict')
     const claimCalls = mocks.createVerificationClaim.mock.calls
     expect(claimCalls).toHaveLength(2)
     expect(JSON.stringify(claimCalls)).not.toContain('bride@example.com')

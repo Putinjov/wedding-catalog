@@ -4,6 +4,7 @@ export const purposeLabels: Record<BookingPurpose, string> = {
   buy: 'Buy a dress',
   rent: 'Rent a dress',
   undecided: 'Not decided',
+  follow_up: 'Follow-up appointment',
 }
 
 export const statusLabels: Record<AppointmentStatus, string> = {

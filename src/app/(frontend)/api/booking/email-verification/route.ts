@@ -7,7 +7,10 @@ import { getEmailAddresses } from '@/config/email'
 import { getServerEnvironment } from '@/config/env'
 import { normalizeCustomerEmail } from '@/lib/customers/email'
 import {
-  createEmailVerificationToken,
+  createEmailCodeChallenge,
+  emailCodeCookieName,
+  emailCodeCookiePath,
+  emailCodeMaxAge,
   emailRequestClaimKey,
   ipRequestClaimKey,
 } from '@/lib/customers/emailVerification'
@@ -43,7 +46,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return response('Enter a valid email address.', 400)
 
   if (!consumeRateLimits([ipRateLimitRule(request.headers, 'booking-email-verification', 5, 15 * 60 * 1000)])) {
-    return response('Please wait before requesting another link.', 429)
+    return response('Please wait before requesting another code.', 429)
   }
 
   try {
@@ -54,7 +57,7 @@ export async function POST(request: Request) {
     const payload = await getPayload({ config: configPromise })
     const claim = emailRequestClaimKey(email, secret)
     if (!(await createVerificationClaim(payload, claim))) {
-      return response('If the address can receive email, a verification link will arrive shortly.')
+      return response('If you requested a code recently, use that code in the same browser or wait 15 minutes before trying again.')
     }
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -72,18 +75,17 @@ export async function POST(request: Request) {
         overrideAccess: true,
         where: { claimKey: { equals: claim } },
       })
-      return response('Please wait before requesting another link.', 429)
+      return response('Please wait before requesting another code.', 429)
     }
 
-    const token = createEmailVerificationToken(email, secret)
-    const link = `${getServerSideURL()}/book-a-fitting/verify#token=${encodeURIComponent(token)}`
+    const { challenge, code } = createEmailCodeChallenge(email, secret)
     const addresses = getEmailAddresses(environment)
     try {
       await payload.sendEmail({
         from: addresses.from,
         replyTo: addresses.replyTo,
         subject: 'Confirm your email for a CAIT Bridal fitting',
-        text: `Confirm your email before booking a fitting. This link expires in 15 minutes and can be used once:\n\n${link}\n\nIf you did not request this, you can ignore this email.`,
+        text: `Your CAIT Bridal verification code is: ${code}\n\nEnter this six-digit code in the browser where you started booking. It expires in 15 minutes and can be used once. Never share this code.\n\nIf you did not request this, you can ignore this email.`,
         to: email,
       })
     } catch (error) {
@@ -98,7 +100,15 @@ export async function POST(request: Request) {
       }
       throw error
     }
-    return response('If the address can receive email, a verification link will arrive shortly.')
+    const result = response('If the address can receive email, a six-digit code will arrive shortly. Enter it here within 15 minutes.')
+    result.cookies.set(emailCodeCookieName, challenge, {
+      httpOnly: true,
+      maxAge: emailCodeMaxAge,
+      path: emailCodeCookiePath,
+      sameSite: 'strict',
+      secure: new URL(getServerSideURL()).protocol === 'https:',
+    })
+    return result
   } catch (error) {
     console.error('[booking-verification] Request failed.', {
       errorType: error instanceof Error ? error.name : 'UnknownError',

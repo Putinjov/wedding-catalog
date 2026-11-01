@@ -35,17 +35,20 @@ describe('undecided booking purpose', () => {
   it('remains available when a selected dress is not currently buyable or rentable', () => {
     const selectedDress = { supportsBuy: false, supportsRent: false }
 
-    expect(getAvailableBookingPurposes(selectedDress)).toEqual(['undecided'])
-    expect(getInitialBookingPurpose('buy', selectedDress)).toBe('undecided')
-    expect(getInitialBookingPurpose('undecided', selectedDress)).toBe('undecided')
+    expect(getAvailableBookingPurposes(selectedDress)).toEqual(['follow_up'])
+    expect(getInitialBookingPurpose('buy', selectedDress)).toBe('follow_up')
+    expect(getInitialBookingPurpose('undecided', null)).toBe('buy')
+    expect(getBookingPurposeDressMode('follow_up')).toBeNull()
   })
 
   it('normalizes public and admin labels without raw enum copy', () => {
     expect(getBookingPurposeCustomerLabel('undecided')).toBe('I’m not sure yet')
     expect(getBookingPurposeAdminLabel('undecided')).toBe('Undecided')
     expect(purposeOptions).toContainEqual(
-      expect.objectContaining({ label: 'I’m not sure yet', value: 'undecided' }),
+      expect.objectContaining({ label: 'Follow-up appointment', value: 'follow_up' }),
     )
+    expect(purposeOptions.some((option) => option.value === 'undecided')).toBe(false)
+    expect(bookingSchema.safeParse({ ...undecidedBooking, purpose: 'follow_up' }).success).toBe(true)
 
     const markup = renderToStaticMarkup(
       <BookingSummary date="2 January 2099" purpose="undecided" time="10:00" />,
