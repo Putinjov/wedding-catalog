@@ -4,7 +4,8 @@ export const BOOKING_TIMEZONE = 'Europe/Dublin' as const
 export const STRIPE_CHECKOUT_MINIMUM_HOLD_MINUTES = 30
 export const MAXIMUM_BOOKING_HOLD_MINUTES = 120
 
-export const bookingPurposeValues = ['buy', 'rent', 'undecided'] as const
+// Keep undecided for historical records and staff; it is no longer a public choice.
+export const bookingPurposeValues = ['buy', 'rent', 'undecided', 'follow_up'] as const
 
 export type BookingHours = {
   end: string

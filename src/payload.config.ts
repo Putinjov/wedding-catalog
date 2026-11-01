@@ -11,6 +11,7 @@ import { AppointmentSlotLocks } from './collections/AppointmentSlotLocks'
 import { Appointments } from './collections/Appointments'
 import { Categories } from './collections/Categories'
 import { Customers } from './collections/Customers'
+import { CustomerVerificationClaims } from './collections/CustomerVerificationClaims'
 import { Dresses } from './collections/Dresses'
 import { EmailDeliveries } from './collections/EmailDeliveries'
 import { Backs } from './collections/Lookups/Backs'
@@ -143,6 +144,7 @@ export default buildConfig({
     Embellishments,
     Dresses,
     Customers,
+    CustomerVerificationClaims,
     Appointments,
     MobileDevices,
     EmailDeliveries,

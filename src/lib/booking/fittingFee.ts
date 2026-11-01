@@ -41,7 +41,7 @@ export function isWaivedPublicBookingCreate({
   return (
     paymentOrigin === 'public-booking' &&
     source === 'website' &&
-    fittingFee === siteConfig.fittingFee &&
+    fittingFee === 0 &&
     isFittingFeeWaived(fittingFee) &&
     paymentStatus === 'unpaid' &&
     status === 'confirmed'

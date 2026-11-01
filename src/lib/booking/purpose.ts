@@ -5,12 +5,14 @@ const adminLabels: Record<BookingPurpose, string> = {
   buy: 'Buy',
   rent: 'Rent',
   undecided: 'Undecided',
+  follow_up: 'Follow-up appointment',
 }
 
 const customerLabels: Record<BookingPurpose, string> = {
   buy: 'Buy',
   rent: 'Rent',
   undecided: 'I’m not sure yet',
+  follow_up: 'Follow-up appointment',
 }
 
 export type BookingPurposeDressAvailability = {
@@ -21,11 +23,12 @@ export type BookingPurposeDressAvailability = {
 export function getAvailableBookingPurposes(
   dress: BookingPurposeDressAvailability | null,
 ): BookingPurpose[] {
-  if (!dress) return [...bookingPurposeValues]
+  const publicPurposes = bookingPurposeValues.filter((purpose) => purpose !== 'undecided')
+  if (!dress) return publicPurposes
 
-  return bookingPurposeValues.filter(
+  return publicPurposes.filter(
     (purpose) =>
-      purpose === 'undecided' ||
+      purpose === 'follow_up' ||
       (purpose === 'buy' ? dress.supportsBuy : dress.supportsRent),
   )
 }
@@ -39,7 +42,7 @@ export function getBookingPurposeCustomerLabel(purpose: BookingPurpose): string 
 }
 
 export function getBookingPurposeDressMode(purpose: BookingPurpose): DressMode | null {
-  return purpose === 'undecided' ? null : purpose
+  return purpose === 'buy' || purpose === 'rent' ? purpose : null
 }
 
 export function getInitialBookingPurpose(
@@ -51,7 +54,7 @@ export function getInitialBookingPurpose(
     return requestedPurpose
   }
 
-  return availablePurposes[0] ?? 'undecided'
+  return availablePurposes[0] ?? 'follow_up'
 }
 
 export function isBookingPurpose(value: unknown): value is BookingPurpose {

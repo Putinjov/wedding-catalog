@@ -7,6 +7,7 @@ import type { Appointment } from '@/payload-types'
 const mocks = vi.hoisted(() => ({
   createStripeSession: vi.fn(),
   expireStripeSession: vi.fn(),
+  findCustomer: vi.fn(),
   getAppointmentByReference: vi.fn(),
   getBookingSettings: vi.fn(),
   hasAppointmentSlotConflict: vi.fn(),
@@ -17,7 +18,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({
-  getPayload: vi.fn(async () => ({ update: mocks.payloadUpdate })),
+  getPayload: vi.fn(async () => ({ findByID: mocks.findCustomer, update: mocks.payloadUpdate })),
 }))
 vi.mock('@/lib/booking/appointmentIntegrity', () => ({
   isAppointmentSlotValid: mocks.isAppointmentSlotValid,
@@ -82,6 +83,7 @@ describe('Stripe Checkout hold synchronization', () => {
     mocks.hasAppointmentSlotConflict.mockResolvedValue(false)
     mocks.isAppointmentSlotValid.mockReturnValue(true)
     mocks.payloadUpdate.mockResolvedValue(appointment)
+    mocks.findCustomer.mockResolvedValue({ purchaseConfirmedAt: null })
     mocks.createStripeSession.mockImplementation(
       async (params: Stripe.Checkout.SessionCreateParams) =>
         ({
@@ -91,6 +93,14 @@ describe('Stripe Checkout hold synchronization', () => {
           url: 'https://checkout.stripe.com/c/pay/test',
         }) as Stripe.Checkout.Session,
     )
+  })
+
+  it('does not start Checkout after the linked customer has made a confirmed purchase', async () => {
+    mocks.getAppointmentByReference.mockResolvedValue(createAppointment({ customer: 'customer-1' }))
+    mocks.findCustomer.mockResolvedValue({ purchaseConfirmedAt: '2029-12-31T10:00:00.000Z' })
+    const result = await createFittingCheckoutSession(`fit_${'a'.repeat(32)}`)
+    expect(result.status).toBe('unavailable')
+    expect(mocks.createStripeSession).not.toHaveBeenCalled()
   })
 
   afterEach(() => {

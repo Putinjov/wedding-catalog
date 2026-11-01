@@ -58,7 +58,7 @@ export function CalendarFilters({
       <label>
         <span>Purpose</span>
         <select onChange={(event) => update('purpose', event.target.value as CalendarFilterState['purpose'])} value={filters.purpose}>
-          <option value="all">All purposes</option><option value="buy">Buy</option><option value="rent">Rent</option><option value="undecided">Undecided</option>
+          <option value="all">All purposes</option><option value="buy">Buy</option><option value="rent">Rent</option><option value="follow_up">Follow-up appointment</option><option value="undecided">Undecided</option>
         </select>
       </label>
       <label className="calendar-filter-check">

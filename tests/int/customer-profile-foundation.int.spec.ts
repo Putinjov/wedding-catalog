@@ -115,4 +115,43 @@ describe('private customer profile foundation', () => {
       } as never),
     ).rejects.toThrow(/unlink appointments/i)
   })
+
+  it('requires every new website appointment to link a verified profile', async () => {
+    await expect(validateAppointmentCustomer({
+      data: { email: 'bride@example.test', source: 'website' },
+      operation: 'create',
+    } as never)).rejects.toThrow(/verified customer profile/i)
+  })
+
+  it('rechecks purchase and fee at the appointment write boundary', async () => {
+    const customer: { email: string; id: string; purchaseConfirmedAt: string | null } = {
+      id: 'customer-id',
+      email: 'bride@example.test',
+      purchaseConfirmedAt: '2026-10-24T12:00:00.000Z',
+    }
+    const findByID = vi.fn(async () => customer)
+    const find = vi.fn(async () => ({ docs: [customer] }))
+    const input = {
+      data: {
+        customer: customer.id,
+        email: customer.email,
+        fittingFee: 0,
+        source: 'website',
+        startAt: '2099-01-02T10:00:00.000Z',
+      },
+      operation: 'create',
+      req: { payload: { find, findByID } },
+    }
+    await expect(validateAppointmentCustomer(input as never)).rejects.toThrow(/confirmed purchase/i)
+
+    const noPurchase = { ...customer, purchaseConfirmedAt: null }
+    findByID.mockResolvedValue(noPurchase)
+    find.mockReset()
+      .mockResolvedValueOnce({ docs: [noPurchase] })
+      .mockResolvedValueOnce({ docs: [] })
+    await expect(validateAppointmentCustomer({
+      ...input,
+      data: { ...input.data, fittingFee: 1 },
+    } as never)).rejects.toThrow(/fitting fee changed/i)
+  })
 })

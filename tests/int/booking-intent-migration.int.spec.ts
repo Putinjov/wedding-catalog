@@ -29,7 +29,7 @@ describe('Task 18 booking intent migration', () => {
 
     await expect(up(args)).resolves.toBeUndefined()
     expect(args.payload.db.collections.appointments.collection.countDocuments).toHaveBeenCalledWith(
-      { purpose: { $nin: ['buy', 'rent', 'undecided'] } },
+      { purpose: { $nin: ['buy', 'rent', 'undecided', 'follow_up'] } },
       { session: args.session },
     )
   })

@@ -105,7 +105,7 @@ test.describe('Booking accessibility', () => {
       page.getByRole('button', { name: /Explore dresses available to rent/ }),
     )
     await expectMinimumTargetSize(
-      page.getByRole('button', { name: /Explore both options with guidance/ }),
+      page.getByRole('button', { name: /Return for a fitting or measurements/ }),
     )
     await expectMinimumTargetSize(
       page.getByRole('button', { name: 'Continue to date and time' }),

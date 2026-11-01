@@ -112,7 +112,7 @@ export const Customers: CollectionConfig = {
       admin: {
         date: { pickerAppearance: 'dayAndTime' },
         description:
-          'Staff record this only after the order is confirmed and the deposit is received. No booking rule uses this field yet.',
+          'Record only after the order is confirmed and the deposit is received. This closes online booking; arrange later fittings by phone.',
       },
     },
     {
