@@ -19,7 +19,8 @@ describe('one-time booking email proof', () => {
     expect(readEmailVerificationToken(token, secret, now + 14 * 60 * 1000)?.email)
       .toBe('bride@example.com')
     expect(readEmailVerificationToken(token, secret, now + 15 * 60 * 1000)).toBeNull()
-    expect(readEmailVerificationToken(`${token.slice(0, -1)}a`, secret, now)).toBeNull()
+    const tamperedToken = `${token[0] === 'a' ? 'b' : 'a'}${token.slice(1)}`
+    expect(readEmailVerificationToken(tamperedToken, secret, now)).toBeNull()
     expect(readEmailVerificationToken(token, `${secret}-wrong`, now)).toBeNull()
   })
 

@@ -38,3 +38,25 @@ No customer phone, notes, full email content, secret, or Stripe payload is logge
 - The welcome offer still makes the configured public fee €0. The eventual €20 cutover and changed Stripe account need a separate reviewed release and provider smoke test.
 - Live Google Workspace delivery has not been exercised with a customer address in local tests. The existing process-local IP limiter is not shared across instances; unique database claims enforce the per-address and per-IP issuance quotas.
 - The owner confirmed that a 29 February visit remains eligible through 28 February, inclusive, two years later. A requested visit on 1 March is outside the free window.
+
+## Локальна повторна перевірка після оновлення від master — 2026-11-01
+
+- Гілка містить master `a61b395` із виправленнями контрасту діалогу й очікуваного заголовка головної. Незакомічені тести збережені під час merge; production-код цього PR додатково не змінювався.
+- `npm ci --no-audit --no-fund`, генерація types/importMap і перевірка їх diff пройшли. `npm run lint` завершився без помилок із попереднім warning про `dirname` у `src/collections/Media.ts`.
+- `npm run test:int`: 674 passed, 2 skipped. Два пропущені за замовчуванням сценарії потребують явного opt-in і запускаються окремо лише на тимчасовій локальній MongoDB.
+- Окремий запуск із `LOCAL_BOOKING_FLOW_TEST=true`: 2 passed. Перевірено доставку посилання в поштову скриньку в пам'яті, конкурентне одноразове підтвердження, створення зв'язаного повторного візиту за €0 без Stripe-сесії та заборону нового онлайн-запису після підтвердженої покупки.
+- `tests/int/helpers/local-booking-environment.ts` вимагає `mongodb://127.0.0.1:<port>/repeat_booking_e2e?directConnection=true`, локальний origin і вимкнені SMTP/Stripe/R2/push. Тестові дані синтетичні; справжні листи не надсилаються.
+- Тест підміни токена тепер гарантовано змінює перший символ, замість потенційного повторення початкового останнього символу.
+- На порожній локальній базі виконано всі 17 міграцій; обов'язковий migration check підтвердив їх застосування. Production migration gate не запускався.
+- `npm run build`: успішно, включно з TypeScript. Використані лише локальна MongoDB і фіктивні provider-ключі.
+- Повний Playwright-набір у незалежному тестовому Chrome проти локального `next start`: 10 passed, 1 skipped. Пропущено лише opt-in сценарій створення скриншотів; перевірки desktop/mobile, axe, keyboard-only, reduced motion, каталогу, адмінки та сторінки підтвердження виконані.
+- HTTP-перевірка зібраної `/book-a-fitting/verify`: 200, `private` та `no-store` у Cache-Control, `noindex` у X-Robots-Tag і rendered robots metadata. Перевірка не використовувала справжній token або email клієнта.
+- Під час Vitest є діагностичне повідомлення про відсутній `expo/tsconfig.base` в окремому `apps/manager`; воно не спричинило падіння тестів. Мобільний застосунок цим PR не змінюється.
+
+Для повторення двох локальних сценаріїв після налаштування описаного ізольованого середовища:
+
+```text
+npm run test:int -- tests/int/booking-verification-local-flow.int.spec.ts tests/int/repeat-booking-local-flow.int.spec.ts --maxWorkers=1
+```
+
+Ці результати не підтверджують доставку через Google Workspace, ізоляцію бази Vercel Preview або новий Stripe-акаунт. До завершення окремої provider-перевірки PR залишається draft, а welcome offer — активним.
