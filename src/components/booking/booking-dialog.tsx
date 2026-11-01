@@ -91,7 +91,7 @@ export function BookingDialog({
       <Dialog onOpenChange={updateOpen} open={open}>
         {trigger(primaryLabel, primaryClassName)}
         {secondaryLabel ? trigger(secondaryLabel, secondaryClassName) : null}
-        <DialogContent closeLabel="Close booking dialog" className="max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain p-7 pt-14">
+        <DialogContent closeLabel="Close booking dialog" className="max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain p-7 pt-14 data-[state=open]:animate-none">
           <DialogTitle className="sr-only">Book a private fitting</DialogTitle>
           <DialogDescription className="sr-only">
             {isFittingFeeWaived()
