@@ -156,6 +156,21 @@ describe('deployment configuration', () => {
     )
   })
 
+  it('prepares the isolated CI database before tests that depend on unique indexes', () => {
+    const workflow = readFileSync(resolve(process.cwd(), '.github/workflows/ci.yml'), 'utf8')
+    const migrate = workflow.indexOf('npm run migrations:run')
+    const verify = workflow.indexOf('MIGRATION_GATE_REQUIRED=true npm run migrations:check')
+    const test = workflow.indexOf('npm run test:int')
+    const build = workflow.indexOf('npm run build')
+
+    expect(workflow).toContain('DATABASE_URL: mongodb://127.0.0.1:27017/wedding-catalog-ci')
+    expect(migrate).toBeGreaterThan(-1)
+    expect(verify).toBeGreaterThan(migrate)
+    expect(test).toBeGreaterThan(verify)
+    expect(build).toBeGreaterThan(test)
+    expect(workflow).not.toContain('continue-on-error: true')
+  })
+
   it('keeps migrations out of runtime startup and wires a serialized production gate', () => {
     const packageConfig = JSON.parse(
       readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
