@@ -10,6 +10,7 @@ const journeys = [
     href: '/buy',
     cta: 'Shop dresses',
     className: 'bg-brand-soft-lavender',
+    copyClassName: 'text-brand-charcoal',
   },
   {
     eyebrow: 'Rent',
@@ -18,6 +19,7 @@ const journeys = [
     href: '/rent',
     cta: 'Browse rentals',
     className: 'bg-brand-blush',
+    copyClassName: 'text-foreground/75',
   },
 ] as const
 
@@ -46,19 +48,19 @@ export function JourneySplit({
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {journeys.map(({ className, copy, cta, eyebrow, href, title: journeyTitle }) => (
+          {journeys.map(({ className, copy, copyClassName, cta, eyebrow, href, title: journeyTitle }) => (
             <article
               className={`${className} flex min-h-[22rem] flex-col justify-between border border-brand-warm-border p-8 sm:p-10 md:min-h-[26rem] md:p-12`}
               key={href}
             >
               <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-brand-deep-lavender">
+                <p className="text-xs uppercase tracking-[0.28em] text-brand-charcoal">
                   {eyebrow}
                 </p>
                 <h3 className="mt-5 max-w-md font-serif text-4xl leading-none text-foreground md:text-5xl">
                   {journeyTitle}
                 </h3>
-                <p className="mt-6 max-w-md text-base leading-7 text-foreground/75">{copy}</p>
+                <p className={`mt-6 max-w-md text-base leading-7 ${copyClassName}`}>{copy}</p>
               </div>
               <Button asChild className="mt-10 w-fit rounded-sm px-6">
                 <Link href={href}>{cta}</Link>
