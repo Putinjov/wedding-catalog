@@ -1,0 +1,40 @@
+{
+  "fonts": [
+    {
+      "file": "InterVariable.woff2",
+      "family": "Inter",
+      "weight": "100 900",
+      "bytes": 345588,
+      "sha256": "8af7bd5b545567adffb3dfceb5bedb353a522d7bf1b3a2b8af7b6064156babc0",
+      "source": "https://raw.githubusercontent.com/rsms/inter/66647c0bbbe41a850d79d9c76fb13add3378940f/docs/font-files/InterVariable.woff2",
+      "license": "Inter-OFL.txt"
+    },
+    {
+      "file": "CormorantGaramond-Regular.woff2",
+      "family": "Cormorant Garamond",
+      "weight": "400",
+      "bytes": 126292,
+      "sha256": "ba94ea02bcb624f4da51b53a988fbc5c60c5eac2391cdb61b0b33bb44c67ae65",
+      "source": "https://raw.githubusercontent.com/CatharsisFonts/Cormorant/6d210fd3550b7358ca62d6ba3e354ec1ec940813/fonts/webfonts/CormorantGaramond-Regular.woff2",
+      "license": "Cormorant-OFL.txt"
+    },
+    {
+      "file": "CormorantGaramond-Medium.woff2",
+      "family": "Cormorant Garamond",
+      "weight": "500",
+      "bytes": 127564,
+      "sha256": "d0a555044fc0acab5931c85f6218d1adfb4ff275a1cf303d31adba3259ec3bc7",
+      "source": "https://raw.githubusercontent.com/CatharsisFonts/Cormorant/6d210fd3550b7358ca62d6ba3e354ec1ec940813/fonts/webfonts/CormorantGaramond-Medium.woff2",
+      "license": "Cormorant-OFL.txt"
+    },
+    {
+      "file": "CormorantGaramond-SemiBold.woff2",
+      "family": "Cormorant Garamond",
+      "weight": "600",
+      "bytes": 126772,
+      "sha256": "8bf7f3917392e0dd9fc9d6ecf55ad1ff1841d1e0074abc8c618d64d85796fc3b",
+      "source": "https://raw.githubusercontent.com/CatharsisFonts/Cormorant/6d210fd3550b7358ca62d6ba3e354ec1ec940813/fonts/webfonts/CormorantGaramond-SemiBold.woff2",
+      "license": "Cormorant-OFL.txt"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { cn } from '@/utilities/ui'
-import { Cormorant_Garamond, Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
@@ -18,17 +18,24 @@ import { cookies, draftMode } from 'next/headers'
 
 import './globals.css'
 
-const sans = Inter({
+const sans = localFont({
+  src: '../../assets/fonts/InterVariable.woff2',
   display: 'swap',
-  subsets: ['latin'],
+  style: 'normal',
   variable: '--font-body-sans',
+  weight: '100 900',
 })
 
-const serif = Cormorant_Garamond({
+const serif = localFont({
+  src: [
+    { path: '../../assets/fonts/CormorantGaramond-Regular.woff2', weight: '400' },
+    { path: '../../assets/fonts/CormorantGaramond-Medium.woff2', weight: '500' },
+    { path: '../../assets/fonts/CormorantGaramond-SemiBold.woff2', weight: '600' },
+  ],
+  adjustFontFallback: 'Times New Roman',
   display: 'swap',
-  subsets: ['latin'],
+  style: 'normal',
   variable: '--font-editorial-serif',
-  weight: ['400', '500', '600'],
 })
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
