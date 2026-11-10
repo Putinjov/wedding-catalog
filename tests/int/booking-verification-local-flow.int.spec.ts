@@ -56,6 +56,13 @@ describe.skipIf(!enabled)('local booking email verification flow', () => {
       expect(success?.headers.get('X-Robots-Tag')).toContain('noindex')
       expect(readVerifiedEmailSession(cookie, secret)).toBe(email)
       expect(readVerifiedEmailSession(cookie, secret) === 'other@example.test').toBe(false)
+
+      const replay = await redeemLink(post('/api/booking/email-verification/redeem', { email, code }, challengeCookie))
+      expect(replay.status).toBe(410)
+      expect(Boolean(replay.cookies.get(verifiedEmailCookieName))).toBe(false)
+      expect(replay.headers.get('Cache-Control')).toContain('no-store')
+      expect(replay.headers.get('X-Robots-Tag')).toContain('noindex')
+      expect(mailbox).toHaveBeenCalledTimes(1)
     } finally {
       mailbox.mockRestore()
       await payload.destroy()
