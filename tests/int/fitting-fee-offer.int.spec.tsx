@@ -12,25 +12,26 @@ import {
 
 afterEach(cleanup)
 
-describe('welcome fitting-fee offer', () => {
-  it('keeps the standard price visible while presenting the current fee as temporarily free', () => {
+describe('standard fitting fee after the welcome offer', () => {
+  it('shows the current standard fee without a welcome promotion or crossed-out price', () => {
     render(<FittingFeeOffer />)
 
-    const standardPrice = screen.getByText('€20', { selector: 'del' })
+    const standardPrice = screen.getByText('€20')
     expect(standardPrice).not.toBeNull()
-    expect(screen.getByText('Temporarily free')).not.toBeNull()
-    expect(screen.getByText('Welcome offer')).not.toBeNull()
-    expect(screen.getByText(/standard fitting fee €20.*temporarily free.*welcome offer/i)).not.toBeNull()
+    expect(screen.queryByText('Temporarily free')).toBeNull()
+    expect(screen.queryByText('Welcome offer')).toBeNull()
+    expect(standardPrice.closest('del')).toBeNull()
   })
 
-  it('makes zero the authoritative current fee and starts website bookings confirmed and unpaid', () => {
+  it('requires the standard fee while retaining explicit zero-fee follow-up support', () => {
     expect(siteConfig.standardFittingFee).toBe(20)
-    expect(siteConfig.fittingFee).toBe(0)
-    expect(isFittingFeeWaived()).toBe(true)
-    expect(requiresFittingFeePayment()).toBe(false)
+    expect(siteConfig.fittingFee).toBe(20)
+    expect(siteConfig.fittingFeePromotion).toBeNull()
+    expect(isFittingFeeWaived()).toBe(false)
+    expect(requiresFittingFeePayment()).toBe(true)
     expect(getWebsiteBookingInitialPaymentState()).toEqual({
       paymentStatus: 'unpaid',
-      status: 'confirmed',
+      status: 'pending_payment',
     })
     expect(
       isWaivedPublicBookingCreate({
@@ -41,6 +42,14 @@ describe('welcome fitting-fee offer', () => {
         status: 'confirmed',
       }),
     ).toBe(true)
+  })
+
+  it('still presents a server-approved returning customer waiver', () => {
+    render(<FittingFeeOffer amount={0} waiverName="Returning customer" />)
+    expect(screen.getByText('Free')).not.toBeNull()
+    expect(screen.getByText('Returning customer')).not.toBeNull()
+    expect(screen.queryByText('Welcome offer')).toBeNull()
+    expect(getWebsiteBookingInitialPaymentState(0)).toEqual({ status: 'confirmed', paymentStatus: 'unpaid' })
   })
 
   it('does not authorize a forged free confirmation outside the public-booking context', () => {

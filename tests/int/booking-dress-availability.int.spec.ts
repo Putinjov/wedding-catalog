@@ -131,14 +131,14 @@ describe('public booking dress availability', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           dress: 'dress-1',
-          fittingFee: 0,
+          fittingFee: 20,
           paymentStatus: 'unpaid',
           purpose: 'undecided',
-          status: 'confirmed',
+          status: 'pending_payment',
         }),
       }),
     )
-    expect(create.mock.calls[0]?.[0].data).not.toHaveProperty('holdExpiresAt')
+    expect(create.mock.calls[0]?.[0].data).toHaveProperty('holdExpiresAt')
     expect(result).toEqual(expect.objectContaining({ success: true }))
   })
 })

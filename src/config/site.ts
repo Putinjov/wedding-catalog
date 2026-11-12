@@ -1,5 +1,5 @@
 // Set to false to restore the standard fee and Stripe-backed confirmation flow.
-const welcomeOfferActive: boolean = true
+const welcomeOfferActive: boolean = false
 const standardFittingFee = 20
 
 export const siteConfig = {

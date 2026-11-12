@@ -15,6 +15,12 @@ import { assertLocalBookingEnvironment } from './helpers/local-booking-environme
 
 const requestState = vi.hoisted(() => ({ cookie: '' }))
 
+// This opt-in fixture exercises manual linking and repeat entitlement, not Stripe payment.
+vi.mock('@/config/site', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/site')>()
+  return { ...actual, siteConfig: { ...actual.siteConfig, fittingFee: 0 } }
+})
+
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => ({ value: requestState.cookie }) }),
   headers: async () => new Headers({ 'x-forwarded-for': '192.0.2.92' }),
