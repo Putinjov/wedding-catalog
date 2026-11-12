@@ -10,6 +10,8 @@ export type SelectedDressSummary = {
 
 export type PurposeOption = {
   description: string
+  eyebrow: string
   label: string
+  title: string
   value: BookingPurpose
 }

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react'
 
 import { BookingProgress } from '@/components/booking/booking-progress'
 import { BookingSummary } from '@/components/booking/booking-summary'
@@ -48,18 +48,24 @@ import type { PurposeOption, SelectedDressSummary as SelectedDress } from './typ
 
 export const purposeOptions: PurposeOption[] = [
   {
-    description: 'Explore dresses available to purchase.',
+    description: 'Find your dress to keep, with a fitting tailored to you.',
+    eyebrow: 'First appointment',
     label: 'Buy',
+    title: 'Buy',
     value: 'buy',
   },
   {
-    description: 'Explore dresses available to rent.',
+    description: 'Find your dress to rent, with a fitting tailored to you.',
+    eyebrow: 'First appointment',
     label: 'Rent',
+    title: 'Rent',
     value: 'rent',
   },
   {
-    description: 'Return for a fitting or measurements after a completed visit. Verify your email to check eligibility.',
+    description: 'Return for measurements or another fitting after your visit.',
+    eyebrow: 'Returning bride',
     label: 'Follow-up appointment',
+    title: 'Follow-up',
     value: 'follow_up',
   },
 ]
@@ -112,6 +118,7 @@ export function BookingFlow({
 }) {
   const pathname = usePathname()
   const router = useRouter()
+  const purposeDescriptionId = useId()
   const searchParams = useSearchParams()
   const requestId = useRef(0)
   const requestedInitialTime = useRef(initialTime)
@@ -518,8 +525,10 @@ export function BookingFlow({
               .filter((option) => availablePurposes.includes(option.value))
               .map((option) => (
                 <button
+                  aria-label={option.label}
+                  aria-describedby={`${purposeDescriptionId}-${option.value}`}
                   aria-pressed={purpose === option.value}
-                  className="group flex min-h-36 flex-col items-start justify-between border border-brand-warm-border bg-background p-5 text-left outline-none transition-colors hover:border-brand-deep-lavender focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 data-[selected=true]:border-brand-deep-lavender data-[selected=true]:bg-brand-soft-lavender/55"
+                  className="group flex flex-col items-start gap-4 border border-brand-warm-border bg-background p-5 text-left outline-none transition-colors hover:border-brand-deep-lavender focus-visible:ring-2 focus-visible:ring-brand-deep-lavender focus-visible:ring-offset-2 data-[selected=true]:border-brand-deep-lavender data-[selected=true]:bg-brand-soft-lavender/55"
                   data-selected={purpose === option.value}
                   key={option.value}
                   onClick={() => {
@@ -531,11 +540,11 @@ export function BookingFlow({
                   type="button"
                 >
                   <span className="text-xs uppercase tracking-[0.22em] text-brand-deep-lavender group-data-[selected=true]:text-foreground">
-                    {option.label}
+                    {option.eyebrow}
                   </span>
                   <span>
-                    <span className="block font-serif text-2xl text-foreground">{option.label}</span>
-                    <span className="mt-2 block text-sm leading-6 text-muted-foreground group-data-[selected=true]:text-foreground">
+                    <span className="block font-serif text-3xl text-foreground">{option.title}</span>
+                    <span id={`${purposeDescriptionId}-${option.value}`} className="mt-3 block text-[15px] leading-relaxed text-muted-foreground group-data-[selected=true]:text-foreground">
                       {option.description}
                     </span>
                   </span>
