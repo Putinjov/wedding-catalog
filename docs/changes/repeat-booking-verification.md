@@ -1,5 +1,7 @@
 # Booking email verification and two-year repeat entitlement
 
+Актуальний результат provider-перевірок за 11–12 листопада 2026: [OTP, тестова оплата €20, replay та Follow-up €0](repeat-booking-provider-verification.md). Історичні обмеження нижче слід читати з урахуванням цього звіту; Production-випуск усе ще потребує окремого погодження.
+
 ## Problem
 
 The current welcome offer confirms every online fitting at €0. Once the offer ends, the booking backend needs a private, reliable way to distinguish a first/expired fitting from a repeat visit, and to close online booking after a confirmed purchase. A browser-supplied “returning customer” flag would not be authoritative.
