@@ -25,6 +25,15 @@ const undecidedBooking = {
 } as const
 
 describe('undecided booking purpose', () => {
+  it('keeps editorial card text balanced without duplicating the eyebrow and title', () => {
+    expect(purposeOptions.map(({ title }) => title)).toEqual(['Buy', 'Rent', 'Follow-up'])
+    expect(purposeOptions.map(({ eyebrow }) => eyebrow)).toEqual(['First appointment', 'First appointment', 'Returning bride'])
+    for (const option of purposeOptions) {
+      expect(option.description.length).toBeGreaterThan(45)
+      expect(option.description.length).toBeLessThan(75)
+      expect(option.description).not.toMatch(/verify|eligibility/i)
+    }
+  })
   it('is a booking intent without becoming a catalogue mode', () => {
     expect(isBookingPurpose('undecided')).toBe(true)
     expect(getBookingPurposeDressMode('undecided')).toBeNull()
