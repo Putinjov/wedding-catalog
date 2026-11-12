@@ -378,7 +378,7 @@ export function BookingFlow({
         showFieldErrors(errors, 'Please check the highlighted details.')
         return
       }
-      if (!emailVerified) {
+      if (purpose === 'follow_up' && !emailVerified) {
         showFieldErrors(
           { email: 'Please verify this email address before booking.' },
           'Please verify your email before continuing.',
@@ -794,11 +794,11 @@ export function BookingFlow({
                   {getFieldError('email')}
                 </p>
               ) : null}
-              <EmailVerificationControl
+              {purpose === 'follow_up' ? <EmailVerificationControl
                 email={email}
                 onVerifiedChange={setEmailVerified}
                 verified={emailVerified}
-              />
+              /> : null}
             </div>
             <div
               ref={(node) => {

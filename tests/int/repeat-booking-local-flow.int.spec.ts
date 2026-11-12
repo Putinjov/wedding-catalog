@@ -69,14 +69,16 @@ describe.skipIf(process.env.LOCAL_BOOKING_FLOW_TEST !== 'true')('local repeat bo
         where: { publicReference: { equals: first.reference } },
       })
       const firstAppointment = firstAppointments.docs[0]
-      if (!firstAppointment || typeof firstAppointment.customer !== 'string') {
-        throw new Error('The initial test appointment is not linked to a customer.')
-      }
+      if (!firstAppointment) throw new Error('The initial test appointment is missing.')
+      expect(firstAppointment.customer).toBeFalsy()
+      const profile = await payload.create({ collection: 'customers',
+        data: { email, name: 'Test Customer', orderStatus: 'none' }, overrideAccess: true })
+      firstAppointment.customer = profile.id
       expect(firstAppointment.status).toBe('confirmed')
 
       vi.setSystemTime(realNow)
       await payload.update({
-        collection: 'appointments', id: firstAppointment.id, data: { status: 'completed' },
+        collection: 'appointments', id: firstAppointment.id, data: { status: 'completed', customer: profile.id },
         depth: 0, overrideAccess: true,
       })
 
@@ -115,7 +117,7 @@ describe.skipIf(process.env.LOCAL_BOOKING_FLOW_TEST !== 'true')('local repeat bo
       expect((await resolveRepeatBookingDecision({
         email, now: new Date(), payload, requestedAt: laterStart,
       })).kind).toBe('closed')
-      const afterPurchase = await createPendingAppointment({ ...baseInput, ...laterSlot })
+      const afterPurchase = await createPendingAppointment({ ...baseInput, ...laterSlot, purpose: 'follow_up' })
       expect(afterPurchase.success).toBe(false)
       if (!afterPurchase.success) expect(afterPurchase.message).toMatch(/confirmed purchase/i)
       const count = await payload.count({

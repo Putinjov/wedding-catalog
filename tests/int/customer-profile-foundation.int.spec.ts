@@ -116,9 +116,9 @@ describe('private customer profile foundation', () => {
     ).rejects.toThrow(/unlink appointments/i)
   })
 
-  it('requires every new website appointment to link a verified profile', async () => {
+  it('requires each website follow-up to link a verified profile', async () => {
     await expect(validateAppointmentCustomer({
-      data: { email: 'bride@example.test', source: 'website' },
+      data: { email: 'bride@example.test', source: 'website', purpose: 'follow_up' },
       operation: 'create',
     } as never)).rejects.toThrow(/verified customer profile/i)
   })
@@ -136,6 +136,7 @@ describe('private customer profile foundation', () => {
         customer: customer.id,
         email: customer.email,
         fittingFee: 0,
+        purpose: 'follow_up',
         source: 'website',
         startAt: '2099-01-02T10:00:00.000Z',
       },
@@ -151,7 +152,7 @@ describe('private customer profile foundation', () => {
       .mockResolvedValueOnce({ docs: [] })
     await expect(validateAppointmentCustomer({
       ...input,
-      data: { ...input.data, fittingFee: 1 },
+      data: { ...input.data, customer: undefined, purpose: 'buy', fittingFee: 1 },
     } as never)).rejects.toThrow(/fitting fee changed/i)
   })
 })

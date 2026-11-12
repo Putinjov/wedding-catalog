@@ -91,15 +91,17 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
 
   const data = parsed.data
   const email = normalizeCustomerEmail(data.email)
-  const secret = getServerEnvironment({ strict: false }).PAYLOAD_SECRET
-  const cookieStore = await cookies()
-  const verifiedEmail = secret
-    ? readVerifiedEmailSession(cookieStore.get(verifiedEmailCookieName)?.value, secret)
-    : null
-  if (verifiedEmail !== email) {
-    return invalidBooking('Please verify your email using the six-digit code before booking.', {
-      email: 'Please verify this email address before booking.',
-    })
+  if (data.purpose === 'follow_up') {
+    const secret = getServerEnvironment({ strict: false }).PAYLOAD_SECRET
+    const cookieStore = await cookies()
+    const verifiedEmail = secret
+      ? readVerifiedEmailSession(cookieStore.get(verifiedEmailCookieName)?.value, secret)
+      : null
+    if (verifiedEmail !== email) {
+      return invalidBooking('Please verify your email using the six-digit code before booking.', {
+        email: 'Please verify this email address before booking.',
+      })
+    }
   }
   const requestHeaders = await headers()
   const rateLimitAllowed = consumeRateLimits([
@@ -176,41 +178,21 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
     })
   }
 
-  let decision = await resolveRepeatBookingDecision({
+  const decision = data.purpose === 'follow_up' ? await resolveRepeatBookingDecision({
     email,
     now,
     payload,
     requestedAt: dateTimes.startAt,
-  })
+  }) : null
   if (data.purpose === 'follow_up') {
+    if (!decision) throw new Error('Follow-up decision is missing.')
     const followUpError = getFollowUpBookingError(decision)
     if (followUpError) return invalidBooking(followUpError)
   }
-  if (!decision.customer) {
-    try {
-      const customer = await payload.create({
-        collection: 'customers',
-        data: { email, name: data.customerName, orderStatus: 'none', phone: data.phone },
-        depth: 0,
-        overrideAccess: true,
-      })
-      decision = { customer, kind: 'standard' }
-    } catch (error) {
-      if (!isUniqueConflict(error)) throw error
-      decision = await resolveRepeatBookingDecision({
-        email,
-        now,
-        payload,
-        requestedAt: dateTimes.startAt,
-      })
-    }
-  }
-  if (decision.kind === 'closed') {
+  if (decision?.kind === 'closed') {
     return invalidBooking('Online bookings are no longer available after a confirmed purchase. Please call us for further appointments.')
   }
-  if (!decision.customer) throw new Error('The verified customer profile could not be loaded.')
-
-  const fittingFee = decision.kind === 'free' ? 0 : siteConfig.fittingFee
+  const fittingFee = decision?.kind === 'free' ? 0 : siteConfig.fittingFee
 
   try {
     const privacyRecordedAt = new Date().toISOString()
@@ -223,7 +205,7 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
       draft: false,
       data: {
         customerName: data.customerName,
-        customer: decision.customer.id,
+        ...(decision?.customer ? { customer: decision.customer.id } : {}),
         dress: dress?.id,
         email,
         endAt,

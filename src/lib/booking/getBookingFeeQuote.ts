@@ -59,8 +59,12 @@ export async function getBookingFeeQuote(input: unknown): Promise<BookingFeeQuot
   if (!parsed.success) return { message: 'Choose a valid fitting time and email.', success: false }
   const { date, time } = parsed.data
   const email = normalizeCustomerEmail(parsed.data.email)
-  const verificationError = await getVerificationError(email)
-  if (verificationError) return { message: verificationError, success: false }
+  if (parsed.data.purpose === 'follow_up') {
+    const verificationError = await getVerificationError(email)
+    if (verificationError) return { message: verificationError, success: false }
+  } else if (!consumeRateLimits([ipRateLimitRule(await headers(), 'booking-fee-quote', 20, 15 * 60 * 1000)])) {
+    return { message: 'Please wait before checking the fitting fee again.', success: false }
+  }
   const settings = await getBookingSettings()
   if (!isValidSlotTime(date, time, settings)) {
     return { message: 'Choose an available fitting time.', success: false }
@@ -70,6 +74,9 @@ export async function getBookingFeeQuote(input: unknown): Promise<BookingFeeQuot
     return { message: 'Choose a future fitting time.', success: false }
   }
 
+  if (parsed.data.purpose !== 'follow_up') {
+    return { amount: siteConfig.fittingFee, kind: siteConfig.fittingFee === 0 ? 'welcome' : 'standard', success: true }
+  }
   const payload = await getPayload({ config: configPromise })
   const decision = await resolveRepeatBookingDecision({
     email,

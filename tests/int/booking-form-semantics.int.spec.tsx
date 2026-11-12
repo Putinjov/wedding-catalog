@@ -78,7 +78,7 @@ function completeRequiredDetails() {
   fireEvent.change(screen.getByLabelText('Email'), {
     target: { value: 'customer@example.com' },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Verify test email' }))
+  expect(screen.queryByRole('button', { name: 'Verify test email' })).toBeNull()
   fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '+353100000000' } })
   fireEvent.click(
     screen.getByRole('checkbox', {

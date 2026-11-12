@@ -87,7 +87,7 @@ test('keeps email verification private and usable on desktop and mobile', async 
   }
 })
 
-test('captures the verification step in the fitting form', async ({ page }) => {
+test('captures guest details without a verification step in the fitting form', async ({ page }) => {
   test.skip(process.env.CAPTURE_BOOKING_SCREENSHOTS !== 'true')
   await page.goto(`${baseUrl}/book-a-fitting`)
   await page.getByRole('button', { name: 'Continue to date and time' }).click()
@@ -107,7 +107,7 @@ test('captures the verification step in the fitting form', async ({ page }) => {
   }
   expect(slotFound).toBe(true)
   await page.getByRole('button', { name: 'Continue to your details' }).click()
-  await expect(page.getByRole('button', { name: 'Send verification code' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Send verification code' })).toHaveCount(0)
   await page.screenshot({ path: 'docs/changes/repeat-booking-form-desktop.png', fullPage: true })
 
   await page.setViewportSize({ width: 390, height: 844 })

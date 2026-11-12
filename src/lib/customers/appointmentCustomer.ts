@@ -20,6 +20,13 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
   const customerId = getCustomerId(
     data.customer === undefined ? originalDoc?.customer : data.customer,
   )
+  if (operation === 'create' && data.source === 'website' && data.purpose !== 'follow_up') {
+    if (customerId) throw new APIError('Guest bookings cannot attach a customer profile.', 400)
+    if (data.fittingFee !== siteConfig.fittingFee) {
+      throw new APIError('The fitting fee changed. Please review your booking again.', 409)
+    }
+    return data
+  }
   if (!customerId) {
     if (operation === 'create' && data.source === 'website') {
       throw new APIError('A verified customer profile is required for online booking.', 400)

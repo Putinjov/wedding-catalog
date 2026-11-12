@@ -81,7 +81,7 @@ describe('server-authoritative repeat booking creation', () => {
 
   it('rejects an unverified address before reading private customer data', async () => {
     mocks.readVerifiedEmailSession.mockReturnValue(null)
-    const result = await createPendingAppointment(input)
+    const result = await createPendingAppointment({ ...input, purpose: 'follow_up' })
     expect(result.success).toBe(false)
     expect(mocks.getPayload).not.toHaveBeenCalled()
     expect(mocks.resolveRepeatBookingDecision).not.toHaveBeenCalled()
@@ -91,7 +91,7 @@ describe('server-authoritative repeat booking creation', () => {
     mocks.resolveRepeatBookingDecision.mockResolvedValue({
       customer: { id: 'customer-1' }, kind: 'free',
     })
-    const result = await createPendingAppointment(input)
+    const result = await createPendingAppointment({ ...input, purpose: 'follow_up' })
     expect(result.success).toBe(true)
     const appointment = mocks.create.mock.calls[0]?.[0].data
     expect(appointment).toEqual(expect.objectContaining({
@@ -122,7 +122,7 @@ describe('server-authoritative repeat booking creation', () => {
     mocks.resolveRepeatBookingDecision.mockResolvedValue({
       customer: { id: 'customer-1' }, kind: 'closed',
     })
-    const result = await createPendingAppointment(input)
+    const result = await createPendingAppointment({ ...input, purpose: 'follow_up' })
     expect(result).toEqual(expect.objectContaining({ success: false }))
     expect(mocks.create).not.toHaveBeenCalled()
   })
@@ -132,6 +132,22 @@ describe('server-authoritative repeat booking creation', () => {
     const result = await createPendingAppointment({ ...input, purpose: 'follow_up' })
     expect(result).toEqual(expect.objectContaining({ success: false, message: expect.stringContaining('free follow-up') }))
     expect(mocks.create).not.toHaveBeenCalled()
+  })
+
+  it.each(['buy', 'rent'])('accepts guest %s without verification, profile lookup, linking or a repeat discount', async (purpose) => {
+    mocks.readVerifiedEmailSession.mockReturnValue(null)
+    mocks.resolveRepeatBookingDecision.mockResolvedValue({ customer: { id: 'private-customer' }, kind: 'closed' })
+    expect((await createPendingAppointment({ ...input, purpose })).success).toBe(true)
+    expect(mocks.readVerifiedEmailSession).not.toHaveBeenCalled()
+    expect(mocks.resolveRepeatBookingDecision).not.toHaveBeenCalled()
+    expect(mocks.create).toHaveBeenCalledTimes(1)
+    expect(mocks.create.mock.calls[0][0]).toEqual(expect.objectContaining({ collection: 'appointments' }))
+    expect(mocks.create.mock.calls[0][0].data).toEqual(expect.objectContaining({ fittingFee: 20, status: 'pending_payment' }))
+    expect(mocks.create.mock.calls[0][0].data).not.toHaveProperty('customer')
+    mocks.getPayload.mockClear()
+    expect(await getBookingFeeQuote({ ...input, purpose })).toEqual({ amount: 20, kind: 'standard', success: true })
+    expect(mocks.getPayload).not.toHaveBeenCalled()
+    expect(mocks.resolveRepeatBookingDecision).not.toHaveBeenCalled()
   })
 
   it('persists an eligible follow-up as confirmed and unpaid at zero', async () => {
@@ -163,5 +179,20 @@ describe('server-authoritative repeat booking creation', () => {
       req: { payload: { findByID: async () => ({ email: input.email }) } },
     } as unknown as Parameters<typeof validateAppointmentCustomer>[0]
     await expect(validateAppointmentCustomer(args)).rejects.toThrow(/free follow-up/)
+  })
+
+  it('rejects attaching a private profile to a guest booking at the write boundary', async () => {
+    await expect(validateAppointmentCustomer({
+      data: { source: 'website', purpose: 'buy', fittingFee: 20, customer: 'private-profile' },
+      operation: 'create',
+    } as never)).rejects.toThrow(/guest bookings cannot attach/i)
+    expect(mocks.resolveRepeatBookingDecision).not.toHaveBeenCalled()
+  })
+
+  it('rejects a forged guest discount at the write boundary', async () => {
+    await expect(validateAppointmentCustomer({
+      data: { source: 'website', purpose: 'rent', fittingFee: 0 }, operation: 'create',
+    } as never)).rejects.toThrow(/fitting fee changed/i)
+    expect(mocks.resolveRepeatBookingDecision).not.toHaveBeenCalled()
   })
 })
