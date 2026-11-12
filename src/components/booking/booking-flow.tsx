@@ -8,6 +8,7 @@ import { BookingProgress } from '@/components/booking/booking-progress'
 import { BookingSummary } from '@/components/booking/booking-summary'
 import { BookingCalendar } from '@/components/booking/booking-calendar'
 import { FittingFeeOffer } from '@/components/booking/fitting-fee-offer'
+import { EmailVerificationControl } from '@/components/booking/email-verification-control'
 import { SelectedDressSummary } from '@/components/booking/selected-dress-summary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ import {
   formatTimeInputValue,
 } from '@/lib/booking/date'
 import { createPendingAppointment, type BookingActionResult } from '@/lib/booking/createAppointment'
+import { checkFollowUpEligibility, getBookingFeeQuote, type BookingFeeQuote } from '@/lib/booking/getBookingFeeQuote'
 import { getAvailableSlots } from '@/lib/booking/getAvailableSlots'
 import { getFullyBookedDates } from '@/lib/booking/getFullyBookedDates'
 import { isFittingFeeWaived } from '@/lib/booking/fittingFee'
@@ -56,9 +58,9 @@ export const purposeOptions: PurposeOption[] = [
     value: 'rent',
   },
   {
-    description: 'Explore both options with guidance during your fitting.',
-    label: 'I’m not sure yet',
-    value: 'undecided',
+    description: 'Return for a fitting or measurements after a completed visit. Verify your email to check eligibility.',
+    label: 'Follow-up appointment',
+    value: 'follow_up',
   },
 ]
 
@@ -135,6 +137,8 @@ export function BookingFlow({
   const [calendarAvailabilityError, setCalendarAvailabilityError] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [email, setEmail] = useState('')
+  const [emailVerified, setEmailVerified] = useState(false)
+  const followUpCheckId = useRef(0)
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
   const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false)
@@ -142,9 +146,11 @@ export function BookingFlow({
   const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({})
   const [formError, setFormError] = useState('')
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
+  const [feeQuote, setFeeQuote] = useState<Extract<BookingFeeQuote, { success: true }> | null>(null)
+  const [quoting, setQuoting] = useState(false)
   const availablePurposes = getAvailableBookingPurposes(selectedDress)
   const bookingNoticeLabel = getBookingNoticeLabel(settings)
-  const fittingFeeWaived = isFittingFeeWaived()
+  const fittingFeeWaived = isFittingFeeWaived(feeQuote?.amount)
 
   const clearValidationState = useCallback(() => {
     setFieldErrors({})
@@ -318,7 +324,7 @@ export function BookingFlow({
     pendingFormErrorFocus.current = true
   }
 
-  function handleNext() {
+  async function handleNext() {
     if (step === 1) {
       if (!availablePurposes.includes(purpose)) {
         showFieldErrors(
@@ -326,6 +332,29 @@ export function BookingFlow({
           'Please check the highlighted details.',
         )
         return
+      }
+      if (purpose === 'follow_up') {
+        if (!emailVerified) {
+          setFormError('Please enter your email and verify the six-digit code below.')
+          fieldRefs.current.email?.querySelector('input')?.focus()
+          return
+        }
+        const checkId = ++followUpCheckId.current
+        setQuoting(true)
+        try {
+          const result = await checkFollowUpEligibility({ email })
+          if (checkId !== followUpCheckId.current) return
+          if (!result.success) {
+            showFieldErrors({}, result.message, 'error')
+            return
+          }
+        } catch {
+          if (checkId !== followUpCheckId.current) return
+          showFieldErrors({}, 'We could not check your follow-up eligibility. Please try again.', 'error')
+          return
+        } finally {
+          setQuoting(false)
+        }
       }
       clearValidationState()
       setStep(2)
@@ -349,6 +378,34 @@ export function BookingFlow({
         showFieldErrors(errors, 'Please check the highlighted details.')
         return
       }
+      if (purpose === 'follow_up' && !emailVerified) {
+        showFieldErrors(
+          { email: 'Please verify this email address before booking.' },
+          'Please verify your email before continuing.',
+        )
+        return
+      }
+      if (!selectedSlot) return
+      setQuoting(true)
+      let quote: BookingFeeQuote
+      try {
+        quote = await getBookingFeeQuote({
+          date,
+          email,
+          purpose,
+          time: formatTimeInputValue(selectedSlot.startAt),
+        })
+      } catch {
+        setQuoting(false)
+        showFieldErrors({}, 'We could not check the fitting fee. Please try again.', 'error')
+        return
+      }
+      setQuoting(false)
+      if (!quote.success) {
+        showFieldErrors({}, quote.message, 'error')
+        return
+      }
+      setFeeQuote(quote)
       clearValidationState()
       setStep(4)
     }
@@ -454,8 +511,7 @@ export function BookingFlow({
             </span>
           </legend>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Choose whether this private appointment is for buying, renting, or deciding with our
-            guidance.
+            Choose a first appointment to buy or rent, or a follow-up after a completed visit.
           </p>
           <div className="mt-7 grid gap-4 sm:grid-cols-3" role="group">
             {purposeOptions
@@ -467,7 +523,9 @@ export function BookingFlow({
                   data-selected={purpose === option.value}
                   key={option.value}
                   onClick={() => {
+                    followUpCheckId.current += 1
                     setPurpose(option.value)
+                    setFeeQuote(null)
                     clearFieldError('purpose')
                   }}
                   type="button"
@@ -484,6 +542,32 @@ export function BookingFlow({
                 </button>
               ))}
           </div>
+          {purpose === 'follow_up' ? (
+            <div className="mt-6 space-y-3" ref={(node) => { fieldRefs.current.email = node }}>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Free follow-ups are available within two years of your latest completed visit, until purchase.
+                After purchase, please contact us by phone to arrange measurements or further fittings.
+              </p>
+              <label className="block text-sm font-medium" htmlFor="follow-up-email">Email used for your previous visit</label>
+              <Input
+                autoComplete="email"
+                className="min-h-11"
+                id="follow-up-email"
+                inputMode="email"
+                onChange={(event) => {
+                  followUpCheckId.current += 1
+                  setEmail(event.target.value)
+                  setEmailVerified(false)
+                  setFeeQuote(null)
+                  clearFieldError('email')
+                }}
+                required
+                type="email"
+                value={email}
+              />
+              <EmailVerificationControl email={email} onVerifiedChange={setEmailVerified} verified={emailVerified} />
+            </div>
+          ) : null}
           {getFieldError('purpose') ? (
             <p className="mt-3 text-sm text-destructive" id="booking-purpose-error">
               {getFieldError('purpose')}
@@ -697,6 +781,8 @@ export function BookingFlow({
                 name="email"
                 onChange={(event) => {
                   setEmail(event.target.value)
+                  setEmailVerified(false)
+                  setFeeQuote(null)
                   clearFieldError('email')
                 }}
                 required
@@ -708,6 +794,11 @@ export function BookingFlow({
                   {getFieldError('email')}
                 </p>
               ) : null}
+              {purpose === 'follow_up' ? <EmailVerificationControl
+                email={email}
+                onVerifiedChange={setEmailVerified}
+                verified={emailVerified}
+              /> : null}
             </div>
             <div
               ref={(node) => {
@@ -871,14 +962,16 @@ export function BookingFlow({
               date={summaryDate}
               dressName={selectedDress?.name}
               duration={`${settings.durationMinutes} minutes`}
-              fee={<FittingFeeOffer size="compact" />}
+              fee={<FittingFeeOffer amount={feeQuote?.amount} size="compact" waiverName={feeQuote?.kind === 'repeat' ? 'Returning customer' : undefined} />}
               purpose={purpose}
               time={summaryTime}
             />
           </div>
           <p className="mt-6 border-l-2 border-brand-antique-gold pl-4 text-sm leading-6 text-muted-foreground">
             {fittingFeeWaived
-              ? 'No payment is required. Your appointment is confirmed immediately under our welcome offer.'
+              ? feeQuote?.kind === 'repeat'
+                ? 'No payment is required for this repeat fitting. Your appointment is confirmed immediately.'
+                : 'No payment is required. Your appointment is confirmed immediately under our welcome offer.'
               : 'Payment will be required to confirm this appointment.'}
           </p>
         </section>
@@ -904,12 +997,13 @@ export function BookingFlow({
         {step < 4 ? (
           <Button
             className={`${step === 1 ? 'col-span-2' : ''} w-full rounded-sm lg:ml-auto lg:w-auto`}
+            disabled={quoting}
             key={`continue-step-${step}`}
             onClick={handleNext}
             size="lg"
             type="button"
           >
-            Continue to {step === 1 ? 'date and time' : step === 2 ? 'your details' : 'review'}
+            {quoting ? 'Checking booking details…' : `Continue to ${step === 1 ? 'date and time' : step === 2 ? 'your details' : 'review'}`}
           </Button>
         ) : (
           <Button

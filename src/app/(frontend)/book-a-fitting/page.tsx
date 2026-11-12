@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/book-a-fitting',
   },
-  description: 'Book a private wedding dress fitting whether you plan to buy, rent, or decide during your appointment.',
+  description: 'Book a private wedding dress fitting to buy or rent, or verify your email to arrange an eligible follow-up appointment.',
   title: 'Book a fitting',
 }
 
@@ -65,8 +65,8 @@ export default async function BookAFittingPage({ searchParams }: Args) {
             Find time for the dress.
           </h1>
           <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            Tell us whether you are looking to buy, rent, or would prefer to decide during your
-            private appointment.
+            Choose a private fitting to buy or rent a dress, or verify your email to arrange
+            an eligible follow-up appointment.
           </p>
           <div className="mt-8 border-l-2 border-brand-antique-gold pl-5">
             <p className="text-sm uppercase tracking-[0.22em] text-muted-foreground">

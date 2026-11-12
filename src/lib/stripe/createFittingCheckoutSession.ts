@@ -83,6 +83,22 @@ export async function createFittingCheckoutSession(
   }
 
   const payload = await getPayload({ config: configPromise })
+  const customerId = appointment.customer &&
+    (typeof appointment.customer === 'object' ? appointment.customer.id : appointment.customer)
+  if (customerId) {
+    const customer = await payload.findByID({
+      collection: 'customers',
+      depth: 0,
+      id: customerId,
+      overrideAccess: true,
+    })
+    if (customer.purchaseConfirmedAt) {
+      return {
+        message: 'Online booking is unavailable after a confirmed purchase. Please call us for help.',
+        status: 'unavailable',
+      }
+    }
+  }
   if (await hasAppointmentSlotConflict(payload, appointment, settings)) {
     return {
       message: 'This fitting time is no longer available. Please contact us for help.',

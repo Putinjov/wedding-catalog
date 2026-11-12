@@ -1,8 +1,8 @@
 'use server'
 
 import configPromise from '@payload-config'
-import { headers } from 'next/headers'
-import { getPayload } from 'payload'
+import { cookies, headers } from 'next/headers'
+import { APIError, getPayload, ValidationError } from 'payload'
 
 import { createPublicReference } from '@/lib/booking/createPublicReference'
 import { siteConfig } from '@/config/site'
@@ -34,6 +34,10 @@ import {
 } from '@/lib/booking/privacyIntegrity'
 import { currentPrivacyPolicy } from '@/config/privacy'
 import { getBookingPurposeDressMode } from '@/lib/booking/purpose'
+import { normalizeCustomerEmail } from '@/lib/customers/email'
+import { readVerifiedEmailSession, verifiedEmailCookieName } from '@/lib/customers/emailVerification'
+import { getFollowUpBookingError, resolveRepeatBookingDecision } from '@/lib/customers/repeatBooking'
+import { getServerEnvironment } from '@/config/env'
 import {
   getBookingNoticeMessage,
   getBookingNoticeViolation,
@@ -67,7 +71,9 @@ function invalidBooking(
 }
 
 function isUniqueConflict(error: unknown): boolean {
-  return error instanceof Error && /duplicate|unique/i.test(error.message)
+  return (error instanceof ValidationError && error.data.errors.some((field) =>
+    field.path === 'email' && /unique/i.test(field.message))) ||
+    (error instanceof Error && /duplicate|unique/i.test(error.message))
 }
 
 function isBookingConflict(error: unknown): boolean {
@@ -84,10 +90,23 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
   }
 
   const data = parsed.data
+  const email = normalizeCustomerEmail(data.email)
+  if (data.purpose === 'follow_up') {
+    const secret = getServerEnvironment({ strict: false }).PAYLOAD_SECRET
+    const cookieStore = await cookies()
+    const verifiedEmail = secret
+      ? readVerifiedEmailSession(cookieStore.get(verifiedEmailCookieName)?.value, secret)
+      : null
+    if (verifiedEmail !== email) {
+      return invalidBooking('Please verify your email using the six-digit code before booking.', {
+        email: 'Please verify this email address before booking.',
+      })
+    }
+  }
   const requestHeaders = await headers()
   const rateLimitAllowed = consumeRateLimits([
     ipRateLimitRule(requestHeaders, 'public-booking', 10, 15 * 60 * 1000),
-    identifierRateLimitRule(data.email, 'public-booking:email', 3, 60 * 60 * 1000),
+    identifierRateLimitRule(email, 'public-booking:email', 3, 60 * 60 * 1000),
     identifierRateLimitRule(data.phone, 'public-booking:phone', 3, 60 * 60 * 1000),
   ])
   if (!rateLimitAllowed) {
@@ -159,10 +178,26 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
     })
   }
 
+  const decision = data.purpose === 'follow_up' ? await resolveRepeatBookingDecision({
+    email,
+    now,
+    payload,
+    requestedAt: dateTimes.startAt,
+  }) : null
+  if (data.purpose === 'follow_up') {
+    if (!decision) throw new Error('Follow-up decision is missing.')
+    const followUpError = getFollowUpBookingError(decision)
+    if (followUpError) return invalidBooking(followUpError)
+  }
+  if (decision?.kind === 'closed') {
+    return invalidBooking('Online bookings are no longer available after a confirmed purchase. Please call us for further appointments.')
+  }
+  const fittingFee = decision?.kind === 'free' ? 0 : siteConfig.fittingFee
+
   try {
     const privacyRecordedAt = new Date().toISOString()
-    const paymentState = getWebsiteBookingInitialPaymentState()
-    const holdExpiresAt = requiresFittingFeePayment()
+    const paymentState = getWebsiteBookingInitialPaymentState(fittingFee)
+    const holdExpiresAt = requiresFittingFeePayment(fittingFee)
       ? createAppointmentHoldExpiry(settings.holdMinutes, now).iso
       : null
     const appointment = await payload.create({
@@ -170,10 +205,11 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
       draft: false,
       data: {
         customerName: data.customerName,
+        ...(decision?.customer ? { customer: decision.customer.id } : {}),
         dress: dress?.id,
-        email: data.email,
+        email,
         endAt,
-        fittingFee: siteConfig.fittingFee,
+        fittingFee,
         ...(holdExpiresAt ? { holdExpiresAt } : {}),
         notes: data.notes || undefined,
         paymentStatus: paymentState.paymentStatus,
@@ -212,6 +248,9 @@ export async function createPendingAppointment(input: unknown): Promise<BookingA
       success: true,
     }
   } catch (error: unknown) {
+    if (error instanceof APIError && error.status === 409) {
+      return invalidBooking('Your booking details changed. Please review them and try again, or call us for help.')
+    }
     if (isBookingConflict(error)) {
       return invalidBooking('That fitting time has just been taken. Please choose another.', {
         time: 'That fitting time has just been taken. Please choose another.',

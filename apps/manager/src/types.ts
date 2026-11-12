@@ -10,7 +10,7 @@ export type ManagerUser = {
   role: UserRole
 }
 
-export type BookingPurpose = 'buy' | 'rent' | 'undecided'
+export type BookingPurpose = 'buy' | 'rent' | 'undecided' | 'follow_up'
 
 export type AppointmentStatus =
   | 'cancelled'

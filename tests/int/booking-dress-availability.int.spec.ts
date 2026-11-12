@@ -14,7 +14,24 @@ vi.mock('@payload-config', () => ({
 }))
 
 vi.mock('next/headers', () => ({
+  cookies: vi.fn(async () => ({ get: () => ({ value: 'verified-test-cookie' }) })),
   headers: vi.fn(async () => new Headers()),
+}))
+
+vi.mock('@/config/env', () => ({
+  getServerEnvironment: () => ({ PAYLOAD_SECRET: 'test-secret-with-at-least-thirty-two-characters' }),
+}))
+
+vi.mock('@/lib/customers/emailVerification', () => ({
+  readVerifiedEmailSession: () => 'test@example.com',
+  verifiedEmailCookieName: 'booking_verified_email',
+}))
+
+vi.mock('@/lib/customers/repeatBooking', () => ({
+  resolveRepeatBookingDecision: vi.fn(async () => ({
+    customer: { email: 'test@example.com', id: 'customer-1' },
+    kind: 'standard',
+  })),
 }))
 
 vi.mock('payload', async (importOriginal) => {
