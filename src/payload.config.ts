@@ -120,6 +120,9 @@ export default buildConfig({
   editor: defaultLexical,
   db: mongooseAdapter({
     connectOptions: {
+      maxPoolSize: 5,
+      minPoolSize: 0,
+      maxIdleTimeMS: 30000,
       autoIndex:
         process.env.NODE_ENV !== 'production' && process.env.PAYLOAD_MIGRATING !== 'true',
     },
