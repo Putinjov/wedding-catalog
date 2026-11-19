@@ -1,6 +1,6 @@
 import payload, { getMigrations, readMigrationFiles } from 'payload'
 
-import { findPendingMigrationNames, isMigrationGateRequired } from '@/config/migration-gate'
+import { assertPersistedUserRoles, findPendingMigrationNames, isMigrationGateRequired } from '@/config/migration-gate'
 
 async function checkPendingMigrations(): Promise<void> {
   if (!isMigrationGateRequired()) {
@@ -33,6 +33,15 @@ async function checkPendingMigrations(): Promise<void> {
         `[migration-gate] Production build blocked. Pending migrations: ${pendingNames.join(', ')}.`,
       )
     }
+
+    const users = payload.db.collections.users
+    if (!users) throw new Error('[migration-gate] Users model unavailable.')
+    const [totalUsers, owners, invalidRoles] = await Promise.all([
+      users.collection.countDocuments({}),
+      users.collection.countDocuments({ role: 'owner' }),
+      users.collection.countDocuments({ role: { $nin: ['owner', 'manager', 'staff'] } }),
+    ])
+    assertPersistedUserRoles({ totalUsers, owners, invalidRoles })
 
     console.info(`[migration-gate] Verified ${migrationFiles.length} applied migration(s).`)
   } finally {
