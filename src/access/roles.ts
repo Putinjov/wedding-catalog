@@ -16,8 +16,8 @@ export function getUserRole(user: unknown): UserRole | null {
   if (!isUserWithRole(user)) return null
   if (user.role && userRoles.includes(user.role)) return user.role
 
-  // The startup migration assigns persisted roles to legacy accounts. Until it
-  // completes, use least privilege rather than accidentally escalating access.
+  // Legacy accounts without a valid persisted role retain least privilege.
+  // Production deployments verify persisted roles before release.
   return 'staff'
 }
 
