@@ -40,7 +40,6 @@ import { defaultLexical } from './fields/defaultLexical'
 import { Header } from './Header/config'
 import { cleanupExpiredAppointmentHoldsTask } from './jobs/cleanupExpiredAppointmentHolds'
 import { sendAppointmentEmailTask } from './jobs/sendAppointmentEmail'
-import { migrateLegacyUserRoles } from './lib/security/migrateLegacyUserRoles'
 import { plugins } from './plugins'
 import { getServerSideURL } from './utilities/getURL'
 
@@ -184,7 +183,6 @@ export default buildConfig({
       enabled: r2Enabled,
     }),
   ],
-  onInit: migrateLegacyUserRoles,
   secret: environment.PAYLOAD_SECRET ?? '',
   sharp,
   typescript: {
