@@ -23,6 +23,7 @@ import {
 } from '@/lib/dress-cache'
 import { getCatalogueFilterOptions } from '@/lib/getCatalogueFilterOptions'
 import { getDresses, MAX_CACHED_CATALOGUE_PAGE } from '@/lib/getDresses'
+import { getFeaturedDresses } from '@/lib/getFeaturedDresses'
 import type { Dress } from '@/payload-types'
 
 const mocks = vi.hoisted(() => ({
@@ -149,6 +150,24 @@ describe('catalogue persistent caching', () => {
     await getDresses('buy')
 
     expect(mocks.find).toHaveBeenCalledOnce()
+  })
+
+  it('caches featured dresses and refreshes them after a published dress changes', async () => {
+    await getFeaturedDresses()
+    await getFeaturedDresses()
+    expect(mocks.find).toHaveBeenCalledOnce()
+    expect(mocks.find).toHaveBeenCalledWith(
+      expect.objectContaining({ draft: false, overrideAccess: false }),
+    )
+
+    const published = dress()
+    await revalidateDress({
+      doc: published,
+      previousDoc: published,
+      req: { context: {} },
+    } as Parameters<typeof revalidateDress>[0])
+    await getFeaturedDresses()
+    expect(mocks.find).toHaveBeenCalledTimes(2)
   })
 
   it('keeps Buy and Rent cache entries separate', async () => {
