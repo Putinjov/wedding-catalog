@@ -4,6 +4,7 @@ import { getServerEnvironment } from '@/config/env'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 10
 
 const healthCheckTimeoutMs = 2_500
 
@@ -53,3 +54,4 @@ export async function GET(): Promise<Response> {
     )
   }
 }
+
