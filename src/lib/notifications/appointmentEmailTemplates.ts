@@ -308,8 +308,8 @@ export function buildAppointmentEmail({
   if (event === 'admin_alert') {
     const adminURL = `${getCanonicalOrigin()}/admin/collections/appointments/${encodeURIComponent(String(appointment.id))}`
     return {
-      subject: 'Appointment requires admin review',
-      text: `An appointment requires admin review.\n\nAppointment ID: ${String(appointment.id)}\nStatus: ${appointment.status}\nScheduled time: ${formatDateTimeForCustomer(appointment.startAt)}\n\nOpen the authenticated admin record: ${adminURL}\n\nCustomer contact details and notes are intentionally omitted from this alert.`,
+      subject: 'Appointment flagged for admin review',
+      text: `An appointment was flagged for review. Open the record to check the latest status.\n\nAppointment ID: ${String(appointment.id)}\nStatus: ${appointment.status}\nScheduled time: ${formatDateTimeForCustomer(appointment.startAt)}\n\nOpen the authenticated admin record: ${adminURL}\n\nCustomer: ${appointment.customerName}\nPhone: ${appointment.phone}\nEmail: ${appointment.email}`,
       to: adminAddress,
     }
   }
@@ -319,3 +319,4 @@ export function buildAppointmentEmail({
     to: appointment.email,
   }
 }
+

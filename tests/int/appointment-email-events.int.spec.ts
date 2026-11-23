@@ -69,6 +69,15 @@ describe('appointment email event mapping', () => {
     ).toEqual(['admin_alert'])
   })
 
+  it('alerts once per review transition and preserves alerts already queued', () => {
+    const flagged = state({ needsAdminReview: true })
+    expect(getAppointmentEmailEvents({ appointment: flagged, operation: 'create' })).toEqual(['admin_alert'])
+    expect(getAppointmentEmailEvents({ appointment: flagged, previous: flagged, operation: 'update' })).toEqual([])
+    expect(getAppointmentEmailEvents({ appointment: state(), previous: flagged, operation: 'update' })).toEqual([])
+    expect(getAppointmentEmailEvents({ appointment: flagged, previous: state(), operation: 'update' })).toEqual(['admin_alert'])
+    expect(shouldDeliverAppointmentEmail('admin_alert', state())).toBe(true)
+  })
+
   it('maps a schedule change and confirmation to one rescheduled customer email', () => {
     expect(
       getAppointmentEmailEvents({
@@ -134,3 +143,4 @@ describe('appointment email event mapping', () => {
     ).toBe(false)
   })
 })
+

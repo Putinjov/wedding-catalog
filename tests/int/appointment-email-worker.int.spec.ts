@@ -199,7 +199,7 @@ describe('appointment email worker', () => {
     expect(payload.sendEmail).not.toHaveBeenCalled()
   })
 
-  it('omits customer contact details, notes, and private references from admin alerts', async () => {
+  it('sends staff the customer contacts and record link while excluding private notes and references', async () => {
     const conflict = {
       ...appointment,
       needsAdminReview: true,
@@ -212,12 +212,15 @@ describe('appointment email worker', () => {
     ).resolves.toBe('sent')
 
     const message = JSON.stringify(payload.sendEmail.mock.calls)
-    expect(message).toContain('bookings@caitbridal.ie')
-    expect(message).not.toContain(appointment.email)
-    expect(message).not.toContain(appointment.phone)
+    expect(payload.sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'bookings@caitbridal.ie' }))
+    expect(message).toContain(`/admin/collections/appointments/${appointment.id}`)
+    expect(message).toContain(appointment.email)
+    expect(message).toContain(appointment.phone)
     expect(message).not.toContain(appointment.notes)
-    expect(message).not.toContain(appointment.customerName)
+    expect(message).toContain(appointment.customerName)
     expect(message).not.toContain(appointment.publicReference)
     expect(message).not.toContain('<html')
   })
 })
+
+

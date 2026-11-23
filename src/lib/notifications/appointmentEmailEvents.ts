@@ -106,6 +106,8 @@ export function shouldDeliverAppointmentEmail(
         appointment.paymentStatus === 'partially_refunded'
       )
     case 'admin_alert':
-      return appointment.needsAdminReview === true
+      // Each transition is an event, even if staff clear the flag before dispatch.
+      return true
   }
 }
+
