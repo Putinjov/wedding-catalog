@@ -1,0 +1,26 @@
+name: Production health
+on:
+  schedule:
+    - cron: '23 */2 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/production-health.yml'
+
+permissions: {}
+concurrency:
+  group: production-health
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check production API and database
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --fail --location --max-redirs 1 \
+            --proto '=https' --proto-redir '=https' --connect-timeout 4 --max-time 15 \
+            https://caitbridal.ie/api/health | jq -e '.status == "ok" and .database == "reachable"'
