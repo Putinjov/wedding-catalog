@@ -53,7 +53,7 @@ export const Customers: CollectionConfig = {
   slug: 'customers',
   labels: { singular: 'Customer', plural: 'Customers' },
   admin: {
-    defaultColumns: ['name', 'email', 'orderStatus', 'purchaseConfirmedAt', 'updatedAt'],
+    defaultColumns: ['name', 'email', 'phone', 'updatedAt'],
     description:
       'Private staff-only profiles. Historical appointments are not linked automatically.',
     group: 'Bookings',
@@ -89,6 +89,7 @@ export const Customers: CollectionConfig = {
     },
     { name: 'name', type: 'text', required: true, maxLength: 120 },
     { name: 'phone', type: 'text', maxLength: 40 },
+    { name: 'notes', label: 'Staff notes', type: 'textarea', maxLength: 4000 },
     {
       name: 'orderStatus',
       type: 'select',
