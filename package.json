@@ -12,6 +12,7 @@
     "generate:types": "cross-env NODE_OPTIONS=\"--no-deprecation --use-system-ca\" payload generate:types",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
     "lint:fix": "cross-env NODE_OPTIONS=--no-deprecation eslint . --fix",
+    "privacy:preview": "cross-env PAYLOAD_MIGRATING=true NODE_OPTIONS=\"--no-deprecation --use-system-ca\" tsx src/scripts/preview-retention.ts",
     "migrations:check": "cross-env NODE_OPTIONS=\"--no-deprecation --use-system-ca\" tsx src/scripts/check-pending-migrations.ts",
     "migrations:run": "cross-env PAYLOAD_MIGRATING=true NODE_OPTIONS=\"--no-deprecation --use-system-ca\" tsx src/scripts/run-migrations.ts",
     "payload": "cross-env NODE_OPTIONS=\"--no-deprecation --use-system-ca\" payload",
