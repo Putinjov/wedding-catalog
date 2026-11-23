@@ -1236,6 +1236,7 @@ export interface Customer {
    * Optional internal order reference. Never shown to customers.
    */
   orderReference?: string | null;
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2417,6 +2418,7 @@ export interface CustomersSelect<T extends boolean = true> {
   orderStatus?: T;
   purchaseConfirmedAt?: T;
   orderReference?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }
