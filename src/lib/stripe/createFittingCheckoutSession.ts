@@ -86,7 +86,7 @@ export async function createFittingCheckoutSession(
   const payload = await getPayload({ config: configPromise })
   const customerId = appointment.customer &&
     (typeof appointment.customer === 'object' ? appointment.customer.id : appointment.customer)
-  if (customerId && (appointment.source === 'admin' || appointment.purpose === 'follow_up')) {
+  if (customerId) {
     const customer = await payload.findByID({
       collection: 'customers',
       depth: 0,
@@ -95,7 +95,7 @@ export async function createFittingCheckoutSession(
     })
     if (customer.purchaseConfirmedAt) {
       return {
-        message: 'Online booking is unavailable after a confirmed purchase. Please call us for help.',
+        message: 'Online payment is unavailable for this booking. Please contact the boutique.',
         status: 'unavailable',
       }
     }
@@ -252,3 +252,4 @@ export async function createFittingCheckoutSession(
 
   return { status: 'redirect', url: session.url }
 }
+
