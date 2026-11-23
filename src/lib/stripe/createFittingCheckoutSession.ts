@@ -1,3 +1,4 @@
+import { withAdminBookingWindow } from '@/config/booking'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import type Stripe from 'stripe'
@@ -75,7 +76,7 @@ export async function createFittingCheckoutSession(
     }
   }
 
-  if (!isAppointmentSlotValid(appointment, settings, now)) {
+  if (!isAppointmentSlotValid(appointment, appointment.source === 'admin' ? withAdminBookingWindow(settings) : settings, now)) {
     return {
       message: 'This fitting time is no longer available. Please contact us for help.',
       status: 'unavailable',
@@ -85,7 +86,7 @@ export async function createFittingCheckoutSession(
   const payload = await getPayload({ config: configPromise })
   const customerId = appointment.customer &&
     (typeof appointment.customer === 'object' ? appointment.customer.id : appointment.customer)
-  if (customerId) {
+  if (customerId && (appointment.source === 'admin' || appointment.purpose === 'follow_up')) {
     const customer = await payload.findByID({
       collection: 'customers',
       depth: 0,
