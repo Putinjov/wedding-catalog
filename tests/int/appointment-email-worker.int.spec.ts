@@ -100,7 +100,7 @@ describe('appointment email worker', () => {
     expect(sentMessage).toContain('CÁIT')
     expect(sentMessage).not.toContain(appointment.publicReference)
     expect(sentMessage).not.toContain('Tullamore')
-    expect(sentMessage).toContain(appointment.phone)
+    expect(sentMessage).not.toContain(appointment.phone)
     expect(sentMessage).not.toContain(appointment.notes)
   })
 
@@ -215,11 +215,12 @@ describe('appointment email worker', () => {
     expect(payload.sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'bookings@caitbridal.ie' }))
     expect(message).toContain(`/admin/collections/appointments/${appointment.id}`)
     expect(message).toContain(appointment.email)
-    expect(message).not.toContain(appointment.phone)
+    expect(message).toContain(appointment.phone)
     expect(message).not.toContain(appointment.notes)
     expect(message).toContain(appointment.customerName)
     expect(message).not.toContain(appointment.publicReference)
     expect(message).not.toContain('<html')
   })
 })
+
 
