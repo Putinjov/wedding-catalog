@@ -24,7 +24,11 @@ async function previewRetention() {
         paymentStatus: { in: ['unpaid', 'failed'] },
         updatedAt: { less_than_equal: unpaidCutoff },
       },
-      cancelled: {
+      cancelledWithoutRecordedPayment: {
+        paymentStatus: { in: ['unpaid', 'failed'] },
+        paidAt: { exists: false },
+        stripePaymentIntentId: { exists: false },
+        amountPaid: { exists: false },
         status: { equals: 'cancelled' },
         endAt: { less_than_equal: cancelledCutoff },
         updatedAt: { less_than_equal: cancelledCutoff },
