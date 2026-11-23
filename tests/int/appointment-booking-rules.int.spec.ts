@@ -36,6 +36,16 @@ function settings(
 }
 
 describe('final appointment booking-rule validation', () => {
+  it('allows staff to book six months ahead while enforcing the public window', () => {
+    const input = {
+      data: appointment({ startAt: '2027-01-20T10:00:00Z', endAt: '2027-01-20T11:00:00Z' }),
+      now: new Date('2026-07-20T10:00:00Z'), operation: 'create' as const,
+      settings: settings({ bookingWindowDays: 60 }),
+    }
+    expect(() => assertAppointmentScheduleRules(input)).toThrow(/booking window/i)
+    expect(() => assertAppointmentScheduleRules({ ...input, context: adminBookingRulesContext(false) })).not.toThrow()
+  })
+
   it('blocks a direct create inside the minimum-notice boundary', () => {
     expect(() =>
       assertAppointmentScheduleRules({
