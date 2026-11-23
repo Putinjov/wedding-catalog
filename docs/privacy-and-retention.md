@@ -65,3 +65,22 @@ Stripe transaction, invoice, refund, dispute or chargeback records needed for ta
 or claims are not deleted merely because the local customer record is removed. Remove unnecessary
 Stripe Customer metadata and explain that Stripe may independently retain information under its
 own legal obligations.
+
+
+## Retention preview and template collection inventory
+
+Run `npm run privacy:preview` against the intended database using a read-only account.
+The report contains document counts only. Template counts measure stored content, not route usage.
+Pages, posts, categories, generated search records, forms, submissions and redirects have
+application dependencies. Removing a collection requires reviewing its content and references first.
+
+The three appointment counts are age screens, not authorisation to erase. Cancelled bookings
+use the later of the scheduled end and last update as a conservative proxy for cancellation.
+Unresolved review cases are excluded. Other lifecycle states, including no-shows, need a separate
+policy decision. The preview does not change appointments or customer profiles.
+
+Before enabling writes, implement a persisted legal hold, separate active marketing evidence and
+necessary accounting records, and check for open orders and newer visits. Review linked profiles,
+audit metadata, email deliveries, staff mailboxes and backups. Retaining a link that can identify
+the customer makes the remaining data pseudonymous. A write worker must recheck eligibility
+when it claims each record, resume safely after interruption and avoid triggering booking emails.
