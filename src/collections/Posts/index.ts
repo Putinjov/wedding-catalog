@@ -49,7 +49,8 @@ export const Posts: CollectionConfig<'posts'> = {
     },
   },
   admin: {
-    description: 'Editorial stories and announcements shown on the storefront.',
+    hidden: true,
+    description: 'Archived editorial content.',
     defaultColumns: ['title', 'slug', 'updatedAt'],
     group: 'Content',
     livePreview: {
