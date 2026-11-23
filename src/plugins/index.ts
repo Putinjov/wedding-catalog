@@ -156,6 +156,7 @@ export const plugins: Plugin[] = [
     beforeSync: beforeSyncWithSearch,
     searchOverrides: {
       admin: {
+        hidden: true,
         description: 'Owner-only generated search index records.',
         group: 'Administration',
       },
