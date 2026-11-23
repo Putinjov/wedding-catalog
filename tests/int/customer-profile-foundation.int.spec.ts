@@ -1,3 +1,4 @@
+import { siteConfig } from '@/config/site'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Customers, preventLinkedCustomerDeletion, validateCustomer } from '@/collections/Customers'
@@ -114,6 +115,24 @@ describe('private customer profile foundation', () => {
         req: { payload: { count: vi.fn(async () => ({ totalDocs: 1 })) } },
       } as never),
     ).rejects.toThrow(/unlink appointments/i)
+  })
+
+  it('creates an internal card for a manual appointment and reuses it on a guest booking', async () => {
+    const data = { customerName: 'Jane', email: 'JANE@example.test', phone: '+353123456' }
+    const find = vi.fn().mockResolvedValueOnce({ docs: [] }).mockResolvedValueOnce({ docs: [{ id: 'card' }] })
+    const create = vi.fn().mockResolvedValue({ id: 'card' })
+    const req = { payload: { create, find } }
+    for (const source of ['admin', 'website']) {
+      const result = await validateAppointmentCustomer({
+        data: { ...data, source, purpose: 'buy', fittingFee: siteConfig.fittingFee },
+        operation: 'create', req,
+      } as never)
+      expect(result.customer).toBe('card')
+    }
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      data: { email: 'jane@example.test', name: 'Jane', phone: data.phone, orderStatus: 'none' }, req,
+    }))
   })
 
   it('requires each website follow-up to link a verified profile', async () => {

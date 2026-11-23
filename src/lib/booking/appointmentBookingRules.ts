@@ -1,3 +1,4 @@
+import { withAdminBookingWindow } from '@/config/booking'
 import { APIError, type RequestContext } from 'payload'
 
 import type { ResolvedBookingSettings } from '@/config/booking'
@@ -115,7 +116,10 @@ export function assertAppointmentScheduleRules({
     throw new APIError('A complete appointment slot is required.', 400)
   }
 
-  const slot = getAppointmentSlotDetails({ endAt, startAt }, settings, now)
+  const slotSettings = getAdminBookingRulesContext(context) || originalDoc?.source === 'admin'
+    ? withAdminBookingWindow(settings)
+    : settings
+  const slot = getAppointmentSlotDetails({ endAt, startAt }, slotSettings, now)
   if (!slot) {
     throw new APIError('Choose a future configured fitting time within the booking window.', 400)
   }

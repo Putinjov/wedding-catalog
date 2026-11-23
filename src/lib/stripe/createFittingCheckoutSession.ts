@@ -1,3 +1,4 @@
+import { withAdminBookingWindow } from '@/config/booking'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import type Stripe from 'stripe'
@@ -75,7 +76,7 @@ export async function createFittingCheckoutSession(
     }
   }
 
-  if (!isAppointmentSlotValid(appointment, settings, now)) {
+  if (!isAppointmentSlotValid(appointment, appointment.source === 'admin' ? withAdminBookingWindow(settings) : settings, now)) {
     return {
       message: 'This fitting time is no longer available. Please contact us for help.',
       status: 'unavailable',
@@ -94,7 +95,7 @@ export async function createFittingCheckoutSession(
     })
     if (customer.purchaseConfirmedAt) {
       return {
-        message: 'Online booking is unavailable after a confirmed purchase. Please call us for help.',
+        message: 'Online payment is unavailable for this booking. Please contact the boutique.',
         status: 'unavailable',
       }
     }
@@ -251,3 +252,4 @@ export async function createFittingCheckoutSession(
 
   return { status: 'redirect', url: session.url }
 }
+

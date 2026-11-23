@@ -1224,6 +1224,7 @@ export interface Customer {
   email: string;
   name: string;
   phone?: string | null;
+  notes?: string | null;
   /**
    * Internal manual order progress; this field alone does not change booking fees.
    */
@@ -2414,6 +2415,7 @@ export interface CustomersSelect<T extends boolean = true> {
   email?: T;
   name?: T;
   phone?: T;
+  notes?: T;
   orderStatus?: T;
   purchaseConfirmedAt?: T;
   orderReference?: T;

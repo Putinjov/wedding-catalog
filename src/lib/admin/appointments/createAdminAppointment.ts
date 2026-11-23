@@ -1,3 +1,4 @@
+import { withAdminBookingWindow } from '@/config/booking'
 import type { Payload, TypedUser } from 'payload'
 import { z } from 'zod'
 
@@ -67,7 +68,7 @@ export async function createAdminAppointment({
   user: TypedUser
   input: CreateAdminAppointmentInput
 }) {
-  const settings = await getBookingSettingsFromPayload(payload)
+  const settings = withAdminBookingWindow(await getBookingSettingsFromPayload(payload))
   const now = new Date()
   if (!isDateWithinBookingWindow(input.date, settings, now)) {
     throw new AdminAppointmentError(getBookingWindowLabel(settings))

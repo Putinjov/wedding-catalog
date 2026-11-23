@@ -225,7 +225,7 @@ export default function AppointmentScreen() {
   }
 
   const actions = getStatusActions(detail)
-  const maxDate = addDays(getDateKey(), settings?.bookingWindowDays ?? 60)
+  const maxDate = addDays(getDateKey(), Math.max(settings?.bookingWindowDays ?? 0, 184))
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

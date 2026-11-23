@@ -58,6 +58,11 @@ export type ResolvedBookingSettings = {
   weekdayHours: BookingHours
 }
 
+// 184 days covers any six consecutive calendar months.
+export function withAdminBookingWindow(settings: ResolvedBookingSettings): ResolvedBookingSettings {
+  return { ...settings, bookingWindowDays: Math.max(settings.bookingWindowDays, 184) }
+}
+
 export const defaultBookingSettings: ResolvedBookingSettings = {
   blockedIntervals: [],
   bookingWindowDays: 60,

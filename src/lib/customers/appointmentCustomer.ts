@@ -11,6 +11,27 @@ function getCustomerId(value: Appointment['customer']): string | null {
   return String(typeof value === 'object' ? value.id : value)
 }
 
+async function linkBookingContact(
+  data: Partial<Appointment>,
+  req: Parameters<CollectionBeforeChangeHook<Appointment>>[0]['req'],
+) {
+  if (!data.email || !data.customerName || !data.phone) {
+    throw new APIError('A name, email and phone are required.', 400)
+  }
+  const email = normalizeCustomerEmail(data.email)
+  const result = await req.payload.find({
+    collection: 'customers', where: { email: { equals: email } },
+    depth: 0, limit: 1, overrideAccess: true, req,
+  })
+  // Guest input must never overwrite an existing customer's contact details or staff notes.
+  const customer = result.docs[0] ?? await req.payload.create({
+    collection: 'customers',
+    data: { email, name: data.customerName, phone: data.phone, orderStatus: 'none' },
+    depth: 0, overrideAccess: true, req,
+  })
+  return { ...data, customer: customer.id }
+}
+
 export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment> = async ({
   data,
   operation,
@@ -25,7 +46,10 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
     if (data.fittingFee !== siteConfig.fittingFee) {
       throw new APIError('The fitting fee changed. Please review your booking again.', 409)
     }
-    return data
+    return linkBookingContact(data, req)
+  }
+  if (operation === 'create' && data.source === 'admin' && !customerId) {
+    return linkBookingContact(data, req)
   }
   if (!customerId) {
     if (operation === 'create' && data.source === 'website') {

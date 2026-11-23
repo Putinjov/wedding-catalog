@@ -1,6 +1,7 @@
+import { withAdminBookingWindow } from '@/config/booking'
 import type { PayloadRequest } from 'payload'
 
-import { getSlotDateTimes, parseDateKey } from '@/lib/booking/date'
+import { getSlotDateTimes, isDateWithinBookingWindow, parseDateKey } from '@/lib/booking/date'
 import { hasAppointmentSlotConflict } from '@/lib/booking/hasAppointmentSlotConflict'
 import { getNoticeEligibleSlotTimes } from '@/lib/booking/noticeRules'
 import { getBookingSettingsFromPayload } from '@/lib/booking/settings'
@@ -27,7 +28,10 @@ export async function getAvailableAppointmentSlots({
   req: PayloadRequest
 }): Promise<{ durationMinutes: number; slots: AvailableAdminSlot[]; timezone: string }> {
   if (!parseDateKey(date)) throw new AdminAppointmentError('Choose a valid fitting date.')
-  const settings = await getBookingSettingsFromPayload(req.payload, req)
+  const settings = withAdminBookingWindow(await getBookingSettingsFromPayload(req.payload, req))
+  if (!isDateWithinBookingWindow(date, settings)) {
+    return { durationMinutes: settings.durationMinutes, slots: [], timezone: settings.timezone }
+  }
   const candidates = getNoticeEligibleSlotTimes({
     allowNoticeOverride,
     dateKey: date,

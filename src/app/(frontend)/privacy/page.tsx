@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             sensitive personal information in the notes field.
           </p>
           <p>
-            Our staff may maintain a private customer profile to link verified visits and record
+            We create or link a private customer profile when you book, using your name, email and phone. Our staff can add notes and record
             whether a dress order is awaiting a deposit, awaiting the dress, ready for collection,
             or fulfilled. This profile is not a public account.
           </p>
