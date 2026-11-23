@@ -24,6 +24,7 @@ import { consumeRateLimits, ipRateLimitRule } from '@/lib/security/rateLimit'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 30
 
 // Accept outstanding links during the switch to codes; new links are no longer issued.
 const requestSchema = z.union([
@@ -104,3 +105,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Email verification is temporarily unavailable.' }, { headers: responseHeaders, status: 503 })
   }
 }
+
