@@ -31,6 +31,9 @@ export function getEmailAdapter(
         pass: environment.SMTP_PASSWORD,
         user: environment.SMTP_USER,
       },
+      connectionTimeout: 5_000,
+      greetingTimeout: 5_000,
+      socketTimeout: 10_000,
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
@@ -45,3 +48,4 @@ export function getEmailAddresses(environment: ServerEnvironment) {
     replyTo: environment.EMAIL_REPLY_TO ?? emailDeliveryDefaults.replyToAddress,
   }
 }
+
