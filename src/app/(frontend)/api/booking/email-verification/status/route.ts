@@ -9,6 +9,7 @@ import { getServerSideURL } from '@/utilities/getURL'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 30
 
 const responseHeaders = {
   'Cache-Control': 'private, no-store, max-age=0',
@@ -39,3 +40,4 @@ export async function POST(request: Request) {
     { headers: responseHeaders },
   )
 }
+

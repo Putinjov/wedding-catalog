@@ -12,6 +12,7 @@ export function getStripeClient(): Stripe {
     throw new Error('Stripe is not configured.')
   }
 
-  stripeClient = new Stripe(secretKey)
+  stripeClient = new Stripe(secretKey, { timeout: 6_000, maxNetworkRetries: 1 })
   return stripeClient
 }
+

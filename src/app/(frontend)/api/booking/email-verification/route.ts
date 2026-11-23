@@ -20,6 +20,7 @@ import { getServerSideURL } from '@/utilities/getURL'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 45
 
 const requestSchema = z.object({ email: z.email().max(254) })
 const responseHeaders = {
@@ -116,3 +117,4 @@ export async function POST(request: Request) {
     return response('Email verification is temporarily unavailable. Please try again later.', 503)
   }
 }
+

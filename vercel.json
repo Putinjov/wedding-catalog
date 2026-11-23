@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/app/(payload)/api/**/route.ts": { "maxDuration": 60 }
+  },
   "crons": [
     {
       "path": "/api/cron/expired-holds",
@@ -15,3 +18,4 @@
     }
   ]
 }
+

@@ -23,6 +23,7 @@ import {
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 const conflictNotice =
   'Stripe fitting payment received; appointment could not be safely confirmed. Admin review required.'
@@ -380,3 +381,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Webhook processing failed.' }, { status: 500 })
   }
 }
+
