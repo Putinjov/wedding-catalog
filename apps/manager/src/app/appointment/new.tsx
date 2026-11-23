@@ -150,7 +150,7 @@ export default function NewAppointmentScreen() {
   }
 
   const minDate = addDays(getDateKey(), 1)
-  const maxDate = addDays(getDateKey(), settings?.bookingWindowDays ?? 60)
+  const maxDate = addDays(getDateKey(), Math.max(settings?.bookingWindowDays ?? 0, 184))
 
   return (
     <KeyboardAvoidingView
