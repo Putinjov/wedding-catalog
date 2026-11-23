@@ -10,6 +10,7 @@ import {
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 const requestSchema = z.object({
   reference: z.string().regex(/^fit_[a-f0-9]{32}$/),
@@ -78,3 +79,4 @@ export async function POST(request: Request) {
     )
   }
 }
+
