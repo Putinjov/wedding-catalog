@@ -84,3 +84,8 @@ necessary accounting records, and check for open orders and newer visits. Review
 audit metadata, email deliveries, staff mailboxes and backups. Retaining a link that can identify
 the customer makes the remaining data pseudonymous. A write worker must recheck eligibility
 when it claims each record, resume safely after interruption and avoid triggering booking emails.
+
+
+### Cancelled bookings with a payment history
+
+Exclude paid, refunded and ambiguous payment records from the unpaid cancellation screen. Before erasure, reconcile with Stripe and keep the minimum evidence needed for a potential dispute, even before a dispute is opened. Review the applicable network window using the scheduled service date for advance bookings. The usual 120 days is not a universal deadline. An open inquiry or dispute suspends disposal of relevant evidence until resolution. Independently apply accounting retention to required financial records. See https://docs.stripe.com/disputes/how-disputes-work.
