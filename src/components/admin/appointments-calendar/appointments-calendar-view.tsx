@@ -1,3 +1,4 @@
+import { withAdminBookingWindow } from '@/config/booking'
 import { DefaultTemplate } from '@payloadcms/next/templates'
 import type { AdminViewServerProps } from 'payload'
 
@@ -64,7 +65,7 @@ export async function AppointmentsCalendarView(props: AdminViewServerProps) {
 
   return (
     <DefaultTemplate {...props} visibleEntities={props.initPageResult.visibleEntities}>
-      <AppointmentsCalendar dresses={dresses} initialError={initialError} settings={settings} />
+      <AppointmentsCalendar dresses={dresses} initialError={initialError} settings={withAdminBookingWindow(settings)} />
     </DefaultTemplate>
   )
 }
