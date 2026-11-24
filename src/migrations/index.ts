@@ -1,3 +1,4 @@
+import * as migration_20261124_220000_add_retention_cursor_index from './20261124_220000_add_retention_cursor_index'
 import * as migration_20260731_221500_split_dress_availability from './20260731_221500_split_dress_availability'
 import * as migration_20260731_224500_add_dress_business_validation from './20260731_224500_add_dress_business_validation'
 import * as migration_20260801_154500_add_catalogue_display_order from './20260801_154500_add_catalogue_display_order'
@@ -107,5 +108,10 @@ export const migrations = [
     up: migration_20261101_120000_add_follow_up_booking_purpose.up,
     down: migration_20261101_120000_add_follow_up_booking_purpose.down,
     name: '20261101_120000_add_follow_up_booking_purpose',
+  },
+  {
+    up: migration_20261124_220000_add_retention_cursor_index.up,
+    down: migration_20261124_220000_add_retention_cursor_index.down,
+    name: '20261124_220000_add_retention_cursor_index',
   },
 ]
