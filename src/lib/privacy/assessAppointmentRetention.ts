@@ -27,8 +27,6 @@ export function assessAppointmentRetention({
     if (!customer || customer.orderStatus !== 'none' || customer.purchaseConfirmedAt || customer.orderReference) {
       return { eligible: false, reason: 'customer' }
     }
-    // A profile can be used by other visits or marketing; clean-up requires a separate check.
-    return { eligible: false, reason: 'customer' }
   }
 
   if (appointment.status !== 'cancelled' && appointment.status !== 'expired') {
