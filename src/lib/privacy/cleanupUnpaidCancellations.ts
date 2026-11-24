@@ -45,9 +45,20 @@ export async function cleanupUnpaidCustomer({
         depth: 0, overrideAccess: true, req,
       })
     } else {
-      // Legacy unlinked bookings need independent identity reconciliation.
-      await payload.db.rollbackTransaction(transactionID)
-      return 'skipped'
+      const email = current.email.trim().toLowerCase()
+      const existing = await payload.count({
+        collection: 'customers', where: { email: { equals: email } }, overrideAccess: true, req,
+      })
+      if (existing.totalDocs) {
+        await payload.db.rollbackTransaction(transactionID)
+        return 'skipped'
+      }
+      // A temporary unique-email profile serializes this cleanup with a new guest booking.
+      customer = await payload.create({
+        collection: 'customers',
+        data: { email, name: current.customerName, phone: current.phone, orderStatus: 'none' },
+        depth: 0, overrideAccess: true, req,
+      })
     }
 
     const related = await payload.find({
