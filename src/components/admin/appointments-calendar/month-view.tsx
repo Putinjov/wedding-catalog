@@ -40,11 +40,12 @@ export function MonthView({
 
           return (
             <div
-              className={`month-view__day${outsideMonth ? ' is-outside-month' : ''}${dateKey === today ? ' is-today' : ''}`}
+              className={`month-view__day${outsideMonth ? ' is-outside-month' : ''}${dateKey === today ? ' is-today' : ''}${dateKey === selectedDate ? ' is-selected' : ''}`}
               key={dateKey}
             >
               <button
                 aria-label={`Open ${formatCalendarDate(dateKey, { dateStyle: 'full' })}, ${dayAppointments.length} appointments`}
+                aria-pressed={dateKey === selectedDate}
                 className="month-view__date"
                 onClick={() => onSelectDay(dateKey)}
                 type="button"
