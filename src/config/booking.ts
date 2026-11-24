@@ -40,6 +40,7 @@ export const verifiedBookingVisitDetails: BookingVisitDetails = {
 }
 
 export type ResolvedBookingSettings = {
+  dateHours?: BookingBlockedInterval[]
   blockedIntervals: BookingBlockedInterval[]
   bookingWindowDays: number
   bufferAfterMinutes: number
@@ -64,6 +65,7 @@ export function withAdminBookingWindow(settings: ResolvedBookingSettings): Resol
 }
 
 export const defaultBookingSettings: ResolvedBookingSettings = {
+  dateHours: [],
   blockedIntervals: [],
   bookingWindowDays: 60,
   bufferAfterMinutes: 0,
