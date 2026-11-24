@@ -1222,6 +1222,7 @@ export interface Customer {
    * Stable private identity key; changes require a reviewed account-linking workflow.
    */
   email: string;
+  retentionWriteToken?: string | null;
   name: string;
   phone?: string | null;
   notes?: string | null;
@@ -2418,6 +2419,7 @@ export interface DressesSelect<T extends boolean = true> {
  */
 export interface CustomersSelect<T extends boolean = true> {
   email?: T;
+  retentionWriteToken?: T;
   name?: T;
   phone?: T;
   notes?: T;
