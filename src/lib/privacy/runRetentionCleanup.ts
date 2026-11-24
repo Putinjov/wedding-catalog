@@ -60,7 +60,7 @@ export async function runRetentionCleanup(payload: Payload, now = new Date()) {
               { and: [{ status: { equals: 'expired' } }, { updatedAt: { less_than_equal: unpaidCutoff } }] },
               { and: [{ status: { equals: 'cancelled' } }, { or: [
                 { cancelledAt: { less_than_equal: cancelledCutoff } },
-                { and: [{ cancelledAt: { exists: false } }, { updatedAt: { less_than_equal: cancelledCutoff } }] },
+                { and: [{ cancelledAt: { equals: null } }, { updatedAt: { less_than_equal: cancelledCutoff } }] },
               ] }] },
               { and: [{ status: { equals: 'completed' } }, { endAt: { less_than_equal: completedCutoff.toISOString() } }] },
             ],
