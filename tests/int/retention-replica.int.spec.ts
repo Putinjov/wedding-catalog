@@ -43,9 +43,19 @@ integration('retention with MongoDB replica-set transactions', () => {
       currency: 'EUR', source: 'admin', startAt: oldDate, endAt: oldDate,
       createdAt: oldDate, updatedAt: oldDate,
     })
+    await payload.db.collections['appointment-audits'].collection.insertMany([
+      { appointment: appointmentID, action: 'created', actorType: 'system', timestamp: oldDate },
+      { appointment: appointmentID, action: 'cancelled', actorType: 'system', timestamp: oldDate },
+    ])
+    await payload.db.collections['email-deliveries'].collection.insertMany([
+      { appointment: appointmentID, event: 'cancelled', status: 'sent', trigger: 'automatic', attempts: 1, idempotencyKey: randomUUID(), createdAt: oldDate, updatedAt: oldDate },
+      { appointment: appointmentID, event: 'cancelled', status: 'sent', trigger: 'manual', attempts: 1, idempotencyKey: randomUUID(), createdAt: oldDate, updatedAt: oldDate },
+    ])
     expect(await cleanupUnpaidCustomer({ payload, appointmentId: String(appointmentID), now })).toBe('removed')
     expect(await payload.db.collections.customers.collection.countDocuments({ _id: profileID })).toBe(0)
     expect(await payload.db.collections.appointments.collection.countDocuments({ _id: appointmentID })).toBe(0)
+    expect(await payload.db.collections['appointment-audits'].collection.countDocuments({ appointment: appointmentID })).toBe(0)
+    expect(await payload.db.collections['email-deliveries'].collection.countDocuments({ appointment: appointmentID })).toBe(0)
   }, 60_000)
 
   it('preserves a customer and previous booking when a new booking commits concurrently', async () => {
