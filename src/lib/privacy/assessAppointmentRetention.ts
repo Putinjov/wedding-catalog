@@ -2,7 +2,7 @@ import { privacyRetention } from '@/config/privacy'
 import type { Appointment, Customer } from '@/payload-types'
 
 export type RetentionDecision =
-  | { eligible: true; reason: 'unpaid_cancelled' | 'unpaid_expired' }
+  | { eligible: true; reason: 'unpaid_cancelled' | 'unpaid_expired' | 'unpaid_completed' }
   | { eligible: false; reason: 'active' | 'recent' | 'payment' | 'review' | 'marketing' | 'customer' | 'invalid_date' }
 
 export function assessAppointmentRetention({
@@ -29,15 +29,26 @@ export function assessAppointmentRetention({
     }
   }
 
-  if (appointment.status !== 'cancelled' && appointment.status !== 'expired') {
+  if (appointment.status !== 'cancelled' && appointment.status !== 'expired' && appointment.status !== 'completed') {
     return { eligible: false, reason: 'active' }
   }
-  const anchor = appointment.status === 'cancelled'
+  const anchor = appointment.status === 'completed' ? appointment.endAt : appointment.status === 'cancelled'
     ? appointment.cancelledAt ?? appointment.updatedAt
     : appointment.updatedAt
   const timestamp = Date.parse(anchor)
   if (!Number.isFinite(timestamp) || !Number.isFinite(now.getTime())) {
     return { eligible: false, reason: 'invalid_date' }
+  }
+  if (appointment.status === 'completed') {
+    const cutoff = new Date(now)
+    const day = cutoff.getUTCDate()
+    cutoff.setUTCDate(1)
+    cutoff.setUTCMonth(cutoff.getUTCMonth() - privacyRetention.completedOperationalMonths)
+    const lastDay = new Date(Date.UTC(cutoff.getUTCFullYear(), cutoff.getUTCMonth() + 1, 0)).getUTCDate()
+    cutoff.setUTCDate(Math.min(day, lastDay))
+    return timestamp <= cutoff.getTime()
+      ? { eligible: true, reason: 'unpaid_completed' }
+      : { eligible: false, reason: 'recent' }
   }
   const days = appointment.status === 'cancelled'
     ? privacyRetention.cancelledUnpaidDays
