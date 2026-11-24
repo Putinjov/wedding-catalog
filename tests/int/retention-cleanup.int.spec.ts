@@ -17,7 +17,16 @@ const appointment = {
 function fixture(bookings: object[] = [appointment]) {
   const db = { beginTransaction: vi.fn(async () => 'tx'), commitTransaction: vi.fn(), rollbackTransaction: vi.fn() }
   const findByID = vi.fn(async ({ collection }: { collection: string }) => collection === 'customers' ? customer : appointment)
-  const find = vi.fn(async () => ({ docs: bookings, totalDocs: bookings.length }))
+  const remaining = new Map([
+    ['email-deliveries', [{ id: 'delivery-1' }]],
+    ['appointment-audits', [{ id: 'audit-1' }]],
+  ])
+  const find = vi.fn(async ({ collection }: { collection: string }) => {
+    if (collection === 'appointments') return { docs: bookings, totalDocs: bookings.length }
+    const docs = remaining.get(collection) ?? []
+    remaining.set(collection, [])
+    return { docs, totalDocs: docs.length }
+  })
   const update = vi.fn(async () => customer)
   const remove = vi.fn(async (_args: unknown) => ({}))
   return { db, findByID, find, update, delete: remove }
