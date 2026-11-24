@@ -1316,10 +1316,10 @@ export interface Appointment {
     | 'payment_received_conflict'
     | 'refunded'
     | 'partially_refunded';
+  cancelledAt?: string | null;
   /**
    * Online payment covers the private fitting fee only; any dress purchase or rental is arranged in store.
    */
-  cancelledAt?: string | null;
   paymentStatus: 'unpaid' | 'processing' | 'paid' | 'failed' | 'refunded' | 'partially_refunded';
   /**
    * Read-only Stripe Checkout Session used for the fitting fee.
