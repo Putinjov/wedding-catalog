@@ -54,9 +54,6 @@ export async function runRetentionCleanup(payload: Payload, now = new Date()) {
           { paymentStatus: { in: ['unpaid', 'failed'] } },
           { needsAdminReview: { not_equals: true } },
           { retentionHold: { not_equals: true } },
-          { stripeCheckoutSessionId: { exists: false } },
-          { stripePaymentIntentId: { exists: false } },
-          { stripeRefundId: { exists: false } },
           { marketingConsentStatus: { not_equals: 'granted' } },
           {
             or: [
