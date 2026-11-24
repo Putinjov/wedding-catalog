@@ -11,6 +11,7 @@ import { validateBookingSettings } from '@/lib/booking/settings'
 
 import { changeBlockedIntervalsEndpoint } from './blockedIntervals'
 import { changeClosuresEndpoint } from './closures'
+import { changeDateHoursEndpoint } from './dateHours'
 
 import { revalidateBookingSettings } from './hooks/revalidateBookingSettings'
 
@@ -70,7 +71,7 @@ function validateMapUrl(value: null | string | undefined): true | string {
 export const BookingSettings: GlobalConfig = {
   slug: 'booking-settings',
   label: 'Booking settings',
-  endpoints: [changeClosuresEndpoint, changeBlockedIntervalsEndpoint],
+  endpoints: [changeClosuresEndpoint, changeBlockedIntervalsEndpoint, changeDateHoursEndpoint],
   access: {
     read: () => true,
     update: ownerOrManager,
@@ -221,6 +222,12 @@ export const BookingSettings: GlobalConfig = {
       type: 'array',
       maxRows: 100,
       fields: [dateField('startDate', 'Start date'), dateField('endDate', 'End date')],
+    },
+    {
+      name: 'dateHours',
+      type: 'array',
+      maxRows: 250,
+      fields: [dateField('date', 'Date'), timeField('start', 'Opening time'), timeField('end', 'Closing time')],
     },
     {
       name: 'blockedIntervals',

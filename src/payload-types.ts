@@ -2963,6 +2963,14 @@ export interface BookingSetting {
         id?: string | null;
       }[]
     | null;
+  dateHours?:
+    | {
+        date: string;
+        start: string;
+        end: string;
+        id?: string | null;
+      }[]
+    | null;
   blockedIntervals?:
     | {
         date: string;
@@ -3089,6 +3097,14 @@ export interface BookingSettingsSelect<T extends boolean = true> {
     | {
         startDate?: T;
         endDate?: T;
+        id?: T;
+      };
+  dateHours?:
+    | T
+    | {
+        date?: T;
+        start?: T;
+        end?: T;
         id?: T;
       };
   blockedIntervals?:

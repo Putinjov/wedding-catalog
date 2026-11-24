@@ -264,6 +264,17 @@ export function resolveBookingSettings(value: unknown): ResolvedBookingSettings 
       : readTime(nextDayCutoff, 'nextDayCutoffTime')
 
   const settings: ResolvedBookingSettings = {
+    dateHours: readArray(record.dateHours, 'dateHours', 250).map((entry, index) => {
+      const item = asRecord(entry)
+      if (!item) throw new Error(`dateHours.${index} is invalid.`)
+      const date = readDate(item.date, `dateHours.${index}.date`)
+      const start = readTime(item.start, `dateHours.${index}.start`)
+      const end = readTime(item.end, `dateHours.${index}.end`)
+      if (timeToMinutes(end) - timeToMinutes(start) < durationMinutes) {
+        throw new Error('Custom opening hours must contain at least one complete fitting slot.')
+      }
+      return { date, start, end }
+    }),
     blockedIntervals: readBlockedIntervals(record.blockedIntervals),
     bookingWindowDays: readInteger(record, 'bookingWindowDays', 60, 1, 365),
     bufferAfterMinutes: readInteger(record, 'bufferAfterMinutes', 0, 0, 180),
@@ -296,6 +307,9 @@ export function resolveBookingSettings(value: unknown): ResolvedBookingSettings 
   }
   if (new Set(settings.holidays).size !== settings.holidays.length) {
     throw new Error('holidays cannot contain duplicate dates.')
+  }
+  if (new Set(settings.dateHours?.map((item) => item.date)).size !== settings.dateHours?.length) {
+    throw new Error('dateHours cannot contain duplicate dates.')
   }
   assertBreaksFitOpeningHours(settings)
   return settings

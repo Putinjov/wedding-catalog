@@ -3,10 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ResolvedBookingSettings } from '@/config/booking'
-import { getConfiguredSlotTimes, isClosedDate, isValidSlotTime } from '@/lib/booking/date'
+import { getConfiguredSlotTimes, getOpeningHours, isClosedDate, isValidSlotTime } from '@/lib/booking/date'
 
 export function AvailabilityControls({ date, settings }: { date: string; settings: ResolvedBookingSettings }) {
   const router = useRouter()
+  const hours = getOpeningHours(date, settings) ?? settings.weekdayHours
+  const [opening, setOpening] = useState(hours.start)
+  const [closing, setClosing] = useState(hours.end)
+  const customHours = settings.dateHours?.find(item => item.date === date)
   const [start, setStart] = useState('10:00')
   const [end, setEnd] = useState('11:00')
   const [busy, setBusy] = useState(false)
@@ -43,15 +47,43 @@ export function AvailabilityControls({ date, settings }: { date: string; setting
     }
   }
 
+  async function saveHours(mode: 'custom' | 'default') {
+    setBusy(true)
+    setMessage('')
+    try {
+      const response = await fetch('/api/globals/booking-settings/date-hours', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, mode, start: opening, end: closing }),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.message ?? 'Unable to change opening hours.')
+      setMessage('Opening hours updated. Existing appointments remain unchanged.')
+      router.refresh()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to change opening hours.')
+    } finally { setBusy(false) }
+  }
+
   return (
     <section className="manager-availability" aria-label="Manage booking availability">
       <h2>Manage availability</h2>
       <p>{date} · {isClosedDate(date, settings) ? 'Closed day' : 'Open day'} · Europe/Dublin</p>
-      <p>Changes affect new bookings only. Existing appointments remain in place. Reopening a period does not override regular opening hours, breaks or other booking rules.</p>
+      <p>Changes affect new bookings only. Existing appointments remain in place. Custom hours replace the weekly schedule for this date. Breaks, blocked intervals and other booking rules still apply.</p>
       <div className="manager-availability__actions">
         <button type="button" className="calendar-button" disabled={busy || exceptional} onClick={() => void change('closures', true)}>Close day</button>
         <button type="button" className="calendar-button" disabled={busy || !exceptional} onClick={() => void change('closures', false)}>Remove day closure</button>
       </div>
+      <details>
+        <summary>{customHours ? `Custom opening hours: ${customHours.start}–${customHours.end}` : 'Set custom opening hours'}</summary>
+        <p>Saving custom hours opens this date even on a regular day off, and removes any explicit day closure. Existing bookings are not cancelled.</p>
+        <div className="manager-availability__actions">
+          <label>Opening <input type="time" value={opening} onChange={event => setOpening(event.target.value)} /></label>
+          <label>Closing <input type="time" value={closing} onChange={event => setClosing(event.target.value)} /></label>
+          <button type="button" className="calendar-button" disabled={busy || !opening || !closing || opening >= closing} onClick={() => void saveHours('custom')}>Save hours &amp; open day</button>
+          {customHours && <button type="button" className="calendar-button" disabled={busy} onClick={() => void saveHours('default')}>Restore regular hours</button>}
+        </div>
+      </details>
       {!isClosedDate(date, settings) && <div className="manager-slot-controls">{configured.map((time) => {
         const until = slotEnd(time)
         const available = isValidSlotTime(date, time, settings)
