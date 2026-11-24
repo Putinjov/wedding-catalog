@@ -48,3 +48,9 @@
   .manager-workspace .month-view__events { display: none; }
   .manager-workspace .month-view__date small { font-size: 8px; }
 }
+
+.month-view__count { display: none; }
+@media (max-width: 768px) {
+  .manager-workspace .month-view__count { display: block; text-align: center; font-size: 11px; color: #80674e; font-weight: 700; }
+  .manager-workspace .calendar-segmented button[aria-pressed] { flex: 1; }
+}
