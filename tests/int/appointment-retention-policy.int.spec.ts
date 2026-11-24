@@ -16,7 +16,7 @@ describe('retention eligibility', () => {
     expect(assessAppointmentRetention({ appointment: { ...appointment, cancelledAt: '2030-05-03T12:00:01Z' }, now }).eligible).toBe(false)
   })
   it('protects payment and dispute evidence including failed or abandoned Stripe sessions', () => {
-    for (const fields of [{ stripeCheckoutSessionId: 'cs' }, { stripePaymentIntentId: 'pi' }, { amountPaid: 0 }, { paymentStatus: 'refunded' as const }, { needsAdminReview: true }]) {
+    for (const fields of [{ stripeCheckoutSessionId: 'cs' }, { stripePaymentIntentId: 'pi' }, { amountPaid: 0 }, { paymentStatus: 'refunded' as const }, { needsAdminReview: true }, { retentionHold: true }]) {
       expect(assessAppointmentRetention({ appointment: { ...appointment, ...fields }, now }).eligible).toBe(false)
     }
   })
