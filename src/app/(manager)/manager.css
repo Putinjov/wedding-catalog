@@ -154,3 +154,14 @@
 .manager-search { display:grid; gap:6px; }
 .manager-search input { font:inherit; border:1px solid #e6e1d9; background:#fff; border-radius:10px; padding:12px; width:100%; }
 @media(max-width:768px) { .manager-section { padding:14px; gap:12px; } .manager-metrics .manager-panel { padding:10px; } .manager-section h1 { font-size:26px; } }
+
+.manager-dresses-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+.manager-dress-card { display:grid; gap:5px; text-decoration:none; color:inherit; }
+.manager-dress-card small { color:#756e66; }
+.manager-pagination { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.manager-editor { display:grid; gap:12px; }
+.manager-editor label { display:grid; gap:4px; }
+.manager-editor input:not([type=checkbox]),.manager-editor select,.manager-editor textarea { width:100%; min-width:0; font:inherit; padding:10px; border:1px solid #e6e1d9; border-radius:8px; background:#fff; }
+.manager-editor textarea { min-height:90px; }
+.manager-section button { cursor:pointer; }
+.manager-section button:disabled { opacity:.5; cursor:not-allowed; }
