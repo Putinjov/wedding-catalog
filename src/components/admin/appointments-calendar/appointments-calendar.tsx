@@ -12,6 +12,7 @@ import {
 import { addCalendarDays, getDateKey } from '@/lib/booking/date'
 import type { ResolvedBookingSettings } from '@/config/booking'
 
+import { AvailabilityControls } from './availability-controls'
 import { AppointmentDrawer } from './appointment-drawer'
 import { CalendarEmptyState } from './calendar-empty-state'
 import { CalendarFilters, initialCalendarFilters } from './calendar-filters'
@@ -43,9 +44,11 @@ function addCalendarMonths(dateKey: string, months: number): string {
 
 export function AppointmentsCalendar({
   dresses,
+  canManageAvailability = false,
   initialError = '',
   settings,
 }: {
+  canManageAvailability?: boolean
   dresses: ManualAppointmentDress[]
   initialError?: string
   settings: ResolvedBookingSettings
@@ -163,6 +166,7 @@ export function AppointmentsCalendar({
         onViewChange={setView}
         view={activeView}
       />
+      {managerWorkspace && canManageAvailability && activeView === 'day' ? <AvailabilityControls key={date} date={date} settings={settings} /> : null}
       <CalendarFilters filters={filters} onChange={setFilters} />
       <CalendarSummary appointments={filtered} />
       {error ? <p className="calendar-message calendar-message--error" role="alert">{error}</p> : null}
