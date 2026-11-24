@@ -70,8 +70,9 @@ export default function PrivacyPage() {
               {privacyRetention.abandonedUnpaidDays} days after the last activity or failed payment.
             </li>
             <li>
-              Cancelled appointments: up to {privacyRetention.cancelledMonths} months after the
-              later of cancellation or the scheduled appointment.
+              Cancelled bookings with no payment: up to {privacyRetention.cancelledUnpaidDays} days after
+              cancellation. Where a payment was made, the information needed for a potential
+              dispute and accounting may be kept longer, as described below.
             </li>
             <li>
               Full operational records for completed appointments: up to{' '}
