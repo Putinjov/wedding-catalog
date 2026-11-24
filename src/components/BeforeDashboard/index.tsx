@@ -12,10 +12,10 @@ const BeforeDashboard: React.FC<{ user?: unknown }> = ({ user }) => {
   const today = getDateKey()
   const shortcuts = [
     {
-      description: 'Open the primary month or week schedule.',
-      href: '/admin/appointments-calendar',
+      description: 'Open the dedicated salon management calendar.',
+      href: '/manager',
       icon: CalendarDays,
-      label: 'Calendar',
+      label: 'Manager workspace',
     },
     {
       description: 'Add a phone, walk-in or staff-created booking.',
