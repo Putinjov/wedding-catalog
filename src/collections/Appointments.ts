@@ -510,6 +510,13 @@ export const Appointments: CollectionConfig = {
       })),
     },
     {
+      name: 'retentionHold',
+      type: 'checkbox',
+      defaultValue: false,
+      access: { create: ownerOrManager, update: ownerOrManager },
+      admin: { position: 'sidebar', description: 'Preserve this record while a dispute or other documented reason requires it.' },
+    },
+    {
       name: 'cancelledAt',
       type: 'date',
       access: { create: () => false, update: () => false },
