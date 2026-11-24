@@ -14,7 +14,7 @@ export function assessAppointmentRetention({
   customer?: Customer | null
   now?: Date
 }): RetentionDecision {
-  if (appointment.needsAdminReview) return { eligible: false, reason: 'review' }
+  if (appointment.retentionHold || appointment.needsAdminReview) return { eligible: false, reason: 'review' }
   if (appointment.marketingConsentStatus === 'granted') return { eligible: false, reason: 'marketing' }
   if (
     appointment.paymentStatus !== 'unpaid' && appointment.paymentStatus !== 'failed' ||
