@@ -28,9 +28,14 @@ async function previewRetention() {
         paymentStatus: { in: ['unpaid', 'failed'] },
         paidAt: { exists: false },
         stripePaymentIntentId: { exists: false },
+        stripeCheckoutSessionId: { exists: false },
+        stripeRefundId: { exists: false },
         amountPaid: { exists: false },
         status: { equals: 'cancelled' },
-        updatedAt: { less_than_equal: cancelledCutoff },
+        or: [
+          { cancelledAt: { less_than_equal: cancelledCutoff } },
+          { and: [{ cancelledAt: { exists: false } }, { updatedAt: { less_than_equal: cancelledCutoff } }] },
+        ],
       },
       completed: {
         status: { equals: 'completed' },
