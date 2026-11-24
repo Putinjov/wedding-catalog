@@ -165,3 +165,11 @@
 .manager-editor textarea { min-height:90px; }
 .manager-section button { cursor:pointer; }
 .manager-section button:disabled { opacity:.5; cursor:not-allowed; }
+
+.manager-choice-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:8px; }
+.manager-choice-grid label { display:flex; align-items:center; gap:6px; }
+.manager-photo { object-fit:cover; border-radius:8px; max-width:100%; }
+.manager-gallery-row { display:grid; grid-template-columns:90px minmax(0,1fr); gap:10px; padding:8px 0; border-bottom:1px solid #eee9e3; }
+.manager-gallery-row .manager-pagination { grid-column:1/-1; }
+.manager-media-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:8px; }
+.manager-media-grid button { display:grid; justify-items:center; gap:4px; border:1px solid #eee9e3; background:white; border-radius:8px; padding:6px; min-width:0; overflow-wrap:anywhere; }
