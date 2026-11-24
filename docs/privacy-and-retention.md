@@ -25,13 +25,13 @@ remove a snapshot referenced by an appointment.
 | Category | Retention |
 | --- | --- |
 | Expired or abandoned unpaid booking with no service | 30 days after last activity or failed payment |
-| Cancelled appointment | 12 months after the later of cancellation or scheduled appointment |
+| Cancelled booking with no payment | 30 days after cancellation |
 | Completed appointment, full operational record | 24 months after the appointment |
 | Minimal completed-booking contract or claims record | 6 years |
 | Payment, invoice, refund, dispute and accounting record | 6 years after the relevant financial or tax year |
 | Active email-marketing consent | Until withdrawal or the marketing programme ends |
 
-After 12 or 24 months, as applicable, remove contact details, free-form notes and unnecessary
+After 30 days or 24 months, as applicable, remove contact details, free-form notes and unnecessary
 operational fields. A six-year minimal record may retain only justified data such as customer name,
 service/date/amount, invoice reference, and required Stripe payment/refund/dispute identifiers.
 
@@ -75,7 +75,7 @@ Pages, posts, categories, generated search records, forms, submissions and redir
 application dependencies. Removing a collection requires reviewing its content and references first.
 
 The three appointment counts are age screens, not authorisation to erase. Cancelled bookings
-use the later of the scheduled end and last update as a conservative proxy for cancellation.
+use the last update as a conservative proxy until cancellation timestamps are available.
 Unresolved review cases are excluded. Other lifecycle states, including no-shows, need a separate
 policy decision. The preview does not change appointments or customer profiles.
 
