@@ -17,7 +17,7 @@ async function previewRetention() {
   try {
     const now = new Date()
     const unpaidCutoff = new Date(now.getTime() - privacyRetention.abandonedUnpaidDays * 86_400_000).toISOString()
-    const cancelledCutoff = monthsBefore(now, privacyRetention.cancelledMonths)
+    const cancelledCutoff = new Date(now.getTime() - privacyRetention.cancelledUnpaidDays * 86_400_000).toISOString()
     const screens: Record<string, Where> = {
       expiredUnpaid: {
         status: { equals: 'expired' },
@@ -30,7 +30,6 @@ async function previewRetention() {
         stripePaymentIntentId: { exists: false },
         amountPaid: { exists: false },
         status: { equals: 'cancelled' },
-        endAt: { less_than_equal: cancelledCutoff },
         updatedAt: { less_than_equal: cancelledCutoff },
       },
       completed: {
