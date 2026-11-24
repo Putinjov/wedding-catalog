@@ -14,7 +14,7 @@ function fixture() {
 }
 
 describe('retention runner', () => {
-  beforeEach(() => mocks.cleanup.mockReset())
+  beforeEach(() => { mocks.cleanup.mockReset() })
 
   it('retries a transient transaction conflict and completes', async () => {
     const payload = fixture()
