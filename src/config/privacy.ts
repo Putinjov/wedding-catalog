@@ -34,6 +34,7 @@ export const currentPrivacyPolicy = privacyPolicySnapshots.at(-1)!
 export const privacyRetention = {
   abandonedUnpaidDays: 30,
   backupMaximumDays: 35,
+  cancelledUnpaidDays: 30,
   cancelledMonths: 12,
   completedOperationalMonths: 24,
   minimumLegalRecordYears: 6,
