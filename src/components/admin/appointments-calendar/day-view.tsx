@@ -1,6 +1,6 @@
 import { formatCalendarDate } from '@/lib/admin/appointments/calendarDate'
 import type { CalendarAppointment } from '@/lib/admin/appointments/calendarTypes'
-import { formatTimeInputValue, getConfiguredSlotTimes, getDateKey, isClosedDate } from '@/lib/booking/date'
+import { formatTimeInputValue, getConfiguredSlotTimes, getDateKey, isClosedDate, isValidSlotTime } from '@/lib/booking/date'
 
 import { AppointmentCard } from './appointment-card'
 import type { ResolvedBookingSettings } from '@/config/booking'
@@ -23,17 +23,19 @@ export function DayView({
     (appointment) => getDateKey(new Date(appointment.startAt)) === dateKey,
   )
 
+  const closed = isClosedDate(dateKey, settings)
+  const configured = getConfiguredSlotTimes({ ...settings, blockedIntervals: [] }, dateKey)
+  const times = [...new Set([...configured, ...dayAppointments.map((appointment) => formatTimeInputValue(appointment.startAt))])].filter(Boolean).sort()
+
   return (
     <section className="day-view" aria-label="Daily appointment schedule">
       <header>
         <div><span>Day schedule</span><h2>{formatCalendarDate(dateKey, { dateStyle: 'full' })}</h2></div>
         {isClosedDate(dateKey, settings) ? <strong className="day-view__closed">Closed</strong> : null}
       </header>
-      {isClosedDate(dateKey, settings) ? (
-        <p className="calendar-empty">The boutique is closed. No fitting slots are available.</p>
-      ) : (
+      {closed ? <p className="calendar-empty">The boutique is closed to new bookings. Existing appointments are shown below.</p> : null}
         <ol className="day-view__slots">
-          {getConfiguredSlotTimes(settings, dateKey).map((time) => {
+          {times.map((time) => {
             const atTime = dayAppointments.filter(
               (appointment) => formatTimeInputValue(appointment.startAt) === time,
             )
@@ -43,7 +45,7 @@ export function DayView({
               <li className={active.length > 0 ? 'is-occupied' : 'is-free'} key={time}>
                 <time>{time}</time>
                 <div>
-                  <span className="day-view__slot-state">{active.length > 0 ? 'Occupied' : 'Free'}</span>
+                  <span className="day-view__slot-state">{active.length > 0 ? 'Occupied' : isValidSlotTime(dateKey, time, settings) ? 'Free' : 'Blocked'}</span>
                   {visible.map((appointment) => (
                     <AppointmentCard
                       appointment={appointment}
@@ -59,7 +61,6 @@ export function DayView({
             )
           })}
         </ol>
-      )}
     </section>
   )
 }

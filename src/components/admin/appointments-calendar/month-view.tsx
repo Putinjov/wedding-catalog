@@ -38,21 +38,30 @@ export function MonthView({
           )
           const outsideMonth = !dateKey.startsWith(selectedMonth)
 
+          const closed = isClosedDate(dateKey, settings)
+          const dots = dayAppointments.slice(0, 3)
+
           return (
             <div
-              className={`month-view__day${outsideMonth ? ' is-outside-month' : ''}${dateKey === today ? ' is-today' : ''}`}
+              className={`month-view__day${outsideMonth ? ' is-outside-month' : ''}${dateKey === today ? ' is-today' : ''}${dateKey === selectedDate ? ' is-selected' : ''}${closed ? ' is-closed' : ''}`}
               key={dateKey}
             >
               <button
-                aria-label={`Open ${formatCalendarDate(dateKey, { dateStyle: 'full' })}`}
+                aria-label={`Open ${formatCalendarDate(dateKey, { dateStyle: 'full' })}, ${dayAppointments.length} appointments${closed ? ', closed' : ''}`}
+                aria-pressed={dateKey === selectedDate}
                 className="month-view__date"
                 onClick={() => onSelectDay(dateKey)}
                 type="button"
               >
                 <span>{formatCalendarDate(dateKey, { day: 'numeric' })}</span>
                 {dateKey === today ? <small>Today</small> : null}
-                {isClosedDate(dateKey, settings) ? <small>Closed</small> : null}
+                {closed ? <small>Closed</small> : null}
               </button>
+              <div className="month-view__indicators" aria-hidden="true">
+                {dots.map((appointment) => <span key={appointment.id} className={`month-view__dot is-${appointment.status}`} />)}
+                {dayAppointments.length > 3 && <span className="month-view__extra">+{dayAppointments.length - 3}</span>}
+                {closed && <span className="month-view__closure-mark" />}
+              </div>
               <div className="month-view__events">
                 {dayAppointments.map((appointment) => (
                   <AppointmentCard

@@ -1,5 +1,6 @@
 'use client'
 
+import { ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 
@@ -12,6 +13,7 @@ import {
 import { addCalendarDays, getDateKey } from '@/lib/booking/date'
 import type { ResolvedBookingSettings } from '@/config/booking'
 
+import { AvailabilityControls } from './availability-controls'
 import { AppointmentDrawer } from './appointment-drawer'
 import { CalendarEmptyState } from './calendar-empty-state'
 import { CalendarFilters, initialCalendarFilters } from './calendar-filters'
@@ -43,9 +45,11 @@ function addCalendarMonths(dateKey: string, months: number): string {
 
 export function AppointmentsCalendar({
   dresses,
+  canManageAvailability = false,
   initialError = '',
   settings,
 }: {
+  canManageAvailability?: boolean
   dresses: ManualAppointmentDress[]
   initialError?: string
   settings: ResolvedBookingSettings
@@ -53,6 +57,7 @@ export function AppointmentsCalendar({
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const managerWorkspace = pathname === '/manager'
   const requestedDate = searchParams.get('date')
   const requestedView = searchParams.get('view')
   const [date, setDate] = useState(() =>
@@ -61,12 +66,13 @@ export function AppointmentsCalendar({
   const [view, setView] = useState<CalendarViewMode>(() =>
     requestedView === 'month' || requestedView === 'week' || requestedView === 'day'
       ? requestedView
-      : 'week',
+      : managerWorkspace ? 'month' : 'week',
   )
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [filters, setFilters] = useState(initialCalendarFilters)
   const [selectedID, setSelectedID] = useState<string | null>(null)
-  const [newOpen, setNewOpen] = useState(() => searchParams.get('new') === '1')
+  const newOpen = searchParams.get('new') === '1'
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(initialError)
   const [filterNow] = useState(() => Date.now())
@@ -75,7 +81,7 @@ export function AppointmentsCalendar({
     getNarrowViewportSnapshot,
     () => false,
   )
-  const activeView: CalendarViewMode = isNarrow ? 'day' : view
+  const activeView: CalendarViewMode = managerWorkspace ? 'month' : isNarrow ? 'day' : view
   const range = useMemo(() => getVisibleRange(date, activeView), [activeView, date])
 
   const loadAppointments = useCallback(
@@ -133,11 +139,10 @@ export function AppointmentsCalendar({
 
   function selectDay(day: string) {
     setDate(day)
-    setView('day')
+    if (!managerWorkspace) setView('day')
   }
 
   function setNewAppointmentOpen(open: boolean) {
-    setNewOpen(open)
     const params = new URLSearchParams(searchParams.toString())
     if (open) params.set('new', '1')
     else params.delete('new')
@@ -146,14 +151,21 @@ export function AppointmentsCalendar({
 
   return (
     <main className="appointments-calendar">
-      <header className="appointments-calendar__header">
+      {!managerWorkspace && <header className="appointments-calendar__header">
         <div>
           <span className="appointments-calendar__eyebrow">Appointments</span>
           <h1>Appointments calendar</h1>
           <p>Times shown in {settings.timezone}. Payment and booking states are managed separately.</p>
         </div>
-      </header>
-      <CalendarToolbar
+      </header>}
+      {managerWorkspace ? <div className="manager-calendar-toolbar">
+        <button type="button" aria-label="Previous month" onClick={() => navigate(-1)}><ChevronLeft /></button>
+        <h1>{new Intl.DateTimeFormat('en-IE', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T12:00:00Z'))}</h1>
+        <button type="button" aria-label="Next month" onClick={() => navigate(1)}><ChevronRight /></button>
+        <button type="button" onClick={() => setDate(getDateKey())}>Today</button>
+        <button type="button" aria-label="Filters" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}><SlidersHorizontal /></button>
+        <button type="button" aria-label="New appointment" onClick={() => setNewAppointmentOpen(true)}><Plus /></button>
+      </div> : <CalendarToolbar
         date={date}
         onDateChange={setDate}
         onNavigate={navigate}
@@ -161,12 +173,12 @@ export function AppointmentsCalendar({
         onToday={() => setDate(getDateKey())}
         onViewChange={setView}
         view={activeView}
-      />
-      <CalendarFilters filters={filters} onChange={setFilters} />
-      <CalendarSummary appointments={filtered} />
+      />}
+      {(!managerWorkspace || filtersOpen) && <CalendarFilters filters={filters} onChange={setFilters} />}
+      {!managerWorkspace && <CalendarSummary appointments={filtered} />}
       {error ? <p className="calendar-message calendar-message--error" role="alert">{error}</p> : null}
       {loading ? <p className="calendar-loading" role="status">Loading appointments…</p> : null}
-      {!loading && !error && filtered.length === 0 ? <CalendarEmptyState /> : null}
+      {!managerWorkspace && !loading && !error && filtered.length === 0 ? <CalendarEmptyState /> : null}
       {!loading ? (
         <div className="appointments-calendar__grid-root">
           {activeView === 'month' ? (
@@ -197,6 +209,8 @@ export function AppointmentsCalendar({
           )}
         </div>
       ) : null}
+      {managerWorkspace && !loading && !error && activeView !== 'day' && <DayView allAppointments={appointments} appointments={filtered} dateKey={date} onOpen={setSelectedID} settings={settings} />}
+      {managerWorkspace && canManageAvailability && <AvailabilityControls key={date} date={date} settings={settings} />}
       {selectedID ? (
         <AppointmentDrawer
           appointmentId={selectedID}
