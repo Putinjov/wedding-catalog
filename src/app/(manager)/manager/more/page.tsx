@@ -13,6 +13,7 @@ export default async function MorePage() {
     <section className="manager-panel"><h2>Salon operations</h2>
       <Link className="manager-action" href="/manager">Calendar &amp; availability</Link>
       <Link className="manager-action" href="/manager/clients">Clients</Link>
+      {(role === 'owner' || role === 'manager') && <Link className="manager-action" href="/manager/dresses">Dress catalogue</Link>}
       <Link className="manager-action" href="/manager?new=1">New appointment</Link>
     </section>
     {role === 'owner' && <section className="manager-panel"><h2>Technical administration</h2><Link className="manager-action" href="/admin">Payload Admin</Link></section>}
