@@ -35,7 +35,7 @@ async function previewRetention() {
         status: { equals: 'cancelled' },
         or: [
           { cancelledAt: { less_than_equal: cancelledCutoff } },
-          { and: [{ cancelledAt: { exists: false } }, { updatedAt: { less_than_equal: cancelledCutoff } }] },
+          { and: [{ cancelledAt: { equals: null } }, { updatedAt: { less_than_equal: cancelledCutoff } }] },
         ],
       },
       completed: {
