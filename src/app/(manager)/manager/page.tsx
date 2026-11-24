@@ -34,5 +34,5 @@ export default async function ManagerPage() {
     initialError = 'Dress options could not be loaded.'
   }
 
-  return <AppointmentsCalendar dresses={dresses} initialError={initialError} settings={withAdminBookingWindow(settings)} />
+  return <AppointmentsCalendar canManageAvailability={hasRole(user, ['owner', 'manager'])} dresses={dresses} initialError={initialError} settings={withAdminBookingWindow(settings)} />
 }
