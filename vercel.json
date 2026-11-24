@@ -1,7 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "src/app/(payload)/api/**/route.ts": { "maxDuration": 60 }
+    "src/app/(payload)/api/**/route.ts": {
+      "maxDuration": 60
+    }
   },
   "crons": [
     {
@@ -15,7 +17,10 @@
     {
       "path": "/api/cron/appointment-reminders",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/privacy-retention",
+      "schedule": "31 4 * * *"
     }
   ]
 }
-
