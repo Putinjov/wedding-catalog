@@ -62,7 +62,7 @@ export async function cleanupUnpaidCustomer({
     }
 
     const related = await payload.find({
-      collection: 'appointments', depth: 0, limit: maxRelatedAppointments + 1,
+      collection: 'appointments', depth: 0, limit: maxRelatedAppointments + 1, pagination: false,
       overrideAccess: true, req,
       where: {
         or: [
