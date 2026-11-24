@@ -46,6 +46,14 @@ describe('unpaid retention cleanup', () => {
     expect(payload.delete).not.toHaveBeenCalled()
     expect(payload.db.rollbackTransaction).toHaveBeenCalledWith('tx')
   })
+  it('preserves customer records when a dress order is active', async () => {
+    const payload = fixture()
+    payload.update.mockResolvedValue({ ...customer, orderStatus: 'awaiting_deposit' })
+    expect(await cleanupUnpaidCustomer({ payload: payload as unknown as Payload, appointmentId: appointment.id, now })).toBe('skipped')
+    expect(payload.delete).not.toHaveBeenCalled()
+    expect(payload.db.rollbackTransaction).toHaveBeenCalledWith('tx')
+  })
+
   it('rolls back a failed write', async () => {
     const payload = fixture()
     payload.delete.mockRejectedValueOnce(new Error('write failed'))
