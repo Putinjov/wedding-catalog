@@ -255,3 +255,5 @@
     .day-view__slots > li { grid-template-columns: 64px 1fr; }
   }
 }
+
+@layer payload-default { .month-view__count { display: none; } }
