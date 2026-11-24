@@ -45,15 +45,9 @@ export async function cleanupUnpaidCustomer({
         depth: 0, overrideAccess: true, req,
       })
     } else {
-      const existing = await payload.count({
-        collection: 'customers', where: { email: { equals: current.email.trim().toLowerCase() } },
-        overrideAccess: true, req,
-      })
-      // An unlinked legacy record cannot safely be associated with a profile by email alone.
-      if (existing.totalDocs) {
-        await payload.db.rollbackTransaction(transactionID)
-        return 'skipped'
-      }
+      // Legacy unlinked bookings need independent identity reconciliation.
+      await payload.db.rollbackTransaction(transactionID)
+      return 'skipped'
     }
 
     const related = await payload.find({
@@ -61,7 +55,7 @@ export async function cleanupUnpaidCustomer({
       overrideAccess: true, req,
       where: {
         or: [
-          { email: { equals: current.email } },
+          { email: { like: current.email } },
           ...(id ? [{ customer: { equals: id } }] : []),
         ],
       },
