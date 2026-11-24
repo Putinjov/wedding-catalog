@@ -19,8 +19,10 @@ export function assessAppointmentRetention({
   if (
     appointment.paymentStatus !== 'unpaid' && appointment.paymentStatus !== 'failed' ||
     appointment.stripeCheckoutSessionId || appointment.stripePaymentIntentId ||
-    appointment.stripeRefundId || appointment.paidAt || appointment.amountPaid != null ||
-    appointment.refundStatus || appointment.refundedAt
+    appointment.stripeRefundId || appointment.stripeCustomerEmail || appointment.checkoutExpiresAt ||
+    appointment.paidAt || appointment.amountPaid != null || appointment.refundAmount != null ||
+    appointment.refundStatus || appointment.refundedAt ||
+    (appointment.source === 'admin' && appointment.status === 'completed' && appointment.fittingFee > 0)
   ) return { eligible: false, reason: 'payment' }
 
   if (appointment.customer) {
