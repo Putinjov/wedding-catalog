@@ -5,6 +5,7 @@ import { cleanupUnpaidCustomer } from './cleanupUnpaidCancellations'
 
 const batchSize = 100
 const maxScanned = 1000
+const cursorKey = 'privacy-retention-cursor'
 
 export async function runRetentionCleanup(payload: Payload, now = new Date()) {
   const unpaidCutoff = new Date(now.getTime() - privacyRetention.abandonedUnpaidDays * 86_400_000).toISOString()
@@ -17,7 +18,8 @@ export async function runRetentionCleanup(payload: Payload, now = new Date()) {
 
   let scanned = 0
   let removed = 0
-  let lastId: string | undefined
+  const savedCursor = await payload.kv.get<string>(cursorKey)
+  let lastId: string | undefined = savedCursor ?? undefined
   let hasMore = false
   while (scanned < maxScanned) {
     const batch = await payload.find({
@@ -49,7 +51,10 @@ export async function runRetentionCleanup(payload: Payload, now = new Date()) {
         ],
       },
     })
-    if (!batch.docs.length) break
+    if (!batch.docs.length) {
+      await payload.kv.delete(cursorKey)
+      break
+    }
     for (const appointment of batch.docs) {
       try {
         const result = await cleanupUnpaidCustomer({ payload, appointmentId: appointment.id, now })
@@ -62,7 +67,12 @@ export async function runRetentionCleanup(payload: Payload, now = new Date()) {
     scanned += batch.docs.length
     lastId = batch.docs.at(-1)?.id
     hasMore = batch.hasNextPage
-    if (!hasMore) break
+    if (hasMore && lastId) {
+      await payload.kv.set(cursorKey, lastId)
+    } else {
+      await payload.kv.delete(cursorKey)
+      break
+    }
   }
   return { scanned, removed, hasMore }
 }
