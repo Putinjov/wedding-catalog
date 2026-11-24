@@ -8,5 +8,5 @@ export default async function DressPage({ params }: { params: Promise<{ id: stri
   const { user } = await requireManagerSession()
   if (!hasRole(user, ['owner', 'manager'])) redirect('/manager')
   const { id } = await params
-  return <DressEditor id={id} />
+  return <DressEditor key={id} id={id} />
 }
