@@ -53,6 +53,7 @@ export function AppointmentsCalendar({
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const managerWorkspace = pathname === '/manager'
   const requestedDate = searchParams.get('date')
   const requestedView = searchParams.get('view')
   const [date, setDate] = useState(() =>
@@ -61,7 +62,7 @@ export function AppointmentsCalendar({
   const [view, setView] = useState<CalendarViewMode>(() =>
     requestedView === 'month' || requestedView === 'week' || requestedView === 'day'
       ? requestedView
-      : 'week',
+      : managerWorkspace ? 'month' : 'week',
   )
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
   const [filters, setFilters] = useState(initialCalendarFilters)
@@ -75,7 +76,7 @@ export function AppointmentsCalendar({
     getNarrowViewportSnapshot,
     () => false,
   )
-  const activeView: CalendarViewMode = isNarrow ? 'day' : view
+  const activeView: CalendarViewMode = isNarrow ? (managerWorkspace && view === 'month' ? 'month' : 'day') : view
   const range = useMemo(() => getVisibleRange(date, activeView), [activeView, date])
 
   const loadAppointments = useCallback(
