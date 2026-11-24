@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { createLocalReq, type Payload, type PayloadRequest } from 'payload'
 
 import type { Appointment, Customer } from '@/payload-types'
@@ -41,7 +42,7 @@ export async function cleanupUnpaidCustomer({
       })
       // This write makes simultaneous new bookings and profile edits conflict with cleanup.
       customer = await payload.update({
-        collection: 'customers', id, data: { name: customer.name },
+        collection: 'customers', id, data: { retentionWriteToken: randomUUID() },
         depth: 0, overrideAccess: true, req,
       })
     } else {
