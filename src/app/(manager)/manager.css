@@ -85,3 +85,54 @@
   .manager-workspace .month-view__date small { line-height:1; }
   .manager-workspace .calendar-loading { margin:4px 0; padding:6px; }
 }
+
+/* Manager calendar presentation is independent of Payload's table styling. */
+.manager-workspace .month-view {
+  background: #fff; border: 1px solid #eee9e3; border-radius: 16px;
+  padding: 12px; min-width: 0;
+}
+.manager-workspace .month-view__weekdays,
+.manager-workspace .month-view__grid { grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; }
+.manager-workspace .month-view__weekdays { background: transparent; border: 0; }
+.manager-workspace .month-view__weekdays span { text-align: center; padding: 8px 0; font-size: 11px; font-weight: 600; }
+.manager-workspace .month-view__day {
+  border: 0; border-radius: 10px; background: transparent; min-height: 100px;
+  padding: 4px; box-shadow: none;
+}
+.manager-workspace .month-view__day.is-outside-month { color: #aaa39b; background: transparent; }
+.manager-workspace .month-view__day.is-closed { background: #f5f1ef; color: #85746e; }
+.manager-workspace .month-view__day.is-selected { background: #80674e; color: #fff; box-shadow: none; }
+.manager-workspace .month-view__date { justify-content: center; flex-direction: column; min-height: 36px; }
+.manager-workspace .month-view__date span { font: 500 15px/1.4 system-ui,sans-serif; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; }
+.manager-workspace .is-today .month-view__date span { outline: 1px solid currentColor; outline-offset: 1px; font-weight: 700; }
+.manager-workspace .month-view__date small { display: none; }
+.manager-workspace .month-view__indicators { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 12px; flex-wrap: wrap; }
+.manager-workspace .month-view__dot { width: 6px; height: 6px; border-radius: 50%; background: #877e74; }
+.manager-workspace .month-view__dot.is-confirmed,.manager-workspace .month-view__dot.is-completed { background: #63836a; }
+.manager-workspace .month-view__dot.is-pending_payment,.manager-workspace .month-view__dot.is-payment_processing { background: #bd8d42; }
+.manager-workspace .month-view__dot.is-cancelled,.manager-workspace .month-view__dot.is-no_show { background: #b67a78; }
+.manager-workspace .month-view__closure-mark { width: 10px; height: 2px; border-radius: 2px; background: #b67a78; }
+.manager-workspace .month-view__extra { font-size: 9px; line-height: 1; }
+.manager-workspace .is-selected .month-view__dot,.manager-workspace .is-selected .month-view__closure-mark { outline: 1px solid #fff; }
+.manager-workspace .day-view { background:#fff; border:1px solid #eee9e3; border-radius:16px; overflow:hidden; }
+.manager-workspace .day-view > header { background:transparent; padding:14px; border-color:#eee9e3; }
+.manager-workspace .day-view > header h2 { font:600 17px/1.35 system-ui,sans-serif; }
+.manager-workspace .day-view > header span { display:none; }
+.manager-workspace .day-view .calendar-empty { background:transparent; border:0; margin:0; color:#655e55; padding:14px; }
+.manager-workspace .day-view__slots > li { min-height:60px; }
+.manager-workspace .day-view__slots > li > time { background:transparent; border:0; }
+.manager-workspace .appointment-card { border-radius:8px; }
+.manager-workspace .manager-slot-controls { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+.manager-workspace .manager-availability details { margin-top:12px; }
+.manager-workspace .manager-availability summary { cursor:pointer; }
+@media(max-width:768px) {
+  .manager-workspace .month-view { padding:8px; }
+  .manager-workspace .month-view__grid,.manager-workspace .month-view__weekdays { gap:3px; }
+  .manager-workspace .month-view__day { min-height:48px; padding:2px; }
+  .manager-workspace .month-view__date { min-height:30px; padding:0; }
+  .manager-workspace .month-view__date span { font-size:14px; }
+  .manager-workspace .month-view__indicators { min-height:10px; }
+  .manager-workspace .manager-calendar-toolbar h1 { font:600 15px/1.2 system-ui,sans-serif; }
+  .manager-workspace .manager-calendar-toolbar { gap:4px; }
+  .manager-workspace .manager-calendar-toolbar button { min-width:32px; min-height:36px; }
+}
