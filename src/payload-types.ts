@@ -1222,6 +1222,7 @@ export interface Customer {
    * Stable private identity key; changes require a reviewed account-linking workflow.
    */
   email: string;
+  retentionWriteToken?: string | null;
   name: string;
   phone?: string | null;
   notes?: string | null;
@@ -1316,6 +1317,11 @@ export interface Appointment {
     | 'payment_received_conflict'
     | 'refunded'
     | 'partially_refunded';
+  /**
+   * Preserve this record while a dispute or other documented reason requires it.
+   */
+  retentionHold?: boolean | null;
+  cancelledAt?: string | null;
   /**
    * Online payment covers the private fitting fee only; any dress purchase or rental is arranged in store.
    */
@@ -2413,6 +2419,7 @@ export interface DressesSelect<T extends boolean = true> {
  */
 export interface CustomersSelect<T extends boolean = true> {
   email?: T;
+  retentionWriteToken?: T;
   name?: T;
   phone?: T;
   notes?: T;
@@ -2461,6 +2468,8 @@ export interface AppointmentsSelect<T extends boolean = true> {
   startAt?: T;
   endAt?: T;
   status?: T;
+  retentionHold?: T;
+  cancelledAt?: T;
   paymentStatus?: T;
   stripeCheckoutSessionId?: T;
   stripePaymentIntentId?: T;

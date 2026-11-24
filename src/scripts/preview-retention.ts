@@ -1,6 +1,7 @@
 import payload, { type Where } from 'payload'
 
 import { privacyRetention } from '@/config/privacy'
+import { assessAppointmentRetention } from '@/lib/privacy/assessAppointmentRetention'
 
 function monthsBefore(now: Date, months: number): string {
   const cutoff = new Date(now)
@@ -28,9 +29,14 @@ async function previewRetention() {
         paymentStatus: { in: ['unpaid', 'failed'] },
         paidAt: { exists: false },
         stripePaymentIntentId: { exists: false },
+        stripeCheckoutSessionId: { exists: false },
+        stripeRefundId: { exists: false },
         amountPaid: { exists: false },
         status: { equals: 'cancelled' },
-        updatedAt: { less_than_equal: cancelledCutoff },
+        or: [
+          { cancelledAt: { less_than_equal: cancelledCutoff } },
+          { and: [{ cancelledAt: { equals: null } }, { updatedAt: { less_than_equal: cancelledCutoff } }] },
+        ],
       },
       completed: {
         status: { equals: 'completed' },
@@ -38,18 +44,36 @@ async function previewRetention() {
       },
     }
     const appointmentCounts: Record<string, number> = {}
+    const eligibleCounts: Record<string, number> = {}
     for (const [name, where] of Object.entries(screens)) {
       const result = await payload.count({
         collection: 'appointments',
         where: { and: [where, { needsAdminReview: { not_equals: true } }] },
       })
       appointmentCounts[name] = result.totalDocs
+      if (name === 'completed') continue
+      let page = 1
+      let eligible = 0
+      while (true) {
+        const batch = await payload.find({
+          collection: 'appointments',
+          depth: 0,
+          limit: 100,
+          page,
+          sort: 'id',
+          where: { and: [where, { needsAdminReview: { not_equals: true } }] },
+        })
+        eligible += batch.docs.filter((appointment) => assessAppointmentRetention({ appointment, now }).eligible).length
+        if (!batch.hasNextPage) break
+        page += 1
+      }
+      eligibleCounts[name] = eligible
     }
     const templateCounts: Record<string, number> = {}
     for (const collection of ['pages', 'posts', 'categories', 'search', 'forms', 'form-submissions', 'redirects'] as const) {
       templateCounts[collection] = (await payload.count({ collection })).totalDocs
     }
-    console.info(JSON.stringify({ asOf: now.toISOString(), appointmentCounts, templateCounts }, null, 2))
+    console.info(JSON.stringify({ asOf: now.toISOString(), appointmentCounts, eligibleCounts, templateCounts }, null, 2))
   } finally {
     await payload.destroy()
   }

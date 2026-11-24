@@ -35,9 +35,13 @@ After 30 days or 24 months, as applicable, remove contact details, free-form not
 operational fields. A six-year minimal record may retain only justified data such as customer name,
 service/date/amount, invoice reference, and required Stripe payment/refund/dispute identifiers.
 
-Automated retention enforcement is not part of Task 20. It is an explicit Task 43 dependency after
-the appointment lifecycle and expired-hold work are in place. That future cron must be bounded,
-authenticated, observable and idempotent, and must support legal retention locks.
+An authenticated daily retention job deletes eligible unpaid cancellations and expired bookings
+after 30 days, and unpaid completed visits after 24 months. The job uses database transactions,
+rechecks all bookings linked to a customer, and deletes the inactive profile, associated booking
+audit records and email-delivery records together. Records with a retention hold, marketing opt-in,
+active order, unresolved review, or any Stripe session or payment evidence are excluded.
+Unlinked legacy bookings sharing an existing profile email are also excluded for manual review.
+The paid-record and active-marketing retention workflows require separate handling.
 
 ## Access, export and deletion procedure
 
@@ -79,11 +83,10 @@ use the last update as a conservative proxy until cancellation timestamps are av
 Unresolved review cases are excluded. Other lifecycle states, including no-shows, need a separate
 policy decision. The preview does not change appointments or customer profiles.
 
-Before enabling writes, implement a persisted legal hold, separate active marketing evidence and
-necessary accounting records, and check for open orders and newer visits. Review linked profiles,
-audit metadata, email deliveries, staff mailboxes and backups. Retaining a link that can identify
-the customer makes the remaining data pseudonymous. A write worker must recheck eligibility
-when it claims each record, resume safely after interruption and avoid triggering booking emails.
+The automated job excludes any paid or Stripe-linked history and active marketing consent.
+Paid records, marketing evidence, staff mailboxes and backups require separate retention handling.
+The job saves a scan cursor between bounded batches and rechecks records within a transaction.
+The report alone does not authorise deletion.
 
 
 ### Cancelled bookings with a payment history

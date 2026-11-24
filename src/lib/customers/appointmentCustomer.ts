@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { APIError, NotFound, type CollectionBeforeChangeHook } from 'payload'
 
 import { siteConfig } from '@/config/site'
@@ -21,7 +22,7 @@ async function linkBookingContact(
   const email = normalizeCustomerEmail(data.email)
   const result = await req.payload.find({
     collection: 'customers', where: { email: { equals: email } },
-    depth: 0, limit: 1, overrideAccess: true, req,
+    depth: 0, limit: 1, pagination: false, overrideAccess: true, req,
   })
   // Guest input must never overwrite an existing customer's contact details or staff notes.
   const customer = result.docs[0] ?? await req.payload.create({
@@ -29,6 +30,12 @@ async function linkBookingContact(
     data: { email, name: data.customerName, phone: data.phone, orderStatus: 'none' },
     depth: 0, overrideAccess: true, req,
   })
+  if (result.docs[0]) {
+    await req.payload.update({
+      collection: 'customers', id: customer.id, data: { retentionWriteToken: randomUUID() },
+      overrideAccess: true, req,
+    })
+  }
   return { ...data, customer: customer.id }
 }
 
@@ -108,6 +115,13 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
     if (data.fittingFee !== expectedFee) {
       throw new APIError('The fitting fee changed. Please review your booking again.', 409)
     }
+  }
+
+  if (operation === 'create') {
+    await req.payload.update({
+      collection: 'customers', id: customerId, data: { retentionWriteToken: randomUUID() },
+      overrideAccess: true, req,
+    })
   }
 
   return data

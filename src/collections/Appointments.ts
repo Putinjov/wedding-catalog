@@ -67,6 +67,11 @@ const validateStatusChange: CollectionBeforeChangeHook<Appointment> = async ({
   assertAppointmentPrivacyFields({ context, data, operation, originalDoc })
 
   const nextStatus = data.status ?? originalDoc?.status ?? 'pending_payment'
+  if (operation === 'create' || originalDoc?.status !== nextStatus) {
+    data.cancelledAt = nextStatus === 'cancelled' ? new Date().toISOString() : null
+  } else {
+    delete data.cancelledAt
+  }
   const nextPaymentStatus = data.paymentStatus ?? originalDoc?.paymentStatus ?? 'unpaid'
   const options = getStatusTransitionOptions(context)
   try {
@@ -503,6 +508,19 @@ export const Appointments: CollectionConfig = {
         label: value.replaceAll('_', ' '),
         value,
       })),
+    },
+    {
+      name: 'retentionHold',
+      type: 'checkbox',
+      defaultValue: false,
+      access: { create: ownerOrManager, update: ownerOrManager },
+      admin: { position: 'sidebar', description: 'Preserve this record while a dispute or other documented reason requires it.' },
+    },
+    {
+      name: 'cancelledAt',
+      type: 'date',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, position: 'sidebar' },
     },
     {
       name: 'paymentStatus',

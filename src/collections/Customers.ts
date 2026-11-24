@@ -87,6 +87,12 @@ export const Customers: CollectionConfig = {
           'Stable private identity key; changes require a reviewed account-linking workflow.',
       },
     },
+    {
+      name: 'retentionWriteToken',
+      type: 'text',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
     { name: 'name', type: 'text', required: true, maxLength: 120 },
     { name: 'phone', type: 'text', maxLength: 40 },
     { name: 'notes', label: 'Staff notes', type: 'textarea', maxLength: 4000 },

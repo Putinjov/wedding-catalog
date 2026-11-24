@@ -119,9 +119,10 @@ describe('private customer profile foundation', () => {
 
   it('creates an internal card for a manual appointment and reuses it on a guest booking', async () => {
     const data = { customerName: 'Jane', email: 'JANE@example.test', phone: '+353123456' }
-    const find = vi.fn().mockResolvedValueOnce({ docs: [] }).mockResolvedValueOnce({ docs: [{ id: 'card' }] })
+    const find = vi.fn().mockResolvedValueOnce({ docs: [] }).mockResolvedValueOnce({ docs: [{ id: 'card', name: 'Jane' }] })
     const create = vi.fn().mockResolvedValue({ id: 'card' })
-    const req = { payload: { create, find } }
+    const update = vi.fn().mockResolvedValue({ id: 'card', name: 'Jane' })
+    const req = { payload: { create, find, update } }
     for (const source of ['admin', 'website']) {
       const result = await validateAppointmentCustomer({
         data: { ...data, source, purpose: 'buy', fittingFee: siteConfig.fittingFee },
@@ -130,6 +131,7 @@ describe('private customer profile foundation', () => {
       expect(result.customer).toBe('card')
     }
     expect(create).toHaveBeenCalledTimes(1)
+    expect(update).toHaveBeenCalledTimes(1)
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
       data: { email: 'jane@example.test', name: 'Jane', phone: data.phone, orderStatus: 'none' }, req,
     }))

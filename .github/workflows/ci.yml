@@ -80,3 +80,50 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+
+  retention-replica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: true
+      RETENTION_REPLICA_TEST: '1'
+      DATABASE_URL: mongodb://127.0.0.1:27017/retention-ci?replicaSet=rs0&directConnection=true
+      PAYLOAD_SECRET: ci-payload-secret-at-least-32-characters
+      NEXT_PUBLIC_SERVER_URL: https://caitbridal.ie
+      PREVIEW_SECRET: ci-preview-secret-at-least-24-characters
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      SMTP_USER: sales@caitbridal.ie
+      SMTP_PASSWORD: ci-smtp-password-placeholder
+      EMAIL_FROM: noreply@caitbridal.ie
+      EMAIL_REPLY_TO: bookings@caitbridal.ie
+      BOOKING_ADMIN_EMAIL: bookings@caitbridal.ie
+      CRON_SECRET: ci-cron-secret-at-least-24-characters
+      R2_BUCKET: ci-wedding-catalog
+      R2_ACCESS_KEY_ID: ci-r2-access-key
+      R2_SECRET_ACCESS_KEY: ci-r2-secret-key
+      R2_ENDPOINT: https://example.r2.cloudflarestorage.com
+      R2_PUBLIC_URL: https://media.example.com
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name retention-mongo -p 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
+          for attempt in $(seq 1 30); do
+            if docker exec retention-mongo mongosh --quiet --eval 'db.adminCommand({ping:1})' >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          docker exec retention-mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
+          for attempt in $(seq 1 30); do
+            if docker exec retention-mongo mongosh --quiet --eval 'quit(db.hello().isWritablePrimary ? 0 : 1)'; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Test concurrent retention and booking
+        run: npm run test:int -- retention-replica.int.spec.ts
