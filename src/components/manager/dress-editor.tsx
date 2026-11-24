@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { Dress } from '@/payload-types'
 
@@ -34,6 +35,11 @@ export function DressEditor({ id }: { id: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [media, setMedia] = useState<{ id: string; url?: string | null; filename?: string | null }[]>([])
+  const [mediaPage, setMediaPage] = useState(1)
+  const [mediaPages, setMediaPages] = useState(1)
+  const [mediaOpen, setMediaOpen] = useState<'main' | 'gallery' | null>(null)
+  const [mediaLoading, setMediaLoading] = useState(false)
   const [previews, setPreviews] = useState<Record<string, string>>({})
   function change<K extends keyof Fields>(key: K, value: Fields[K]) { setFields(previous => ({ ...previous, [key]: value })) }
   useEffect(() => {
@@ -71,6 +77,30 @@ export function DressEditor({ id }: { id: string }) {
     })()
     return () => controller.abort()
   }, [id, creating])
+
+  async function browseMedia(target: 'main' | 'gallery', page = 1) {
+    setMediaOpen(target); setMediaLoading(true); setError('')
+    try {
+      const data = await responseData(await fetch('/api/media?depth=0&limit=24&sort=-createdAt&page=' + page + '&where[mimeType][contains]=image/', { cache: 'no-store' }))
+      setMedia(data.docs); setMediaPage(page); setMediaPages(data.totalPages)
+    } catch (error) { setError(error instanceof Error ? error.message : 'Unable to load media.') }
+    finally { setMediaLoading(false) }
+  }
+
+  function selectMedia(image: { id: string; url?: string | null }) {
+    if (image.url) setPreviews(previous => ({ ...previous, [image.id]: image.url! }))
+    if (mediaOpen === 'main') change('mainImage', image.id)
+    else if (mediaOpen === 'gallery' && fields.gallery.length < 20) change('gallery', [...fields.gallery, { image: image.id, alt: fields.name }])
+    setMediaOpen(null)
+  }
+
+  function movePhoto(index: number, offset: number) {
+    const next = [...fields.gallery]
+    const target = index + offset
+    if (target < 0 || target >= next.length) return
+    ;[next[index], next[target]] = [next[target], next[index]]
+    change('gallery', next)
+  }
 
   async function upload(file: File, target: 'main' | 'gallery') {
     setBusy(true); setError(''); setNotice('')
@@ -140,9 +170,18 @@ export function DressEditor({ id }: { id: string }) {
     <fieldset disabled={busy} className="manager-panel manager-editor"><legend>Photos</legend>
       <label>Video URL<input type="url" value={fields.videoUrl} onChange={event => change('videoUrl', event.target.value)} /></label>
       {fields.mainImage && <span>Main image selected</span>}
-      {previews[fields.mainImage] && <a href={previews[fields.mainImage]} target="_blank" rel="noreferrer">View main image</a>}
+      {previews[fields.mainImage] && <Image unoptimized src={previews[fields.mainImage]} alt="Main dress photo" width={160} height={200} className="manager-photo" />}
+      <button type="button" onClick={() => void browseMedia('main')}>Choose main photo from library</button>
       <label>Upload main photo<input type="file" accept="image/*" onChange={event => { const file = event.target.files?.[0]; if (file) void upload(file, 'main'); event.target.value = '' }} /></label>
-      {fields.gallery.map((row, index) => <div key={row.id ?? row.image + index} className="manager-action"><span>{previews[row.image] ? <a href={previews[row.image]} target="_blank" rel="noreferrer">Photo {index + 1}</a> : 'Photo ' + (index + 1)}</span><button onClick={() => change('gallery', fields.gallery.filter((_, i) => i !== index))}>Remove</button></div>)}
+      {fields.gallery.map((row, index) => <div key={row.id ?? row.image + index} className="manager-gallery-row">
+        {previews[row.image] && <Image unoptimized src={previews[row.image]} alt={row.alt || 'Dress photo'} width={90} height={120} className="manager-photo" />}
+        <label>Photo {index + 1} alt text<input value={row.alt ?? ''} onChange={event => change('gallery', fields.gallery.map((item, i) => i === index ? { ...item, alt: event.target.value } : item))} /></label>
+        <div className="manager-pagination"><button disabled={index === 0} onClick={() => movePhoto(index, -1)}>Up</button><button disabled={index === fields.gallery.length - 1} onClick={() => movePhoto(index, 1)}>Down</button><button onClick={() => change('gallery', fields.gallery.filter((_, i) => i !== index))}>Remove</button></div>
+      </div>)}
+      <button type="button" disabled={fields.gallery.length >= 20} onClick={() => void browseMedia('gallery')}>Choose gallery photo from library</button>
+      {mediaOpen && <section aria-label="Media library"><h3>Media library</h3><button onClick={() => setMediaOpen(null)}>Close library</button>
+        {mediaLoading ? <p role="status">Loading photos…</p> : <><div className="manager-media-grid">{media.map(image => <button type="button" key={image.id} onClick={() => selectMedia(image)}>{image.url && <Image unoptimized src={image.url} width={100} height={120} alt={image.filename || 'Media photo'} className="manager-photo" />}<small>{image.filename || image.id}</small></button>)}</div><div className="manager-pagination"><button disabled={mediaPage <= 1} onClick={() => void browseMedia(mediaOpen, mediaPage - 1)}>Previous</button><span>{mediaPage} / {mediaPages}</span><button disabled={mediaPage >= mediaPages} onClick={() => void browseMedia(mediaOpen, mediaPage + 1)}>Next</button></div></>}
+      </section>}
       <label>Add gallery photo<input type="file" accept="image/*" disabled={fields.gallery.length >= 20} onChange={event => { const file = event.target.files?.[0]; if (file) void upload(file, 'gallery'); event.target.value = '' }} /></label>
     </fieldset>
     <p className="manager-muted">Current status: {status}. Removing a photo from the gallery does not delete the media asset.</p>
