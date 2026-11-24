@@ -26,6 +26,7 @@ export function DressEditor({ id }: { id: string }) {
   const [categories, setCategories] = useState<Option[]>([])
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [loading, setLoading] = useState(true)
+  const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -46,6 +47,7 @@ export function DressEditor({ id }: { id: string }) {
           const images = [dress.mainImage, ...(dress.gallery ?? []).map(row => row.image)]
           setPreviews(Object.fromEntries(images.flatMap(image => typeof image === 'object' && image?.url ? [[image.id, image.url]] : [])))
         }
+        setLoaded(true)
       } catch (error) { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Unable to load dress.') }
       finally { if (!controller.signal.aborted) setLoading(false) }
     })()
@@ -82,6 +84,7 @@ export function DressEditor({ id }: { id: string }) {
   }
 
   if (loading) return <main className="manager-section"><p role="status">Loading…</p></main>
+  if (!loaded) return <main className="manager-section"><Link href="/manager/dresses">Back to catalogue</Link><p role="alert">{error || 'Unable to load dress.'}</p></main>
   return <main className="manager-section">
     <Link href="/manager/dresses">← Dress catalogue</Link><h1>{creating ? 'New dress' : fields.name}</h1>
     {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
