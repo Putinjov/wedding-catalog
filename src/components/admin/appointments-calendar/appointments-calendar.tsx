@@ -71,7 +71,7 @@ export function AppointmentsCalendar({
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filters, setFilters] = useState(initialCalendarFilters)
-  const [selectedID, setSelectedID] = useState<string | null>(null)
+  const [selectedID, setSelectedID] = useState<string | null>(() => managerWorkspace ? searchParams.get('appointment') : null)
   const newOpen = searchParams.get('new') === '1'
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(initialError)
@@ -216,7 +216,14 @@ export function AppointmentsCalendar({
           appointmentId={selectedID}
           key={selectedID}
           onChanged={() => loadAppointments()}
-          onClose={() => setSelectedID(null)}
+          onClose={() => {
+            setSelectedID(null)
+            if (searchParams.has('appointment')) {
+              const params = new URLSearchParams(searchParams.toString())
+              params.delete('appointment')
+              router.replace(params.size ? `${pathname}?${params}` : pathname)
+            }
+          }}
           settings={settings}
         />
       ) : null}
