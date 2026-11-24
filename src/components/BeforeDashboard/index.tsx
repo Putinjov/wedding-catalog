@@ -15,11 +15,11 @@ const BeforeDashboard: React.FC<{ user?: unknown }> = ({ user }) => {
       description: 'Open the dedicated salon management calendar.',
       href: '/manager',
       icon: CalendarDays,
-      label: 'Manager workspace',
+      label: 'Calendar',
     },
     {
       description: 'Add a phone, walk-in or staff-created booking.',
-      href: '/admin/appointments-calendar?new=1',
+      href: '/manager?new=1',
       icon: CalendarPlus,
       label: 'New manual appointment',
     },
@@ -33,7 +33,7 @@ const BeforeDashboard: React.FC<{ user?: unknown }> = ({ user }) => {
       : []),
     {
       description: 'Review today’s fitting schedule in Dublin time.',
-      href: `/admin/appointments-calendar?date=${today}&view=day`,
+      href: `/manager?date=${today}`,
       icon: Clock3,
       label: 'Today’s appointments',
     },
