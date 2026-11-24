@@ -35,9 +35,13 @@ After 30 days or 24 months, as applicable, remove contact details, free-form not
 operational fields. A six-year minimal record may retain only justified data such as customer name,
 service/date/amount, invoice reference, and required Stripe payment/refund/dispute identifiers.
 
-Automated retention enforcement is not part of Task 20. It is an explicit Task 43 dependency after
-the appointment lifecycle and expired-hold work are in place. That future cron must be bounded,
-authenticated, observable and idempotent, and must support legal retention locks.
+An authenticated daily retention job deletes eligible unpaid cancellations and expired bookings
+after 30 days, and unpaid completed visits after 24 months. The job uses database transactions,
+rechecks all bookings linked to a customer, and deletes the inactive profile, associated booking
+audit records and email-delivery records together. Records with a retention hold, marketing opt-in,
+active order, unresolved review, or any Stripe session or payment evidence are excluded.
+Unlinked legacy bookings sharing an existing profile email are also excluded for manual review.
+The paid-record and active-marketing retention workflows require separate handling.
 
 ## Access, export and deletion procedure
 
