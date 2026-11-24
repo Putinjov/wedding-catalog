@@ -1406,7 +1406,7 @@ export interface AppointmentSlotLock {
   createdAt: string;
 }
 /**
- * Manager app installations registered for privacy-minimised push alerts.
+ * Retired device registration storage, retained for migration compatibility.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "mobile-devices".
