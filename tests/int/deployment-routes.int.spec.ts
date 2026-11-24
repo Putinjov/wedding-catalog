@@ -34,7 +34,7 @@ describe('deployment routes', () => {
     const body = await response.text()
 
     expect(body.match(/pages-sitemap\.xml/g)).toHaveLength(1)
-    expect(body.match(/posts-sitemap\.xml/g)).toHaveLength(1)
+    expect(body).not.toContain('/posts-sitemap.xml')
     expect(body.match(/dresses-sitemap\.xml/g)).toHaveLength(1)
   })
 

@@ -1,12 +1,8 @@
 import type { Metadata } from 'next/types'
 
-import { CollectionArchive } from '@/components/CollectionArchive'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
 import React from 'react'
 import { Search } from '@/search/Component'
 import PageClient from './page.client'
-import { CardPostData } from '@/components/Card'
 import { DressGrid } from '@/components/boutique/dress-grid'
 import { publicNoIndexRobots } from '@/config/indexation'
 import { searchPublicDresses } from '@/lib/searchDresses'
@@ -19,39 +15,7 @@ type Args = {
 export default async function Page({ searchParams: searchParamsPromise }: Args) {
   const { q } = await searchParamsPromise
   const query = (Array.isArray(q) ? q[0] : q)?.trim().slice(0, 120) ?? ''
-  const payload = await getPayload({ config: configPromise })
-
-  const [posts, dresses] = await Promise.all([
-    payload.find({
-      collection: 'search',
-      depth: 1,
-      limit: 12,
-      overrideAccess: false,
-      select: {
-        title: true,
-        slug: true,
-        categories: true,
-        meta: true,
-      },
-      // pagination: false reduces overhead if you don't need totalDocs
-      pagination: false,
-      ...(query
-        ? {
-            where: {
-              or: [
-                { title: { like: query } },
-                { 'meta.description': { like: query } },
-                { 'meta.title': { like: query } },
-                { slug: { like: query } },
-              ],
-            },
-          }
-        : {}),
-    }),
-    searchPublicDresses(query),
-  ])
-
-  const hasResults = posts.totalDocs > 0 || dresses.length > 0
+  const dresses = await searchPublicDresses(query)
 
   return (
     <div className="pt-24 pb-24">
@@ -75,16 +39,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
         </section>
       ) : null}
 
-      {posts.totalDocs > 0 ? (
-        <section aria-labelledby="journal-search-results">
-          <h2 className="sr-only" id="journal-search-results">
-            Journal articles
-          </h2>
-          <CollectionArchive posts={posts.docs as CardPostData[]} />
-        </section>
-      ) : null}
-
-      {!hasResults ? <div className="container">No results found.</div> : null}
+      {dresses.length === 0 ? <div className="container">No results found.</div> : null}
     </div>
   )
 }
@@ -95,6 +50,6 @@ export function generateMetadata(): Metadata {
       canonical: '/search',
     },
     robots: publicNoIndexRobots,
-    title: `Payload Website Template Search`,
+    title: `Search wedding dresses`,
   }
 }
