@@ -1316,6 +1316,10 @@ export interface Appointment {
     | 'payment_received_conflict'
     | 'refunded'
     | 'partially_refunded';
+  /**
+   * Preserve this record while a dispute or other documented reason requires it.
+   */
+  retentionHold?: boolean | null;
   cancelledAt?: string | null;
   /**
    * Online payment covers the private fitting fee only; any dress purchase or rental is arranged in store.
@@ -2462,6 +2466,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   startAt?: T;
   endAt?: T;
   status?: T;
+  retentionHold?: T;
   cancelledAt?: T;
   paymentStatus?: T;
   stripeCheckoutSessionId?: T;
