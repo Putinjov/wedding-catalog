@@ -29,7 +29,6 @@ const eslintConfig = [
   {
     ignores: [
       '.next/**',
-      'apps/manager/**',
       'src/payload-types.ts',
       'src/payload-generated-schema.ts',
     ],
