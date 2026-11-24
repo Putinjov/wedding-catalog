@@ -37,6 +37,7 @@ export function ManagerDresses() {
   }, [search, page])
   return <main className="manager-section">
     <h1>Dress catalogue</h1>
+    <Link className="manager-action" href="/manager/dresses/lookups">Manage catalogue attributes</Link>
     <Link className="manager-primary" href="/manager/dresses/new">+ New dress</Link>
     <label className="manager-search">Search dresses<input value={search} type="search" placeholder="Name or SKU" onChange={event => { setSearch(event.target.value); setPage(1) }} /></label>
     {loading ? <p role="status">Loading dresses…</p> : error ? <p role="alert">{error}</p> : <>
