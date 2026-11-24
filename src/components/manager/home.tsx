@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getDateKey, formatTimeForCustomer } from '@/lib/booking/date'
+import { addCalendarDays, getDateKey, formatTimeForCustomer } from '@/lib/booking/date'
 import { parseCalendarAppointments, type CalendarAppointment } from '@/lib/admin/appointments/calendarTypes'
 
 export function ManagerHome() {
@@ -11,7 +11,7 @@ export function ManagerHome() {
   const today = getDateKey()
   useEffect(() => {
     const controller = new AbortController()
-    const params = new URLSearchParams({ from: today, to: today })
+    const params = new URLSearchParams({ from: today, to: addCalendarDays(today, 1) ?? today })
     void (async () => {
       try {
         const response = await fetch('/api/appointments/calendar?' + params, { signal: controller.signal, cache: 'no-store' })
