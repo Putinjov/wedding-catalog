@@ -90,13 +90,6 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
     throw new APIError('The customer profile must match the appointment email.', 400)
   }
 
-  if (operation === 'create') {
-    await req.payload.update({
-      collection: 'customers', id: customerId, data: { name: customerName },
-      overrideAccess: true, req,
-    })
-  }
-
   if (operation === 'create' && data.source === 'website') {
     const startAt = data.startAt ? new Date(data.startAt) : null
     if (!startAt || Number.isNaN(startAt.getTime())) {
@@ -123,6 +116,13 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
     if (data.fittingFee !== expectedFee) {
       throw new APIError('The fitting fee changed. Please review your booking again.', 409)
     }
+  }
+
+  if (operation === 'create') {
+    await req.payload.update({
+      collection: 'customers', id: customerId, data: { name: customerName },
+      overrideAccess: true, req,
+    })
   }
 
   return data
