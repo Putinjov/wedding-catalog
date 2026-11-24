@@ -267,7 +267,7 @@ export interface Page {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Editorial stories and announcements shown on the storefront.
+ * Archived editorial content.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
