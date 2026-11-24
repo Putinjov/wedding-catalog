@@ -25,6 +25,29 @@ integration('retention with MongoDB replica-set transactions', () => {
     await payload.destroy()
   })
 
+  it('atomically deletes an eligible unpaid booking and its inactive profile', async () => {
+    const profileID = new Types.ObjectId()
+    const appointmentID = new Types.ObjectId()
+    ids.push(profileID, appointmentID)
+    const email = `retention-${randomUUID()}@example.test`
+    const now = new Date()
+    const oldDate = new Date(now.getTime() - 60 * 86_400_000)
+    await payload.db.collections.customers.collection.insertOne({
+      _id: profileID, email, name: 'Synthetic customer', phone: '123456',
+      orderStatus: 'none', createdAt: oldDate, updatedAt: oldDate,
+    })
+    await payload.db.collections.appointments.collection.insertOne({
+      _id: appointmentID, customer: profileID, customerName: 'Synthetic customer', email, phone: '123456',
+      status: 'cancelled', paymentStatus: 'unpaid', cancelledAt: oldDate,
+      publicReference: `fit_${randomUUID().replaceAll('-', '')}`, purpose: 'buy', fittingFee: 0,
+      currency: 'EUR', source: 'admin', startAt: oldDate, endAt: oldDate,
+      createdAt: oldDate, updatedAt: oldDate,
+    })
+    expect(await cleanupUnpaidCustomer({ payload, appointmentId: String(appointmentID), now })).toBe('removed')
+    expect(await payload.db.collections.customers.collection.countDocuments({ _id: profileID })).toBe(0)
+    expect(await payload.db.collections.appointments.collection.countDocuments({ _id: appointmentID })).toBe(0)
+  }, 60_000)
+
   it('preserves a customer and previous booking when a new booking commits concurrently', async () => {
     const profileID = new Types.ObjectId()
     const oldID = new Types.ObjectId()
