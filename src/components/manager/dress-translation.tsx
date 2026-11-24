@@ -29,13 +29,20 @@ export function DressTranslation({ id }: { id: string }) {
     })()
     return () => controller.abort()
   }, [url])
+  function localizedRows() {
+    if (!source) return {}
+    return {
+      ...Object.fromEntries((['includedAccessories', 'optionalAccessories'] as const).map(key => [key, (source[key] ?? []).map(row => ({ ...row, item: fields[key]?.find(item => item.id === row.id)?.item || row.item }))])),
+      gallery: (source.gallery ?? []).map(row => ({ ...row, alt: fields.gallery?.find(item => item.id === row.id)?.alt ?? row.alt }))
+    }
+  }
   async function save() {
     if (!source) return
     setBusy(true); setError(''); setNotice('')
     try {
       const response = await fetch(url + '?locale=uk&draft=' + String(source._status !== 'published'), {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...Object.fromEntries(textKeys.map(key => [key, fields[key] ?? ''])), description: fields.description ?? null, generateSlug: false, _status: source._status === 'published' ? 'published' : 'draft' })
+        body: JSON.stringify({ ...Object.fromEntries(textKeys.map(key => [key, fields[key] ?? ''])), description: fields.description ?? null, ...localizedRows(), generateSlug: false, _status: source._status === 'published' ? 'published' : 'draft' })
       })
       if (!response.ok) { const data = await response.json(); throw new Error(data.errors?.[0]?.message || 'Unable to save translation.') }
       setNotice('Ukrainian translation saved.')
@@ -48,6 +55,8 @@ export function DressTranslation({ id }: { id: string }) {
       <legend>Українська</legend>
       {textKeys.map(key => <label key={key}>{labels[key]}<small>English: {source[key] || '—'}</small><textarea maxLength={key === 'shortDescription' ? 300 : undefined} value={fields[key] ?? ''} onChange={event => setFields(previous => ({ ...previous, [key]: event.target.value }))} /></label>)}
       <DescriptionEditor value={fields.description ?? null} onChange={description => setFields(previous => ({ ...previous, description }))} />
+      {(['includedAccessories', 'optionalAccessories'] as const).map(key => <section key={key}><h3>{key === 'includedAccessories' ? 'Included accessories' : 'Optional accessories'}</h3>{(source[key] ?? []).map((row, index) => <label key={row.id ?? index}>English: {row.item}<input value={fields[key]?.find(item => item.id === row.id)?.item ?? ''} onChange={event => { const value = event.target.value; setFields(previous => ({ ...previous, [key]: (source[key] ?? []).map(item => ({ ...item, item: item.id === row.id ? value : previous[key]?.find(existing => existing.id === item.id)?.item ?? '' })) })) }} /></label>)}</section>)}
+      <section><h3>Gallery alternative text</h3>{(source.gallery ?? []).map((row, index) => <label key={row.id ?? index}>Photo {index + 1} · English: {row.alt || '—'}<input value={fields.gallery?.find(item => item.id === row.id)?.alt ?? ''} onChange={event => { const value = event.target.value; setFields(previous => ({ ...previous, gallery: (source.gallery ?? []).map(item => ({ ...item, alt: item.id === row.id ? value : previous.gallery?.find(existing => existing.id === item.id)?.alt ?? '' })) })) }} /></label>)}</section>
       <button type="button" className="manager-primary" disabled={!fields.name?.trim()} onClick={() => void save()}>Save translation</button>
     </fieldset>}
   </main>
