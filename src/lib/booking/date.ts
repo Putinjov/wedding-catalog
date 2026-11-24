@@ -130,13 +130,10 @@ export function getOpeningHours(
   settings: ResolvedBookingSettings,
 ): BookingHours | null {
   const weekday = getWeekday(dateKey)
-  if (
-    weekday == null ||
-    settings.closedWeekdays.includes(weekday) ||
-    isExceptionalClosure(dateKey, settings)
-  ) {
-    return null
-  }
+  if (weekday == null || isExceptionalClosure(dateKey, settings)) return null
+  const override = settings.dateHours?.find((item) => item.date === dateKey)
+  if (override) return override
+  if (settings.closedWeekdays.includes(weekday)) return null
   if (weekday === 6) return settings.saturdayHours.enabled ? settings.saturdayHours : null
   return settings.weekdayHours
 }
@@ -268,6 +265,9 @@ export function getConfiguredSlotTimes(
   const times = new Set(slotTimesForHours(settings.weekdayHours, settings))
   if (settings.saturdayHours.enabled) {
     for (const time of slotTimesForHours(settings.saturdayHours, settings)) times.add(time)
+  }
+  for (const hours of settings.dateHours ?? []) {
+    for (const time of slotTimesForHours(hours, settings)) times.add(time)
   }
   return [...times].sort()
 }
