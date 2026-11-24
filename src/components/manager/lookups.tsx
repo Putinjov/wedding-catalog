@@ -9,6 +9,7 @@ type Form = { name: string; description: string; isActive: boolean; sortOrder: s
 const blank: Form = { name: '', description: '', isActive: true, sortOrder: '0' }
 export function ManagerLookups() {
   const [collection, setCollection] = useState<(typeof collections)[number]>('sizes')
+  const [locale, setLocale] = useState<'en' | 'uk'>('en')
   const [docs, setDocs] = useState<Lookup[]>([])
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
@@ -22,7 +23,7 @@ export function ManagerLookups() {
     const controller = new AbortController()
     void (async () => {
       try {
-        const response = await fetch('/api/' + collection + '?locale=en&depth=0&limit=50&sort=name&page=' + page, { signal: controller.signal, cache: 'no-store' })
+        const response = await fetch('/api/' + collection + '?locale=' + locale + '&fallback-locale=none&depth=0&limit=50&sort=name&page=' + page, { signal: controller.signal, cache: 'no-store' })
         if (!response.ok) throw new Error('Unable to load lookup values.')
         const data = await response.json()
         if (!controller.signal.aborted) { setDocs(data.docs); setPages(data.totalPages) }
@@ -30,13 +31,13 @@ export function ManagerLookups() {
       finally { if (!controller.signal.aborted) setLoading(false) }
     })()
     return () => controller.abort()
-  }, [collection, page, revision])
+  }, [collection, page, revision, locale])
   async function save() {
     setBusy(true); setError('')
     try {
-      const response = await fetch('/api/' + collection + (editing ? '/' + encodeURIComponent(editing) : '') + '?locale=en', {
+      const response = await fetch('/api/' + collection + (editing ? '/' + encodeURIComponent(editing) : '') + '?locale=' + locale, {
         method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, sortOrder: Number(form.sortOrder), generateSlug: !editing })
+        body: JSON.stringify(locale === 'uk' ? { name: form.name, description: form.description, generateSlug: false } : { ...form, sortOrder: Number(form.sortOrder), generateSlug: !editing })
       })
       if (!response.ok) { const data = await response.json(); throw new Error(data.errors?.[0]?.message || 'Unable to save lookup.') }
       setEditing(null); setForm(blank); setLoading(true); setRevision(value => value + 1)
@@ -44,17 +45,18 @@ export function ManagerLookups() {
     finally { setBusy(false) }
   }
   return <main className="manager-section"><Link href="/manager/dresses">← Dress catalogue</Link><h1>Catalogue attributes</h1>
+    <label>Language<select disabled={busy} value={locale} onChange={event => { setLocale(event.target.value as 'en' | 'uk'); setPage(1); setEditing(null); setForm(blank); setLoading(true); setError('') }}><option value="en">English</option><option value="uk">Українська</option></select></label>
     <label>Attribute type<select disabled={busy} value={collection} onChange={event => { setCollection(event.target.value as typeof collection); setPage(1); setEditing(null); setForm(blank); setLoading(true); setError('') }}>{collections.map(value => <option key={value}>{value}</option>)}</select></label>
     {error && <p role="alert">{error}</p>}
-    <fieldset className="manager-panel manager-editor" disabled={busy}><legend>{editing ? 'Edit attribute' : 'New attribute'}</legend>
+    <fieldset className="manager-panel manager-editor" disabled={busy || (locale === 'uk' && !editing)}><legend>{editing ? 'Edit attribute' : 'New attribute'}</legend>
       <label>Name<input value={form.name} onChange={event => setForm(previous => ({ ...previous, name: event.target.value }))} /></label>
       <label>Description<textarea value={form.description} onChange={event => setForm(previous => ({ ...previous, description: event.target.value }))} /></label>
       <label>Sort order<input type="number" min="0" step="1" value={form.sortOrder} onChange={event => setForm(previous => ({ ...previous, sortOrder: event.target.value }))} /></label>
       <label><input type="checkbox" checked={form.isActive} onChange={event => setForm(previous => ({ ...previous, isActive: event.target.checked }))} /> Active</label>
-      <button className="manager-primary" disabled={!form.name.trim() || !Number.isInteger(Number(form.sortOrder)) || Number(form.sortOrder) < 0} onClick={() => void save()}>Save attribute</button>
+      <button className="manager-primary" disabled={(locale === 'uk' && !editing) || !form.name.trim() || !Number.isInteger(Number(form.sortOrder)) || Number(form.sortOrder) < 0} onClick={() => void save()}>Save attribute</button>
       {editing && <button onClick={() => { setEditing(null); setForm(blank) }}>Cancel editing</button>}
     </fieldset>
     <p className="manager-muted">Deactivate unused values rather than deleting attributes referenced by dresses.</p>
-    {loading ? <p role="status">Loading…</p> : <>{docs.map(item => <button type="button" key={item.id} disabled={busy} className="manager-action" onClick={() => { setEditing(item.id); setForm({ name: item.name, description: item.description ?? '', isActive: item.isActive !== false, sortOrder: String(item.sortOrder ?? 0) }) }}>{item.name} · {item.isActive === false ? 'Inactive' : 'Active'}</button>)}<div className="manager-pagination"><button disabled={page <= 1 || busy} onClick={() => { setLoading(true); setPage(value => value - 1) }}>Previous</button><span>{page} / {Math.max(pages, 1)}</span><button disabled={page >= pages || busy} onClick={() => { setLoading(true); setPage(value => value + 1) }}>Next</button></div></>}
+    {loading ? <p role="status">Loading…</p> : <>{docs.map(item => <button type="button" key={item.id} disabled={busy} className="manager-action" onClick={() => { setEditing(item.id); setForm({ name: item.name ?? '', description: item.description ?? '', isActive: item.isActive !== false, sortOrder: String(item.sortOrder ?? 0) }) }}>{item.name || '(Untranslated) ' + item.id} · {item.isActive === false ? 'Inactive' : 'Active'}</button>)}<div className="manager-pagination"><button disabled={page <= 1 || busy} onClick={() => { setLoading(true); setPage(value => value - 1) }}>Previous</button><span>{page} / {Math.max(pages, 1)}</span><button disabled={page >= pages || busy} onClick={() => { setLoading(true); setPage(value => value + 1) }}>Next</button></div></>}
   </main>
 }
