@@ -83,9 +83,18 @@ export async function cleanupUnpaidCustomer({
     }
 
     for (const appointment of related.docs) {
-      const where = { appointment: { equals: appointment.id } }
-      await payload.delete({ collection: 'email-deliveries', where, overrideAccess: true, req })
-      await payload.delete({ collection: 'appointment-audits', where, overrideAccess: true, req })
+      for (const collection of ['email-deliveries', 'appointment-audits'] as const) {
+        while (true) {
+          const documents = await payload.find({
+            collection, where: { appointment: { equals: appointment.id } },
+            depth: 0, limit: 100, pagination: false, overrideAccess: true, req,
+          })
+          if (documents.docs.length === 0) break
+          for (const document of documents.docs) {
+            await payload.delete({ collection, id: document.id, overrideAccess: true, req })
+          }
+        }
+      }
       await payload.delete({ collection: 'appointments', id: appointment.id, overrideAccess: true, req })
     }
     if (customer) {
