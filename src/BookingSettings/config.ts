@@ -9,6 +9,7 @@ import {
 } from '@/config/booking'
 import { validateBookingSettings } from '@/lib/booking/settings'
 
+import { changeBlockedIntervalsEndpoint } from './blockedIntervals'
 import { changeClosuresEndpoint } from './closures'
 
 import { revalidateBookingSettings } from './hooks/revalidateBookingSettings'
@@ -69,7 +70,7 @@ function validateMapUrl(value: null | string | undefined): true | string {
 export const BookingSettings: GlobalConfig = {
   slug: 'booking-settings',
   label: 'Booking settings',
-  endpoints: [changeClosuresEndpoint],
+  endpoints: [changeClosuresEndpoint, changeBlockedIntervalsEndpoint],
   access: {
     read: () => true,
     update: ownerOrManager,
