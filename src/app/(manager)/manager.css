@@ -62,3 +62,26 @@
 .manager-availability__actions label { display: grid; gap: 4px; }
 .manager-availability input { min-height: 40px; border: 1px solid #e6e1d9; border-radius: 5px; padding: 6px; }
 .manager-availability li { margin: 6px 0; }
+
+.manager-calendar-toolbar { display:flex; align-items:center; gap:6px; margin-bottom:12px; }
+.manager-calendar-toolbar h1 { flex:1; font: clamp(18px, 3vw, 28px) Georgia, serif; margin:0; text-align:center; }
+.manager-calendar-toolbar button { display:grid; place-items:center; background:#fff; border:1px solid #e6e1d9; border-radius:6px; min-width:36px; min-height:40px; color:inherit; cursor:pointer; padding:5px; }
+.manager-calendar-toolbar button svg { width:18px; height:18px; }
+.manager-calendar-toolbar button:last-child { background:#80674e; color:white; }
+.manager-nav a { display:flex; align-items:center; gap:8px; }
+.manager-workspace .appointments-calendar__grid-root { min-height:0; margin-bottom:16px; }
+.manager-workspace .month-view__day.is-selected { box-shadow:inset 0 0 0 2px #80674e; background:#eee5d9; }
+.manager-workspace .day-view { max-width:none; }
+@media(max-width:768px) {
+  .manager-workspace .appointments-calendar { padding:12px; min-height:0; }
+  .manager-brand { padding:12px; }
+  .manager-brand a { font-size:20px; }
+  .manager-brand span { font-size:11px; }
+  .manager-nav a { flex-direction:column; gap:3px; padding:5px 9px; }
+  .manager-workspace .month-view__day { min-height:64px; }
+  .manager-workspace .month-view__date { min-height:32px; }
+  .manager-workspace .month-view__date span { font-size:16px; }
+  .manager-workspace .month-view__count { min-height:16px; }
+  .manager-workspace .month-view__date small { line-height:1; }
+  .manager-workspace .calendar-loading { margin:4px 0; padding:6px; }
+}
