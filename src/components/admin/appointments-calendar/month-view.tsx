@@ -44,7 +44,7 @@ export function MonthView({
               key={dateKey}
             >
               <button
-                aria-label={`Open ${formatCalendarDate(dateKey, { dateStyle: 'full' })}`}
+                aria-label={`Open ${formatCalendarDate(dateKey, { dateStyle: 'full' })}, ${dayAppointments.length} appointments`}
                 className="month-view__date"
                 onClick={() => onSelectDay(dateKey)}
                 type="button"
@@ -53,6 +53,7 @@ export function MonthView({
                 {dateKey === today ? <small>Today</small> : null}
                 {isClosedDate(dateKey, settings) ? <small>Closed</small> : null}
               </button>
+              <span className="month-view__count" aria-hidden="true">{dayAppointments.length || ' '}</span>
               <div className="month-view__events">
                 {dayAppointments.map((appointment) => (
                   <AppointmentCard
