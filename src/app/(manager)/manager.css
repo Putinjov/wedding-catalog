@@ -54,3 +54,11 @@
   .manager-workspace .month-view__count { display: block; text-align: center; font-size: 11px; color: #80674e; font-weight: 700; }
   .manager-workspace .calendar-segmented button[aria-pressed] { flex: 1; }
 }
+
+.manager-availability { background: white; border: 1px solid #e6e1d9; border-radius: 8px; padding: 16px; margin: 16px 0; }
+.manager-availability h2 { margin: 0; font: 23px Georgia, serif; }
+.manager-availability p { color: #655e55; margin: 8px 0; }
+.manager-availability__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-top: 12px; }
+.manager-availability__actions label { display: grid; gap: 4px; }
+.manager-availability input { min-height: 40px; border: 1px solid #e6e1d9; border-radius: 5px; padding: 6px; }
+.manager-availability li { margin: 6px 0; }
