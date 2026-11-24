@@ -29,6 +29,12 @@ async function linkBookingContact(
     data: { email, name: data.customerName, phone: data.phone, orderStatus: 'none' },
     depth: 0, overrideAccess: true, req,
   })
+  if (result.docs[0]) {
+    await req.payload.update({
+      collection: 'customers', id: customer.id, data: { name: customer.name },
+      overrideAccess: true, req,
+    })
+  }
   return { ...data, customer: customer.id }
 }
 
@@ -62,6 +68,7 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
   if (!email) throw new APIError('An appointment email is required for a customer profile.', 400)
 
   let customerEmail: string
+  let customerName: string
   try {
     const customer = await req.payload.findByID({
       collection: 'customers',
@@ -71,6 +78,7 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
       req,
     })
     customerEmail = customer.email
+    customerName = customer.name
   } catch (error) {
     if (error instanceof NotFound) {
       throw new APIError('The customer profile could not be verified.', 400)
@@ -80,6 +88,13 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
 
   if (normalizeCustomerEmail(email) !== normalizeCustomerEmail(customerEmail)) {
     throw new APIError('The customer profile must match the appointment email.', 400)
+  }
+
+  if (operation === 'create') {
+    await req.payload.update({
+      collection: 'customers', id: customerId, data: { name: customerName },
+      overrideAccess: true, req,
+    })
   }
 
   if (operation === 'create' && data.source === 'website') {
