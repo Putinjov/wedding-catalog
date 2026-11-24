@@ -21,7 +21,7 @@ async function linkBookingContact(
   const email = normalizeCustomerEmail(data.email)
   const result = await req.payload.find({
     collection: 'customers', where: { email: { equals: email } },
-    depth: 0, limit: 1, overrideAccess: true, req,
+    depth: 0, limit: 1, pagination: false, overrideAccess: true, req,
   })
   // Guest input must never overwrite an existing customer's contact details or staff notes.
   const customer = result.docs[0] ?? await req.payload.create({
