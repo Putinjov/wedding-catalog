@@ -11,7 +11,7 @@ function isTransientTransactionError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const candidate = error as { code?: unknown; hasErrorLabel?: (label: string) => boolean }
   return [24, 112, 251].includes(Number(candidate.code)) ||
-    candidate.hasErrorLabel?.('TransientTransactionError') === true
+    (typeof candidate.hasErrorLabel === 'function' && candidate.hasErrorLabel('TransientTransactionError'))
 }
 
 async function cleanupWithRetry(payload: Payload, appointmentId: string, now: Date) {
