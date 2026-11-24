@@ -19,7 +19,7 @@ function fixture(bookings: object[] = [appointment]) {
   const findByID = vi.fn(async ({ collection }: { collection: string }) => collection === 'customers' ? customer : appointment)
   const find = vi.fn(async () => ({ docs: bookings, totalDocs: bookings.length }))
   const update = vi.fn(async () => customer)
-  const remove = vi.fn(async () => ({}))
+  const remove = vi.fn(async (_args: unknown) => ({}))
   return { db, findByID, find, update, delete: remove }
 }
 describe('unpaid retention cleanup', () => {
