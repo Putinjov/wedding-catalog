@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { APIError, NotFound, type CollectionBeforeChangeHook } from 'payload'
 
 import { siteConfig } from '@/config/site'
@@ -31,7 +32,7 @@ async function linkBookingContact(
   })
   if (result.docs[0]) {
     await req.payload.update({
-      collection: 'customers', id: customer.id, data: { name: customer.name },
+      collection: 'customers', id: customer.id, data: { retentionWriteToken: randomUUID() },
       overrideAccess: true, req,
     })
   }
@@ -68,7 +69,6 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
   if (!email) throw new APIError('An appointment email is required for a customer profile.', 400)
 
   let customerEmail: string
-  let customerName: string
   try {
     const customer = await req.payload.findByID({
       collection: 'customers',
@@ -78,7 +78,6 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
       req,
     })
     customerEmail = customer.email
-    customerName = customer.name
   } catch (error) {
     if (error instanceof NotFound) {
       throw new APIError('The customer profile could not be verified.', 400)
@@ -120,7 +119,7 @@ export const validateAppointmentCustomer: CollectionBeforeChangeHook<Appointment
 
   if (operation === 'create') {
     await req.payload.update({
-      collection: 'customers', id: customerId, data: { name: customerName },
+      collection: 'customers', id: customerId, data: { retentionWriteToken: randomUUID() },
       overrideAccess: true, req,
     })
   }
