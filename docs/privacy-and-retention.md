@@ -83,11 +83,10 @@ use the last update as a conservative proxy until cancellation timestamps are av
 Unresolved review cases are excluded. Other lifecycle states, including no-shows, need a separate
 policy decision. The preview does not change appointments or customer profiles.
 
-Before enabling writes, implement a persisted legal hold, separate active marketing evidence and
-necessary accounting records, and check for open orders and newer visits. Review linked profiles,
-audit metadata, email deliveries, staff mailboxes and backups. Retaining a link that can identify
-the customer makes the remaining data pseudonymous. A write worker must recheck eligibility
-when it claims each record, resume safely after interruption and avoid triggering booking emails.
+The automated job excludes any paid or Stripe-linked history and active marketing consent.
+Paid records, marketing evidence, staff mailboxes and backups require separate retention handling.
+The job saves a scan cursor between bounded batches and rechecks records within a transaction.
+The report alone does not authorise deletion.
 
 
 ### Cancelled bookings with a payment history
