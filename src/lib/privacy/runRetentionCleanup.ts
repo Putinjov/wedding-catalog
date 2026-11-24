@@ -7,6 +7,26 @@ const batchSize = 100
 const maxScanned = 1000
 const cursorKey = 'privacy-retention-cursor'
 
+function isTransientTransactionError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as { code?: unknown; hasErrorLabel?: (label: string) => boolean }
+  return [24, 112, 251].includes(Number(candidate.code)) ||
+    candidate.hasErrorLabel?.('TransientTransactionError') === true
+}
+
+async function cleanupWithRetry(payload: Payload, appointmentId: string, now: Date) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await cleanupUnpaidCustomer({ payload, appointmentId, now })
+    } catch (error) {
+      if (error instanceof APIError && error.status === 404) return 'skipped'
+      if (!isTransientTransactionError(error) || attempt === 2) throw error
+      await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)))
+    }
+  }
+  throw new Error('Retention retry limit reached.')
+}
+
 export async function runRetentionCleanup(payload: Payload, now = new Date()) {
   const unpaidCutoff = new Date(now.getTime() - privacyRetention.abandonedUnpaidDays * 86_400_000).toISOString()
   const cancelledCutoff = new Date(now.getTime() - privacyRetention.cancelledUnpaidDays * 86_400_000).toISOString()
@@ -56,13 +76,8 @@ export async function runRetentionCleanup(payload: Payload, now = new Date()) {
       break
     }
     for (const appointment of batch.docs) {
-      try {
-        const result = await cleanupUnpaidCustomer({ payload, appointmentId: appointment.id, now })
-        if (result === 'removed') removed += 1
-      } catch (error) {
-        // Another related record in this batch may have already been removed.
-        if (!(error instanceof APIError && error.status === 404)) throw error
-      }
+      const result = await cleanupWithRetry(payload, appointment.id, now)
+      if (result === 'removed') removed += 1
     }
     scanned += batch.docs.length
     lastId = batch.docs.at(-1)?.id
