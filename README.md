@@ -3,8 +3,7 @@
 CAIT Bridal is a Next.js and Payload CMS application for a wedding-dress catalogue, private
 fitting bookings, Stripe fitting-fee payments and staff operations.
 
-The standalone Expo manager app lives in [`apps/manager`](apps/manager). It reuses the Payload
-authentication and appointment administration API; it does not maintain a second booking store.
+The responsive staff workspace is available at `/manager` and uses the existing Payload authentication and appointment API.
 
 ## Architecture
 

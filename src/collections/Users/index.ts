@@ -24,7 +24,7 @@ export const Users: CollectionConfig = {
     useAsTitle: 'name',
   },
   auth: {
-    // The manager app refreshes this token on launch. A device unused for a week must sign in again.
+    // Staff sessions expire after seven days.
     tokenExpiration: 60 * 60 * 24 * 7,
   },
   fields: [
