@@ -15,12 +15,7 @@ integration('retention with MongoDB replica-set transactions', () => {
   beforeAll(async () => {
     const { default: config } = await import('@payload-config')
     payload = await getPayload({ config })
-    await Promise.all([
-      payload.db.collections.customers.init(),
-      payload.db.collections.appointments.init(),
-      payload.db.collections['appointment-audits'].init(),
-      payload.db.collections['email-deliveries'].init(),
-    ])
+    await Promise.all(Object.values(payload.db.collections).map((model) => model.init()))
   }, 60_000)
 
   afterAll(async () => {
